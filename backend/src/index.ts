@@ -1,8 +1,9 @@
 import openapi from "@elysiajs/openapi";
-import { Elysia } from "elysia";
+import { Elysia, status } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { RPCHandler } from "@orpc/server/fetch";
 import { router } from "./router";
+import { clerkPlugin } from "elysia-clerk";
 
 const handler = new RPCHandler(router);
 
@@ -15,10 +16,15 @@ const app = new Elysia()
   )
   .use(openapi())
   .get("/", () => "Hello Elysia")
+  .use(clerkPlugin())
   .all(
     "/rpc*",
-    async ({ request }: { request: Request }) => {
-      const { response } = await handler.handle(request, {
+    async (ctx) => {
+      const auth = ctx.auth();
+      if (!auth.isAuthenticated) {
+        return status(401);
+      }
+      const { response } = await handler.handle(ctx.request, {
         prefix: "/rpc",
       });
 

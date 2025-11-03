@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoStorybookRouteImport } from './routes/demo/storybook'
 import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
 import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
+import { Route as ProtectedTodosRouteImport } from './routes/_protected/todos'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
@@ -26,6 +28,10 @@ import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
 
+const ProtectedRoute = ProtectedRouteImport.update({
+  id: '/_protected',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -55,6 +61,11 @@ const DemoClerkRoute = DemoClerkRouteImport.update({
   id: '/demo/clerk',
   path: '/demo/clerk',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ProtectedTodosRoute = ProtectedTodosRouteImport.update({
+  id: '/todos',
+  path: '/todos',
+  getParentRoute: () => ProtectedRoute,
 } as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
   id: '/demo/start/server-funcs',
@@ -109,6 +120,7 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -127,6 +139,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -146,6 +159,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_protected': typeof ProtectedRouteWithChildren
+  '/_protected/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
   '/demo/storybook': typeof DemoStorybookRoute
@@ -166,6 +181,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
     | '/demo/storybook'
@@ -184,6 +200,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
     | '/demo/storybook'
@@ -202,6 +219,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_protected'
+    | '/_protected/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
     | '/demo/storybook'
@@ -221,6 +240,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProtectedRoute: typeof ProtectedRouteWithChildren
   DemoClerkRoute: typeof DemoClerkRoute
   DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
   DemoStorybookRoute: typeof DemoStorybookRoute
@@ -240,6 +260,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_protected': {
+      id: '/_protected'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ProtectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -281,6 +308,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/demo/clerk'
       preLoaderRoute: typeof DemoClerkRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_protected/todos': {
+      id: '/_protected/todos'
+      path: '/todos'
+      fullPath: '/todos'
+      preLoaderRoute: typeof ProtectedTodosRouteImport
+      parentRoute: typeof ProtectedRoute
     }
     '/demo/start/server-funcs': {
       id: '/demo/start/server-funcs'
@@ -355,8 +389,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ProtectedRouteChildren {
+  ProtectedTodosRoute: typeof ProtectedTodosRoute
+}
+
+const ProtectedRouteChildren: ProtectedRouteChildren = {
+  ProtectedTodosRoute: ProtectedTodosRoute,
+}
+
+const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
+  ProtectedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProtectedRoute: ProtectedRouteWithChildren,
   DemoClerkRoute: DemoClerkRoute,
   DemoOrpcTodoRoute: DemoOrpcTodoRoute,
   DemoStorybookRoute: DemoStorybookRoute,

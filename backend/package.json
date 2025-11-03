@@ -10,6 +10,7 @@
     "@elysiajs/openapi": "^1.4.11",
     "@orpc/server": "^1.10.3",
     "elysia": "latest",
+    "elysia-clerk": "^0.12.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
