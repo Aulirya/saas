@@ -1,0 +1,17 @@
+{
+  "name": "saas",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"bun --cwd app/backend run dev\" \"bun --cwd app/web run dev\"",
+    "dev:backend": "bun --cwd app/backend run dev",
+    "dev:web": "bun --cwd app/web run dev"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
