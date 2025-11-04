@@ -16,6 +16,7 @@ const app = new Elysia()
   )
   .use(openapi())
   .get("/", () => "Hello Elysia")
+  .get("/health", () => ({ status: "ok" }))
   .use(clerkPlugin())
   .all(
     "/rpc*",
