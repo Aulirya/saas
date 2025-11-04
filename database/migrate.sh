@@ -21,11 +21,10 @@ echo ""
 echo "Verifying migration..."
 curl -s -X POST \
   -H "Content-Type: application/json" \
-  -H "NS: Aulirya" \
-  -H "DB: saas" \
+  -H "Accept: application/json" \
   -u root:root \
-  -d "INFO FOR DB;" \
-  http://surrealdb:8000/sql | jq '.'
+  -d "USE NS Aulirya; USE DB saas; INFO FOR DB;" \
+  http://surrealdb:8000/sql | jq '.[-1]'
 
 echo ""
 echo "Migration completed successfully!"
