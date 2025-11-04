@@ -1,12 +1,24 @@
-.PHONY: help dev stop logs logs-backend logs-frontend clean rebuild shell-backend shell-frontend urls
+.PHONY: help dev dev-db-reset stop logs logs-backend logs-frontend logs-surrealdb clean rebuild shell-backend shell-frontend shell-surrealdb urls
 
 help: ## Display this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-dev: ## Start all services in development mode
+dev: ## Start all services in development mode (without DB reset)
 	docker-compose up -d --remove-orphans
 	@echo "\n✅ Services started!"
+	@make urls
+
+dev-db-reset: ## Start services and reset database with migrations
+	@echo "Stopping all services and removing volumes..."
+	docker-compose down -v
+	@echo "Starting SurrealDB..."
+	docker-compose up -d surrealdb
+	@echo "Running migration..."
+	docker-compose run --rm surrealdb-migrate
+	@echo "Starting remaining services..."
+	docker-compose up -d
+	@echo "\n✅ Services started with database reset!"
 	@make urls
 
 stop: ## Stop all services
@@ -20,6 +32,9 @@ logs-backend: ## View logs from backend service only
 
 logs-frontend: ## View logs from frontend service only
 	docker-compose logs -f frontend
+
+logs-surrealdb: ## View logs from SurrealDB service only
+	docker-compose logs -f surrealdb
 
 clean: ## Remove all containers, volumes, and networks
 	docker-compose down -v
@@ -38,8 +53,12 @@ shell-backend: ## Open a shell in the backend container
 shell-frontend: ## Open a shell in the frontend container
 	docker-compose exec frontend /bin/sh
 
+shell-surrealdb: ## Open a shell in the SurrealDB container
+	docker-compose exec surrealdb /bin/sh
+
 urls: ## Display service URLs
 	@echo "\n📍 Service URLs:"
-	@echo "  Backend:  http://localhost:3001"
-	@echo "  Frontend: http://localhost:3000"
+	@echo "  Backend:   http://localhost:3001"
+	@echo "  Frontend:  http://localhost:3000"
+	@echo "  SurrealDB: http://localhost:8000"
 	@echo ""

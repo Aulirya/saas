@@ -1,4 +1,30 @@
 services:
+  surrealdb:
+    container_name: saas-surrealdb
+    image: surrealdb/surrealdb:latest
+    user: root
+    ports:
+      - "8000:8000"
+    command: start --user root --pass root --bind 0.0.0.0:8000 rocksdb:/data/database.db
+    volumes:
+      - surrealdb-data:/data
+    networks:
+      - saas-network
+    restart: unless-stopped
+
+  surrealdb-migrate:
+    container_name: saas-surrealdb-migrate
+    image: alpine:latest
+    profiles: ["migrate"]
+    depends_on:
+      surrealdb:
+        condition: service_started
+    command: ["/database/migrate.sh"]
+    volumes:
+      - ./database:/database
+    networks:
+      - saas-network
+
   frontend:
     container_name: saas-frontend
     build:
@@ -17,6 +43,9 @@ services:
       - /app/node_modules
     networks:
       - saas-network
+    depends_on:
+      backend:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "bun", "run", "-e", "await fetch('http://localhost:3000')"]
@@ -35,6 +64,11 @@ services:
     environment:
       - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - SURREALDB_URL=${SURREALDB_URL:-http://surrealdb:8000}
+      - SURREALDB_USER=${SURREALDB_USER:-root}
+      - SURREALDB_PASS=${SURREALDB_PASS:-root}
+      - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
+      - SURREALDB_DB=${SURREALDB_DB:-saas}
     volumes:
       # Bind mount source for hot reload
       - ./backend/src:/app/src
@@ -43,8 +77,8 @@ services:
     networks:
       - saas-network
     depends_on:
-      frontend:
-        condition: service_healthy
+      surrealdb:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "bun", "run", "-e", "await fetch('http://localhost:3001/health')"]
@@ -56,3 +90,7 @@ services:
 networks:
   saas-network:
     driver: bridge
+
+volumes:
+  surrealdb-data:
+    driver: local
