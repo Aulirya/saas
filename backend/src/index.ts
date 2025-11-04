@@ -10,7 +10,7 @@ const handler = new RPCHandler(router);
 const app = new Elysia()
   .use(
     cors({
-      origin: ["http://localhost:3000"], // Your frontend URL
+      origin: ["http://localhost:3000"],
       credentials: true,
     }),
   )
