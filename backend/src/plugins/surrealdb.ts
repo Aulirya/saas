@@ -1,6 +1,5 @@
 import { Elysia } from "elysia";
-import Surreal from "surrealdb";
-import { surrealdbNodeEngines } from "@surrealdb/node";
+import { Surreal } from "surrealdb";
 
 export interface SurrealDBConfig {
   url?: string;
@@ -41,7 +40,8 @@ export const surrealdb = (config?: SurrealDBConfig) => {
   } = config || {};
 
   // Create the Surreal instance outside so we can reference it in lifecycle hooks
-  const dbInstance = new Surreal({ engines: surrealdbNodeEngines() });
+  // No need to specify engines - it will use the appropriate remote engine based on the URL
+  const dbInstance = new Surreal();
 
   return new Elysia({
     name: "surrealdb",

@@ -21,7 +21,7 @@ const app = new Elysia()
   .get("/health", () => ({ status: "ok" }))
   .get("/db-test", async ({ db }) => {
     try {
-      const info = await db.info();
+      const info = db.isConnected;
       return { success: true, info };
     } catch (error) {
       return { success: false, error: String(error) };
