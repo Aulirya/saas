@@ -1,11 +1,21 @@
 services:
   surrealdb:
     container_name: saas-surrealdb
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v3.0.0-alpha.12
     user: root
     ports:
       - "8000:8000"
-    command: start --user root --pass root --bind 0.0.0.0:8000 rocksdb:/data/database.db
+    environment:
+      - SURREAL_CAPS_ALLOW_EXPERIMENTAL=files
+    command:
+      - start
+      - --user
+      - root
+      - --pass
+      - root
+      - --bind
+      - 0.0.0.0:8000
+      - rocksdb:/data/database.db
     volumes:
       - surrealdb-data:/data
     networks:
