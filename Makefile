@@ -62,3 +62,6 @@ urls: ## Display service URLs
 	@echo "  Frontend:  http://localhost:3000"
 	@echo "  SurrealDB: http://localhost:8000"
 	@echo ""
+
+run-storybook: ## Run storybook in the frontend container
+	cd web && bun run storybook
