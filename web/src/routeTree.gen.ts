@@ -9,6 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as JournalRouteImport } from './routes/journal'
+import { Route as CoursesRouteImport } from './routes/courses'
+import { Route as CommunityRouteImport } from './routes/community'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -28,6 +33,31 @@ import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
 
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JournalRoute = JournalRouteImport.update({
+  id: '/journal',
+  path: '/journal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoursesRoute = CoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedRoute = ProtectedRouteImport.update({
   id: '/_protected',
   getParentRoute: () => rootRouteImport,
@@ -120,6 +150,11 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/community': typeof CommunityRoute
+  '/courses': typeof CoursesRoute
+  '/journal': typeof JournalRoute
+  '/resources': typeof ResourcesRoute
   '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -139,6 +174,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/community': typeof CommunityRoute
+  '/courses': typeof CoursesRoute
+  '/journal': typeof JournalRoute
+  '/resources': typeof ResourcesRoute
   '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -160,6 +200,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_protected': typeof ProtectedRouteWithChildren
+  '/analytics': typeof AnalyticsRoute
+  '/community': typeof CommunityRoute
+  '/courses': typeof CoursesRoute
+  '/journal': typeof JournalRoute
+  '/resources': typeof ResourcesRoute
   '/_protected/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -181,6 +226,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/analytics'
+    | '/community'
+    | '/courses'
+    | '/journal'
+    | '/resources'
     | '/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
@@ -200,6 +250,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/analytics'
+    | '/community'
+    | '/courses'
+    | '/journal'
+    | '/resources'
     | '/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
@@ -220,6 +275,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_protected'
+    | '/analytics'
+    | '/community'
+    | '/courses'
+    | '/journal'
+    | '/resources'
     | '/_protected/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
@@ -241,6 +301,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRoute: typeof ProtectedRouteWithChildren
+  AnalyticsRoute: typeof AnalyticsRoute
+  CommunityRoute: typeof CommunityRoute
+  CoursesRoute: typeof CoursesRoute
+  JournalRoute: typeof JournalRoute
+  ResourcesRoute: typeof ResourcesRoute
   DemoClerkRoute: typeof DemoClerkRoute
   DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
   DemoStorybookRoute: typeof DemoStorybookRoute
@@ -260,6 +325,41 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journal': {
+      id: '/journal'
+      path: '/journal'
+      fullPath: '/journal'
+      preLoaderRoute: typeof JournalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses': {
+      id: '/courses'
+      path: '/courses'
+      fullPath: '/courses'
+      preLoaderRoute: typeof CoursesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_protected': {
       id: '/_protected'
       path: ''
@@ -404,6 +504,11 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
+  AnalyticsRoute: AnalyticsRoute,
+  CommunityRoute: CommunityRoute,
+  CoursesRoute: CoursesRoute,
+  JournalRoute: JournalRoute,
+  ResourcesRoute: ResourcesRoute,
   DemoClerkRoute: DemoClerkRoute,
   DemoOrpcTodoRoute: DemoOrpcTodoRoute,
   DemoStorybookRoute: DemoStorybookRoute,
