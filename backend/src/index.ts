@@ -4,6 +4,7 @@ import { cors } from "@elysiajs/cors";
 import { RPCHandler } from "@orpc/server/fetch";
 import { router } from "./router";
 import { clerkPlugin } from "elysia-clerk";
+import { surrealdb } from "./plugins/surrealdb";
 
 const handler = new RPCHandler(router);
 
@@ -15,8 +16,17 @@ const app = new Elysia()
     }),
   )
   .use(openapi())
+  .use(surrealdb())
   .get("/", () => "Hello Elysia")
   .get("/health", () => ({ status: "ok" }))
+  .get("/db-test", async ({ db }) => {
+    try {
+      const info = await db.info();
+      return { success: true, info };
+    } catch (error) {
+      return { success: false, error: String(error) };
+    }
+  })
   .use(clerkPlugin())
   .all(
     "/rpc*",
