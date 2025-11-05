@@ -1,4 +1,4 @@
-.PHONY: help dev dev-db-reset stop logs logs-backend logs-frontend logs-surrealdb clean rebuild shell-backend shell-frontend shell-surrealdb urls
+.PHONY: help dev dev-db-reset stop logs logs-backend logs-frontend logs-surrealdb logs-ngrok clean rebuild shell-backend shell-frontend shell-surrealdb urls webhook-url
 
 help: ## Display this help message
 	@echo "Available commands:"
@@ -36,6 +36,9 @@ logs-frontend: ## View logs from frontend service only
 logs-surrealdb: ## View logs from SurrealDB service only
 	docker-compose logs -f surrealdb
 
+logs-ngrok: ## View logs from ngrok service only
+	docker-compose logs -f ngrok
+
 clean: ## Remove all containers, volumes, and networks
 	docker-compose down -v
 	@echo "\n✅ Cleaned up containers, volumes, and networks"
@@ -58,10 +61,27 @@ shell-surrealdb: ## Open a shell in the SurrealDB container
 
 urls: ## Display service URLs
 	@echo "\n📍 Service URLs:"
-	@echo "  Backend:   http://localhost:3001"
-	@echo "  Frontend:  http://localhost:3000"
-	@echo "  SurrealDB: http://localhost:8000"
+	@echo "  Frontend:      http://localhost:3000"
+	@echo "  Backend:       http://localhost:3001"
+	@echo "  SurrealDB:     http://localhost:8000"
+	@echo "  ngrok Web UI:  http://localhost:4040"
 	@echo ""
+	@echo "⏳ Waiting for ngrok to start..."
+	@sleep 3
+	@make webhook-url
+
+webhook-url: ## Display the ngrok webhook URL for Clerk
+	@echo "\n🔗 Clerk Webhook URL:"
+	@NGROK_URL=$$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*' | grep -o 'https://[^"]*' | head -1); \
+	if [ -z "$$NGROK_URL" ]; then \
+		echo "  ⚠️  ngrok not ready yet. Run 'make webhook-url' again in a few seconds."; \
+	else \
+		echo "  $$NGROK_URL/webhooks/clerk"; \
+		echo ""; \
+		echo "📋 Copy this URL to your Clerk Dashboard:"; \
+		echo "   https://dashboard.clerk.com -> Webhooks -> Add Endpoint"; \
+		echo ""; \
+	fi
 
 run-storybook: ## Run storybook in the frontend container
 	cd web && bun run storybook
