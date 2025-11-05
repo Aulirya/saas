@@ -98,25 +98,6 @@ services:
       retries: 5
       start_period: 10s
 
-  ngrok:
-    container_name: saas-ngrok
-    image: ngrok/ngrok:latest
-    ports:
-      - "4040:4040"  # ngrok web interface
-    environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
-    command:
-      - "http"
-      - "backend:3001"
-      - "--domain=hugely-pleasing-stingray.ngrok-free.app"
-      - "--log=stdout"
-    networks:
-      - saas-network
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-
 networks:
   saas-network:
     driver: bridge
