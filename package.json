@@ -3,6 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "workspaces": ["backend", "web", "shared"],
   "scripts": {
     "dev": "concurrently \"bun --cwd backend run dev\" \"bun --cwd web run dev\"",
     "dev:backend": "bun --cwd backend run dev",

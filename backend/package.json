@@ -9,6 +9,7 @@
     "@elysiajs/cors": "^1.4.0",
     "@elysiajs/openapi": "^1.4.11",
     "@orpc/server": "^1.10.3",
+    "@saas/shared": "workspace:*",
     "elysia": "latest",
     "elysia-clerk": "^0.12.2",
     "surrealdb": "^2.0.0-alpha.12",

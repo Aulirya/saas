@@ -67,6 +67,10 @@ const app = new Elysia()
       }
       const { response } = await handler.handle(ctx.request, {
         prefix: "/rpc",
+        context: {
+          user_id: auth.userId,
+          db: ctx.db,
+        },
       });
 
       return response ?? new Response("Not Found", { status: 404 });
