@@ -1,4 +1,4 @@
-.PHONY: help dev dev-db-reset stop logs logs-backend logs-frontend logs-surrealdb clean rebuild shell-backend shell-frontend shell-surrealdb urls webhook-url
+.PHONY: help dev dev-db-reset seed stop logs logs-backend logs-frontend logs-surrealdb clean rebuild shell-backend shell-frontend shell-surrealdb urls webhook-url
 
 help: ## Display this help message
 	@echo "Available commands:"
@@ -20,6 +20,9 @@ dev-db-reset: ## Start services and reset database with migrations
 	docker-compose up -d
 	@echo "\n✅ Services started with database reset!"
 	@make urls
+
+seed: ## Seed the database with test data
+	@sh database/seed.sh
 
 stop: ## Stop all services
 	docker-compose down
