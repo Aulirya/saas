@@ -14,6 +14,7 @@
         "build-storybook": "storybook build"
     },
     "dependencies": {
+        "@saas/shared": "workspace:*",
         "@clerk/clerk-react": "^5.49.0",
         "@faker-js/faker": "^10.0.0",
         "@orpc/client": "^1.7.5",
