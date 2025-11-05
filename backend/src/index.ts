@@ -4,7 +4,13 @@ import { cors } from "@elysiajs/cors";
 import { RPCHandler } from "@orpc/server/fetch";
 import { router } from "./router";
 import { clerkPlugin } from "elysia-clerk";
+import { verifyWebhook } from "elysia-clerk/webhooks";
 import { surrealdb } from "./plugins/surrealdb";
+import {
+  type ClerkUserWebhookDto,
+  handleUserCreated,
+  handleUserUpdated,
+} from "./webhooks";
 
 const handler = new RPCHandler(router);
 
@@ -28,6 +34,30 @@ const app = new Elysia()
     }
   })
   .use(clerkPlugin())
+  .post("/webhooks/clerk", async ({ request, db }) => {
+    try {
+      const event = await verifyWebhook(request, {
+        signingSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET,
+      });
+      switch (event.type) {
+        case "user.created":
+          await handleUserCreated(db, event.data as ClerkUserWebhookDto);
+          break;
+
+        case "user.updated":
+          await handleUserUpdated(db, event.data as ClerkUserWebhookDto);
+          break;
+
+        default:
+          console.log(`Unhandled webhook event type: ${event.type}`);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Webhook error:", error);
+      return new Response("Webhook Error", { status: 400 });
+    }
+  })
   .all(
     "/rpc*",
     async (ctx) => {

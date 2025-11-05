@@ -109,9 +109,9 @@ DEFINE FIELD user_id ON subjects TYPE record<users> PERMISSIONS FULL;
 DEFINE TABLE users TYPE ANY SCHEMALESS PERMISSIONS NONE;
 
 DEFINE FIELD created_at ON users TYPE datetime DEFAULT time::now() PERMISSIONS FULL;
-DEFINE FIELD email ON users TYPE string PERMISSIONS FULL;
-DEFINE FIELD first_name ON users TYPE string PERMISSIONS FULL;
-DEFINE FIELD last_name ON users FLEXIBLE TYPE string PERMISSIONS FULL;
+DEFINE FIELD email ON users TYPE option<string> PERMISSIONS FULL;
+DEFINE FIELD first_name ON users TYPE option<string> PERMISSIONS FULL;
+DEFINE FIELD last_name ON users FLEXIBLE TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD role ON users TYPE 'teacher' | 'student' PERMISSIONS FULL;
 DEFINE FIELD schools ON users TYPE array<string> PERMISSIONS FULL;
 DEFINE FIELD schools[*] ON users TYPE string PERMISSIONS FULL;
