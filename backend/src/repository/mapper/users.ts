@@ -1,9 +1,9 @@
 import { RecordId } from "surrealdb";
 import type { ClerkUserWebhookDto } from "../../webhooks";
-import type { Users } from "../model/users";
+import type { UsersModel } from "../model/users";
 
 export namespace UserModelMapper {
-  export function fromClerkUser(user: ClerkUserWebhookDto): Users {
+  export function fromClerkUser(user: ClerkUserWebhookDto): UsersModel {
     return {
       id: new RecordId("users", user.id),
       email: user.email_addresses[0].email_address,

@@ -12,4 +12,4 @@ const usersModel = z.object({
   updated_at: z.custom<DateTime>().optional(),
 });
 
-export type Users = z.infer<typeof usersModel>;
+export type UsersModel = z.infer<typeof usersModel>;
