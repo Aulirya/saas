@@ -84,9 +84,12 @@ services:
     volumes:
       # Bind mount source for hot reload
       - ./backend/src:/app/backend/src
-      - ./shared:/app/shared
+      - ./shared/entity:/app/shared/entity
+      - ./shared/input:/app/shared/input
+      - ./shared/index.ts:/app/shared/index.ts
       # Prevent overwriting container's node_modules
       - /app/node_modules
+      - /app/shared/node_modules
     networks:
       - saas-network
     depends_on:
