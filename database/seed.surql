@@ -42,35 +42,40 @@ LET $sophie_class_1 = CREATE classes CONTENT {
     name: "10A Mathematics",
     level: "Year 10",
     school: "Riverside High School",
-    students_count: 28
+    students_count: 28,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 LET $sophie_class_2 = CREATE classes CONTENT {
     name: "11B Advanced Math",
     level: "Year 11",
     school: "Riverside High School",
-    students_count: 22
+    students_count: 22,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 LET $sophie_class_3 = CREATE classes CONTENT {
     name: "12A Calculus",
     level: "Year 12",
     school: "Riverside High School",
-    students_count: 18
+    students_count: 18,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 LET $sophie_class_4 = CREATE classes CONTENT {
     name: "9C Mathematics",
     level: "Year 9",
     school: "Riverside High School",
-    students_count: 30
+    students_count: 30,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 LET $sophie_class_5 = CREATE classes CONTENT {
     name: "10B Statistics",
     level: "Year 10",
     school: "Riverside High School",
-    students_count: 25
+    students_count: 25,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 -- ------------------------------
@@ -81,35 +86,40 @@ LET $vincent_class_1 = CREATE classes CONTENT {
     name: "11A Computer Science",
     level: "Year 11",
     school: "Oakwood Academy",
-    students_count: 24
+    students_count: 24,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 LET $vincent_class_2 = CREATE classes CONTENT {
     name: "12B Web Development",
     level: "Year 12",
     school: "Oakwood Academy",
-    students_count: 20
+    students_count: 20,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 LET $vincent_class_3 = CREATE classes CONTENT {
     name: "10A Programming Basics",
     level: "Year 10",
     school: "Oakwood Academy",
-    students_count: 26
+    students_count: 26,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 LET $vincent_class_4 = CREATE classes CONTENT {
     name: "11C Data Science",
     level: "Year 11",
     school: "Oakwood Academy",
-    students_count: 19
+    students_count: 19,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 LET $vincent_class_5 = CREATE classes CONTENT {
     name: "12A Software Engineering",
     level: "Year 12",
     school: "Oakwood Academy",
-    students_count: 21
+    students_count: 21,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 -- ------------------------------
@@ -221,7 +231,8 @@ CREATE lessons CONTENT {
     average_duration: 60,
     status: "done",
     class_id: $sophie_class_1[0].id,
-    subject_id: $sophie_subject_1[0].id
+    subject_id: $sophie_subject_1[0].id,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 CREATE lessons CONTENT {
@@ -231,7 +242,8 @@ CREATE lessons CONTENT {
     average_duration: 75,
     status: "done",
     class_id: $sophie_class_3[0].id,
-    subject_id: $sophie_subject_2[0].id
+    subject_id: $sophie_subject_2[0].id,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 CREATE lessons CONTENT {
@@ -241,7 +253,8 @@ CREATE lessons CONTENT {
     average_duration: 50,
     status: "in progress",
     class_id: $sophie_class_5[0].id,
-    subject_id: $sophie_subject_3[0].id
+    subject_id: $sophie_subject_3[0].id,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 CREATE lessons CONTENT {
@@ -251,7 +264,8 @@ CREATE lessons CONTENT {
     average_duration: 60,
     status: "planned",
     class_id: $sophie_class_4[0].id,
-    subject_id: $sophie_subject_4[0].id
+    subject_id: $sophie_subject_4[0].id,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 CREATE lessons CONTENT {
@@ -261,7 +275,8 @@ CREATE lessons CONTENT {
     average_duration: 55,
     status: "planned",
     class_id: $sophie_class_2[0].id,
-    subject_id: $sophie_subject_5[0].id
+    subject_id: $sophie_subject_5[0].id,
+    user_id: users:user_353UyKo0yGYVRwzFjWRZzg8DaYr
 };
 
 -- ------------------------------
@@ -275,7 +290,8 @@ CREATE lessons CONTENT {
     average_duration: 90,
     status: "done",
     class_id: $vincent_class_3[0].id,
-    subject_id: $vincent_subject_1[0].id
+    subject_id: $vincent_subject_1[0].id,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 CREATE lessons CONTENT {
@@ -285,7 +301,8 @@ CREATE lessons CONTENT {
     average_duration: 120,
     status: "done",
     class_id: $vincent_class_2[0].id,
-    subject_id: $vincent_subject_2[0].id
+    subject_id: $vincent_subject_2[0].id,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 CREATE lessons CONTENT {
@@ -295,7 +312,8 @@ CREATE lessons CONTENT {
     average_duration: 90,
     status: "planned",
     class_id: $vincent_class_1[0].id,
-    subject_id: $vincent_subject_3[0].id
+    subject_id: $vincent_subject_3[0].id,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 CREATE lessons CONTENT {
@@ -305,7 +323,8 @@ CREATE lessons CONTENT {
     average_duration: 100,
     status: "planned",
     class_id: $vincent_class_4[0].id,
-    subject_id: $vincent_subject_4[0].id
+    subject_id: $vincent_subject_4[0].id,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 CREATE lessons CONTENT {
@@ -315,7 +334,8 @@ CREATE lessons CONTENT {
     average_duration: 120,
     status: "backlog",
     class_id: $vincent_class_5[0].id,
-    subject_id: $vincent_subject_5[0].id
+    subject_id: $vincent_subject_5[0].id,
+    user_id: users:user_353ScLkTjg7WIPeEfUZ7xC76M23
 };
 
 -- ------------------------------
