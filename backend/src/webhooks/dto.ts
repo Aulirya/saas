@@ -1,8 +1,8 @@
 export interface ClerkUserWebhookDto {
   id: string;
   email_addresses: Array<ClerkWebhookEmailDto>;
-  first_name?: string;
-  last_name?: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 interface ClerkWebhookEmailDto {

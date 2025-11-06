@@ -7,8 +7,8 @@ export namespace UserModelMapper {
     return {
       id: new RecordId("users", user.id),
       email: user.email_addresses[0].email_address,
-      first_name: user.first_name ?? undefined,
-      last_name: user.last_name ?? undefined,
+      first_name: user.first_name,
+      last_name: user.last_name,
       role: "teacher",
       schools: [],
     };
