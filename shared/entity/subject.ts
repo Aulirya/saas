@@ -1,6 +1,6 @@
 import z from "zod";
 
-const subject = z.object({
+export const subject = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),

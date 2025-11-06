@@ -1,6 +1,6 @@
 import z from "zod";
 
-const lesson = z.object({
+export const lesson = z.object({
   id: z.string(),
   title: z.string(),
   date: z.custom<Date>(),
