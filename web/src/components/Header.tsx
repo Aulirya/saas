@@ -66,7 +66,7 @@ export default function Header() {
 
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <Link
-                        to="/journal"
+                        to="/dashboard"
                         onClick={() => setIsOpen(false)}
                         className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors mb-2 text-slate-700"
                         activeProps={{
@@ -75,7 +75,7 @@ export default function Header() {
                         }}
                     >
                         <Calendar size={20} />
-                        <span className="font-medium">Journal de classe</span>
+                        <span className="font-medium">Dashboard</span>
                     </Link>
 
                     <Link

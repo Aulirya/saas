@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResourcesRouteImport } from './routes/resources'
-import { Route as JournalRouteImport } from './routes/journal'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -38,9 +38,9 @@ const ResourcesRoute = ResourcesRouteImport.update({
   path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JournalRoute = JournalRouteImport.update({
-  id: '/journal',
-  path: '/journal',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursesRoute = CoursesRouteImport.update({
@@ -153,7 +153,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
   '/courses': typeof CoursesRoute
-  '/journal': typeof JournalRoute
+  '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
   '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
@@ -177,7 +177,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
   '/courses': typeof CoursesRoute
-  '/journal': typeof JournalRoute
+  '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
   '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
@@ -203,7 +203,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
   '/courses': typeof CoursesRoute
-  '/journal': typeof JournalRoute
+  '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
   '/_protected/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
@@ -229,7 +229,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/community'
     | '/courses'
-    | '/journal'
+    | '/dashboard'
     | '/resources'
     | '/todos'
     | '/demo/clerk'
@@ -253,7 +253,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/community'
     | '/courses'
-    | '/journal'
+    | '/dashboard'
     | '/resources'
     | '/todos'
     | '/demo/clerk'
@@ -278,7 +278,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/community'
     | '/courses'
-    | '/journal'
+    | '/dashboard'
     | '/resources'
     | '/_protected/todos'
     | '/demo/clerk'
@@ -304,7 +304,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   CommunityRoute: typeof CommunityRoute
   CoursesRoute: typeof CoursesRoute
-  JournalRoute: typeof JournalRoute
+  DashboardRoute: typeof DashboardRoute
   ResourcesRoute: typeof ResourcesRoute
   DemoClerkRoute: typeof DemoClerkRoute
   DemoOrpcTodoRoute: typeof DemoOrpcTodoRoute
@@ -332,11 +332,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/journal': {
-      id: '/journal'
-      path: '/journal'
-      fullPath: '/journal'
-      preLoaderRoute: typeof JournalRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses': {
@@ -507,7 +507,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   CommunityRoute: CommunityRoute,
   CoursesRoute: CoursesRoute,
-  JournalRoute: JournalRoute,
+  DashboardRoute: DashboardRoute,
   ResourcesRoute: ResourcesRoute,
   DemoClerkRoute: DemoClerkRoute,
   DemoOrpcTodoRoute: DemoOrpcTodoRoute,
