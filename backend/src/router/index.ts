@@ -6,7 +6,7 @@ import {
   listSchoolClasses,
   patchSchoolClass,
 } from "./school_class";
-import { getLesson, listLessons } from "./lesson";
+import { createLesson, getLesson, listLessons, patchLesson } from "./lesson";
 import {
   createSubject,
   getSubject,
@@ -34,6 +34,8 @@ export const router = base.router({
   lesson: {
     list: listLessons,
     get: getLesson,
+    create: createLesson,
+    patch: patchLesson,
   },
 });
 
