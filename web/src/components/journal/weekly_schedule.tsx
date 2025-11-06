@@ -34,6 +34,15 @@ type WeeklyScheduleProps = {
     onPreviousWeek: () => void;
     onNextWeek: () => void;
     timeSlots: TimeSlot[];
+    weekDatesByKey?: {
+        monday: Date;
+        tuesday: Date;
+        wednesday: Date;
+        thursday: Date;
+        friday: Date;
+    };
+    onEmptySlotClick?: (args: { date: Date; slotLabel: string }) => void;
+    onCourseClick?: (args: { id: string }) => void;
 };
 
 const colorClasses = {
@@ -55,6 +64,9 @@ export function WeeklySchedule({
     onPreviousWeek,
     onNextWeek,
     timeSlots,
+    weekDatesByKey,
+    onEmptySlotClick,
+    onCourseClick,
 }: WeeklyScheduleProps) {
     return (
         <Card className="flex flex-col">
@@ -126,6 +138,11 @@ export function WeeklySchedule({
                                                                 course.color
                                                             ]
                                                         )}
+                                                        onClick={() =>
+                                                            onCourseClick?.({
+                                                                id: course.id,
+                                                            })
+                                                        }
                                                     >
                                                         <div className="font-semibold">
                                                             {course.subject}
@@ -135,7 +152,21 @@ export function WeeklySchedule({
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="h-full rounded-lg border border-dashed border-muted" />
+                                                    <button
+                                                        type="button"
+                                                        className="h-full w-full rounded-lg border border-dashed border-muted hover:bg-muted/40"
+                                                        onClick={() => {
+                                                            const date =
+                                                                weekDatesByKey?.[
+                                                                    day.key
+                                                                ] || new Date();
+                                                            onEmptySlotClick?.({
+                                                                date,
+                                                                slotLabel:
+                                                                    slot.time,
+                                                            });
+                                                        }}
+                                                    />
                                                 )}
                                             </div>
                                         );
