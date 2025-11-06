@@ -26,6 +26,7 @@ DEFINE FIELD name ON classes TYPE string PERMISSIONS FULL;
 DEFINE FIELD school ON classes TYPE string PERMISSIONS FULL;
 DEFINE FIELD students_count ON classes TYPE number PERMISSIONS FULL;
 DEFINE FIELD updated_at ON classes TYPE datetime VALUE time::now() PERMISSIONS FULL;
+DEFINE FIELD user_id ON classes TYPE record<users> PERMISSIONS FULL;
 
 
 
@@ -71,6 +72,7 @@ DEFINE FIELD duration_minutes ON lessons TYPE number PERMISSIONS FULL;
 DEFINE FIELD status ON lessons TYPE 'backlog' | 'planned' | 'in progress' | 'done' | 'late' PERMISSIONS FULL;
 DEFINE FIELD subject_id ON lessons TYPE record<subjects> PERMISSIONS FULL;
 DEFINE FIELD title ON lessons TYPE string PERMISSIONS FULL;
+DEFINE FIELD user_id ON lessons TYPE record<users> PERMISSIONS FULL;
 DEFINE FIELD updated_at ON lessons TYPE datetime VALUE time::now() PERMISSIONS FULL;
 
 
@@ -109,9 +111,9 @@ DEFINE FIELD user_id ON subjects TYPE record<users> PERMISSIONS FULL;
 DEFINE TABLE users TYPE ANY SCHEMALESS PERMISSIONS NONE;
 
 DEFINE FIELD created_at ON users TYPE datetime DEFAULT time::now() PERMISSIONS FULL;
-DEFINE FIELD email ON users TYPE string PERMISSIONS FULL;
-DEFINE FIELD first_name ON users TYPE string PERMISSIONS FULL;
-DEFINE FIELD last_name ON users FLEXIBLE TYPE string PERMISSIONS FULL;
+DEFINE FIELD email ON users TYPE option<string> PERMISSIONS FULL;
+DEFINE FIELD first_name ON users TYPE option<string> PERMISSIONS FULL;
+DEFINE FIELD last_name ON users FLEXIBLE TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD role ON users TYPE 'teacher' | 'student' PERMISSIONS FULL;
 DEFINE FIELD schools ON users TYPE array<string> PERMISSIONS FULL;
 DEFINE FIELD schools[*] ON users TYPE string PERMISSIONS FULL;
