@@ -5,6 +5,7 @@ export type ScheduledCourse = {
     subject: string;
     level: string;
     color: CourseColor;
+    // use a lib or create a type to handle dates
     date: string; // ISO date (yyyy-MM-dd)
     slot: string; // e.g. "8h-10h"
 };

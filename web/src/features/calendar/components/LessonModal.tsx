@@ -52,6 +52,7 @@ export type LessonModalProps = {
     onOpenChange: (open: boolean) => void;
     initialDate?: Date;
     initialSlotLabel?: string; // e.g. "8h-9h"
+    initialCourse?: ScheduledCourse; // when editing an existing course
     onSubmit: (course: ScheduledCourse) => Promise<void> | void;
 };
 
@@ -60,14 +61,17 @@ export function LessonModal({
     onOpenChange,
     initialDate,
     initialSlotLabel,
+    initialCourse,
     onSubmit,
 }: LessonModalProps) {
     const form = useForm({
         defaultValues: {
-            subject: "",
-            level: "",
-            date: initialDate ? format(initialDate, "yyyy-MM-dd") : "",
-            slot: initialSlotLabel ?? "",
+            subject: initialCourse?.subject ?? "",
+            level: initialCourse?.level ?? "",
+            date:
+                initialCourse?.date ??
+                (initialDate ? format(initialDate, "yyyy-MM-dd") : ""),
+            slot: initialCourse?.slot ?? initialSlotLabel ?? "",
         },
         validators: {
             onSubmit: formSchema,
@@ -97,7 +101,9 @@ export function LessonModal({
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent side="right">
                 <SheetHeader>
-                    <SheetTitle>Ajouter une leçon</SheetTitle>
+                    <SheetTitle>
+                        {initialCourse ? "Modifier une leçon" : "Ajouter une leçon"}
+                    </SheetTitle>
                 </SheetHeader>
 
                 <form
@@ -323,7 +329,7 @@ export function LessonModal({
                                             >
                                                 {isSubmitting
                                                     ? "..."
-                                                    : "Ajouter"}
+                                                    : initialCourse? "Modifier" : "Ajouter"}
                                             </Button>
                                             <Button
                                                 type="reset"
