@@ -7,7 +7,12 @@ import {
   patchSchoolClass,
 } from "./school_class";
 import { getLesson, listLessons } from "./lesson";
-import { getSubject, listSubjects } from "./subject";
+import {
+  createSubject,
+  getSubject,
+  listSubjects,
+  patchSubject,
+} from "./subject";
 
 export const router = base.router({
   todo: {
@@ -23,6 +28,8 @@ export const router = base.router({
   subject: {
     list: listSubjects,
     get: getSubject,
+    create: createSubject,
+    patch: patchSubject,
   },
   lesson: {
     list: listLessons,

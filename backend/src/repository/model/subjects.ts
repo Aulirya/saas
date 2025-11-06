@@ -4,7 +4,7 @@ import z from "zod";
 const subjectModel = z.object({
   id: z.custom<RecordId>(),
   name: z.string(),
-  description: z.string().optional(),
+  description: z.string().nullable(),
   type: z.string(),
   total_hours: z.number(),
   hours_per_week: z.number(),
