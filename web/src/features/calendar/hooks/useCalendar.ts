@@ -122,6 +122,7 @@ export function useCalendar(initial?: { date?: Date }) {
     return {
         weekStartDate,
         displayedWeek,
+        weekDays: getWeekdays(weekStartDate),
         goPreviousWeek,
         goNextWeek,
         computeTimeSlotsForWeek,
