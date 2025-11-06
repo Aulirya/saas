@@ -9,27 +9,6 @@ export interface SurrealDBConfig {
   password?: string;
 }
 
-/**
- * SurrealDB plugin for Elysia
- *
- * Establishes a connection to SurrealDB and decorates the Elysia instance
- * with the database connection.
- *
- * @example
- * ```typescript
- * const app = new Elysia()
- *   .use(surrealdb({
- *     url: 'http://localhost:8000',
- *     namespace: 'test',
- *     database: 'test',
- *     username: 'root',
- *     password: 'root'
- *   }))
- *   .get('/users', async ({ db }) => {
- *     return await db.select('users');
- *   });
- * ```
- */
 export const surrealdb = (config?: SurrealDBConfig) => {
   const {
     url = process.env.SURREALDB_URL || "http://localhost:8000",
