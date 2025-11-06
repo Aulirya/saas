@@ -1,6 +1,5 @@
 import { Elysia } from "elysia";
-import Surreal from "surrealdb";
-import { surrealdbNodeEngines } from "@surrealdb/node";
+import { Surreal } from "surrealdb";
 
 export interface SurrealDBConfig {
   url?: string;
@@ -10,27 +9,6 @@ export interface SurrealDBConfig {
   password?: string;
 }
 
-/**
- * SurrealDB plugin for Elysia
- *
- * Establishes a connection to SurrealDB and decorates the Elysia instance
- * with the database connection.
- *
- * @example
- * ```typescript
- * const app = new Elysia()
- *   .use(surrealdb({
- *     url: 'http://localhost:8000',
- *     namespace: 'test',
- *     database: 'test',
- *     username: 'root',
- *     password: 'root'
- *   }))
- *   .get('/users', async ({ db }) => {
- *     return await db.select('users');
- *   });
- * ```
- */
 export const surrealdb = (config?: SurrealDBConfig) => {
   const {
     url = process.env.SURREALDB_URL || "http://localhost:8000",
@@ -41,7 +19,8 @@ export const surrealdb = (config?: SurrealDBConfig) => {
   } = config || {};
 
   // Create the Surreal instance outside so we can reference it in lifecycle hooks
-  const dbInstance = new Surreal({ engines: surrealdbNodeEngines() });
+  // No need to specify engines - it will use the appropriate remote engine based on the URL
+  const dbInstance = new Surreal();
 
   return new Elysia({
     name: "surrealdb",

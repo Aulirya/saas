@@ -38,8 +38,8 @@ services:
   frontend:
     container_name: saas-frontend
     build:
-      context: ./web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: web/Dockerfile
     ports:
       - "3000:3000"
     environment:
@@ -47,8 +47,9 @@ services:
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
     volumes:
       # Bind mount source for hot reload
-      - ./web/src:/app/src
-      - ./web/public:/app/public
+      - ./web/src:/app/web/src
+      - ./web/public:/app/web/public
+      - ./shared:/app/shared
       # Prevent overwriting container's node_modules
       - /app/node_modules
     networks:
@@ -67,13 +68,14 @@ services:
   backend:
     container_name: saas-backend
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "3001:3001"
     environment:
       - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_WEBHOOK_SIGNING_SECRET=${CLERK_WEBHOOK_SIGNING_SECRET}
       - SURREALDB_URL=${SURREALDB_URL:-http://surrealdb:8000}
       - SURREALDB_USER=${SURREALDB_USER:-root}
       - SURREALDB_PASS=${SURREALDB_PASS:-root}
@@ -81,9 +83,13 @@ services:
       - SURREALDB_DB=${SURREALDB_DB:-saas}
     volumes:
       # Bind mount source for hot reload
-      - ./backend/src:/app/src
+      - ./backend/src:/app/backend/src
+      - ./shared/entity:/app/shared/entity
+      - ./shared/input:/app/shared/input
+      - ./shared/index.ts:/app/shared/index.ts
       # Prevent overwriting container's node_modules
       - /app/node_modules
+      - /app/shared/node_modules
     networks:
       - saas-network
     depends_on:
