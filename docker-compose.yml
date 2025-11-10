@@ -24,16 +24,23 @@ services:
 
   surrealdb-migrate:
     container_name: saas-surrealdb-migrate
-    image: alpine:latest
-    profiles: ["migrate"]
+    build:
+      context: ./database
+      dockerfile: Dockerfile
     depends_on:
       surrealdb:
         condition: service_started
-    command: ["/database/migrate.sh"]
     volumes:
-      - ./database:/database
+      - ./database/migrations:/migrations:ro
+    environment:
+      - SURREALDB_URL=http://surrealdb:8000
+      - SURREALDB_USER=${SURREALDB_USER:-root}
+      - SURREALDB_PASS=${SURREALDB_PASS:-root}
+      - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
+      - SURREALDB_DB=${SURREALDB_DB:-saas}
     networks:
       - saas-network
+    restart: on-failure:3
 
   frontend:
     container_name: saas-frontend
