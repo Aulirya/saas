@@ -14,11 +14,11 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardPage() {
     return (
-        <div>
-            <div className="flex flex-1 flex-col h-full">
+        <>
+            <div className="flex flex-1 flex-col">
                 <div className="@container/main flex flex-1 flex-col gap-2">
-                    <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                        <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+                    <div className="flex flex-col gap-4 ">
+                        <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4  *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs  @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
                             <StatisticsCard
                                 description="Cours cette semaine"
                                 data={"$1,250.00"}
@@ -49,7 +49,7 @@ function DashboardPage() {
                     </div>
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-4 lg:px-6 pb-6 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                 <div className="md:col-span-2">
                     <Calendar />
                 </div>
@@ -63,6 +63,6 @@ function DashboardPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
