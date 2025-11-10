@@ -1,0 +1,10 @@
+[core]
+path = "."
+schema = "full"
+
+[db]
+address = "http://surrealdb:8000"
+username = "root"
+password = "root"
+ns = "Aulirya"
+db = "saas"

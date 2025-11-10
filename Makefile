@@ -4,25 +4,34 @@ help: ## Display this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-dev: ## Start all services in development mode (without DB reset)
+dev: ## Start all services in development mode with migrations
+	@echo "Starting SurrealDB..."
+	docker-compose up -d surrealdb
+	@echo "Running migrations..."
+	docker-compose run --rm surrealdb-migrate
+	@echo "Starting all services..."
 	docker-compose up -d --remove-orphans
 	@echo "\n✅ Services started!"
 	@make urls
 
-dev-db-reset: ## Start services and reset database with migrations
-	@echo "Stopping all services and removing volumes..."
-	docker-compose down -v
-	@echo "Starting SurrealDB..."
+migrate: ## Run database migrations
 	docker-compose up -d surrealdb
-	@echo "Running migration..."
+	@echo "Running migrations..."
 	docker-compose run --rm surrealdb-migrate
-	@echo "Starting remaining services..."
-	docker-compose up -d
-	@echo "\n✅ Services started with database reset!"
-	@make urls
+	@echo "✅ Migrations complete!"
 
-seed: ## Seed the database with test data
-	@sh database/seed.sh
+migration-create: ## Create a new migration file (usage: make migration-create NAME=add_users_table)
+	@if [ -z "$(NAME)" ]; then \
+		echo "❌ Error: NAME is required. Usage: make migration-create NAME=add_users_table"; \
+		exit 1; \
+	fi
+	@TIMESTAMP=$$(date +%Y%m%d_%H%M%S); \
+	FILENAME="database/migrations/$${TIMESTAMP}_$(NAME).surql"; \
+	touch $$FILENAME; \
+	echo "-- Migration: $(NAME)" > $$FILENAME; \
+	echo "-- Created: $$(date)" >> $$FILENAME; \
+	echo "" >> $$FILENAME; \
+	echo "✅ Created migration: $$FILENAME"
 
 stop: ## Stop all services
 	docker-compose down
