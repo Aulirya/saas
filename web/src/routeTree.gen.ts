@@ -22,6 +22,7 @@ import { Route as DemoStorybookRouteImport } from './routes/demo/storybook'
 import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
 import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
 import { Route as ProtectedTodosRouteImport } from './routes/_protected/todos'
+import { Route as ProtectedClassesRouteImport } from './routes/_protected/classes'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
@@ -97,6 +98,11 @@ const ProtectedTodosRoute = ProtectedTodosRouteImport.update({
   path: '/todos',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedClassesRoute = ProtectedClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
   id: '/demo/start/server-funcs',
   path: '/demo/start/server-funcs',
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
+  '/classes': typeof ProtectedClassesRoute
   '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
+  '/classes': typeof ProtectedClassesRoute
   '/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
+  '/_protected/classes': typeof ProtectedClassesRoute
   '/_protected/todos': typeof ProtectedTodosRoute
   '/demo/clerk': typeof DemoClerkRoute
   '/demo/orpc-todo': typeof DemoOrpcTodoRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/dashboard'
     | '/resources'
+    | '/classes'
     | '/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/dashboard'
     | '/resources'
+    | '/classes'
     | '/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/dashboard'
     | '/resources'
+    | '/_protected/classes'
     | '/_protected/todos'
     | '/demo/clerk'
     | '/demo/orpc-todo'
@@ -416,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedTodosRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/classes': {
+      id: '/_protected/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof ProtectedClassesRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/demo/start/server-funcs': {
       id: '/demo/start/server-funcs'
       path: '/demo/start/server-funcs'
@@ -490,10 +509,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface ProtectedRouteChildren {
+  ProtectedClassesRoute: typeof ProtectedClassesRoute
   ProtectedTodosRoute: typeof ProtectedTodosRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
+  ProtectedClassesRoute: ProtectedClassesRoute,
   ProtectedTodosRoute: ProtectedTodosRoute,
 }
 
