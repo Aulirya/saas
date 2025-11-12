@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { breakpoints } from "@/lib/media";
+import { useMediaQuery } from "usehooks-ts";
 
 import { createFileRoute } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
@@ -22,6 +24,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
+import { SummaryStat } from "@/components/ui/summary-stat";
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
 import type {
     CourseProgram,
@@ -46,25 +49,11 @@ function CoursesPage() {
     const { data: programs = [], isLoading } = useCoursePrograms();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
-
+    const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
     useEffect(() => {
-        // Check if screen is below lg breakpoint (1024px)
-        const checkMobile = () => {
-            const mobile = window.innerWidth < 1024;
-            setIsMobile(mobile);
-            // Close modal when resizing to desktop
-            if (!mobile && isModalOpen) {
-                setIsModalOpen(false);
-            }
-            if (mobile && !isModalOpen) {
-                setSelectedId(null);
-            }
-        };
-        checkMobile();
-        window.addEventListener("resize", checkMobile);
-        return () => window.removeEventListener("resize", checkMobile);
-    }, [isModalOpen]);
+        if (!isMobile) setIsModalOpen(false);
+        else setSelectedId(null);
+    }, [isMobile]);
 
     useEffect(() => {
         if (!programs.length) {
@@ -72,19 +61,10 @@ function CoursesPage() {
             return;
         }
 
-        if (isMobile) {
-            if (
-                selectedId &&
-                !programs.some((program) => program.id === selectedId)
-            ) {
-                setSelectedId(null);
-            }
-            return;
-        }
-
         if (
-            !selectedId ||
-            !programs.some((program) => program.id === selectedId)
+            !isMobile &&
+            (!selectedId ||
+                !programs.some((program) => program.id === selectedId))
         ) {
             setSelectedId(programs[0].id);
         }
@@ -496,15 +476,6 @@ function ProgramMetric({
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
                 {label}
             </p>
-        </div>
-    );
-}
-
-function SummaryStat({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="rounded-lg flex flex-row justify-between">
-            <p className="text-xs  tracking-wide ">{label}</p>
-            <p className="text-xs  font-semibold">{value}</p>
         </div>
     );
 }
