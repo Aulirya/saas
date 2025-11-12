@@ -9,9 +9,9 @@ export type SchoolClassesFilters = {
     search?: string | null;
 };
 
-const demoClasses: SchoolClassExtended[] = [
+export const demoClasses: SchoolClassExtended[] = [
     {
-        id: "terminale-s1",
+        id: "1",
         name: "Terminale S1",
         level: "Terminale",
         school: "Lycée Jean Moulin",
@@ -82,7 +82,7 @@ const demoClasses: SchoolClassExtended[] = [
         ],
     },
     {
-        id: "premiere-s2",
+        id: "2",
         name: "Première S2",
         level: "Première",
         school: "Lycée Jean Moulin",
@@ -129,7 +129,7 @@ const demoClasses: SchoolClassExtended[] = [
         ],
     },
     {
-        id: "seconde-a",
+        id: "3",
         name: "Seconde A",
         level: "Seconde",
         school: "Collège Saint-Exupéry",

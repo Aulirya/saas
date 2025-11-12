@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Route as ClassDetailRoute } from "./$classId";
 import { Download, Plus, Search, UserPlus, Eye } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
 import {
     Card,
     CardAction,
@@ -38,14 +38,6 @@ import {
 import { CreateClassModal } from "@/features/classes/components/CreateClassModal";
 import type { SchoolClassExtended } from "@/features/classes/types";
 import { cn } from "@/lib/utils";
-
-const statusToBadgeVariant: Record<
-    "active" | "paused",
-    "success" | "warning" | "muted"
-> = {
-    active: "success",
-    paused: "warning",
-};
 
 const colorThemeToClasses: Record<
     "blue" | "green" | "orange",
@@ -98,7 +90,7 @@ const LEVEL_FILTER_OPTIONS = [
 type SchoolFilterValue = (typeof SCHOOL_FILTER_OPTIONS)[number]["value"];
 type LevelFilterValue = (typeof LEVEL_FILTER_OPTIONS)[number]["value"];
 
-export const Route = createFileRoute("/_protected/classes")({
+export const Route = createFileRoute("/_protected/classes/")({
     component: ClassesPage,
 });
 
@@ -380,14 +372,19 @@ function ClassCard({
 
                 <CardAction>
                     <Button
-                        onClick={() => console.log("View class")}
+                        asChild
                         className={cn(
                             "shrink-0",
                             colorThemeToClasses[classData.colorTheme].button
                         )}
                         aria-label="Voir la classe"
                     >
-                        <Eye className="size-4" /> Voir la classe
+                        <Link
+                            to={ClassDetailRoute.to}
+                            params={{ classId: classData.id }}
+                        >
+                            <Eye className="size-4" /> Voir la classe
+                        </Link>
                     </Button>
                 </CardAction>
             </CardHeader>
@@ -534,6 +531,16 @@ function ClassSummarySidebar({
                         </section>
                     )}
                 </CardContent>
+                <CardFooter>
+                    <Button variant="outline" className="w-full" asChild>
+                        <Link
+                            to={ClassDetailRoute.to}
+                            params={{ classId: classData.id }}
+                        >
+                            Voir la fiche détaillée
+                        </Link>
+                    </Button>
+                </CardFooter>
             </Card>
 
             {/* Statistics Card */}
@@ -804,6 +811,14 @@ function ClassSummaryContent({
                         <Download className="size-4" />
                         Exporter liste
                     </button>
+                    <Link
+                        to={ClassDetailRoute.to}
+                        params={{ classId: classData.id }}
+                        className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
+                    >
+                        <Eye className="size-4" />
+                        Voir la fiche détaillée
+                    </Link>
                 </div>
             </section>
         </div>
