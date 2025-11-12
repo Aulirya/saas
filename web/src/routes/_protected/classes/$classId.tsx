@@ -1,11 +1,18 @@
-import { useMemo } from "react";
+import { useMemo, type ComponentType } from "react";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
     AlertCircle,
+    Atom,
+    BookOpen,
+    Calculator,
+    Clock,
     Download,
     Edit,
+    FlaskConical,
     GraduationCap,
+    TrendingUp,
+    Users,
     UserPlus,
 } from "lucide-react";
 
@@ -39,6 +46,36 @@ const distributionColorToClassName: Record<string, string> = {
     purple: "bg-purple-600",
 };
 
+const subjectIconBgClasses: Record<string, string> = {
+    blue: "bg-blue-50",
+    green: "bg-green-50",
+    orange: "bg-orange-50",
+    purple: "bg-purple-50",
+};
+
+const subjectIconColorClasses: Record<string, string> = {
+    blue: "text-blue-600",
+    green: "text-green-600",
+    orange: "text-orange-600",
+    purple: "text-purple-600",
+};
+
+const subjectIconMap: Record<string, ComponentType<{ className?: string }>> = {
+    Mathématiques: Calculator,
+    Maths: Calculator,
+    Chimie: FlaskConical,
+    Physique: Atom,
+    "Physique-Chimie": Atom,
+    Français: BookOpen,
+    Histoire: BookOpen,
+    Géographie: BookOpen,
+    Anglais: BookOpen,
+    Espagnol: BookOpen,
+    Allemand: BookOpen,
+    SVT: FlaskConical,
+    "Sciences de la vie et de la Terre": FlaskConical,
+};
+
 const numberFormatter = new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 1,
     minimumFractionDigits: 0,
@@ -64,7 +101,7 @@ function ClassDetailPage() {
             return "";
         }
 
-        return `${classData.school} • Année ${classData.year}`;
+        return `${classData.level}  • ${classData.school} • Année ${classData.year} `;
     }, [classData]);
 
     if (isLoading) {
@@ -122,12 +159,14 @@ function ClassDetailPage() {
                     {
                         label: "Modifier",
                         icon: Edit,
+                        disabled: true,
                         variant: "outline",
                         onClick: () => console.log("Edit class"),
                     },
                     {
                         label: "Ajouter élève",
                         icon: UserPlus,
+                        disabled: true,
                         onClick: () => console.log("Add student"),
                     },
                     {
@@ -139,221 +178,124 @@ function ClassDetailPage() {
                 ]}
             />
 
-            <Card>
-                <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <GraduationCap className="size-6" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground">
-                                    Niveau {classData.level}
-                                </p>
-                                <p className="text-xl font-semibold text-foreground">
-                                    {classData.studentsCount} élèves suivis
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <Badge variant={statusToBadgeVariant[classData.status]}>
-                        {classData.statusLabel}
-                    </Badge>
-                </CardContent>
-            </Card>
-
             <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
                 <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Informations générales</CardTitle>
-                            <CardDescription>
-                                Vue d&apos;ensemble des indicateurs clés et de
-                                l&apos;organisation de la classe.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                <DetailMetric
-                                    label="Élèves"
-                                    value={classData.studentsCount}
-                                />
-                                <DetailMetric
-                                    label="Matières"
-                                    value={classData.subjectsCount}
-                                />
-                                <DetailMetric
-                                    label="Heures / semaine"
-                                    value={classData.hoursPerWeek}
-                                />
-                                <DetailMetric
-                                    label="Moyenne générale"
-                                    value={`${numberFormatter.format(
-                                        classData.generalAverage
-                                    )}/20`}
-                                />
-                            </div>
+                    <section className="flex flex-row space-between gap-6">
+                        <DetailMetric
+                            label="Élèves"
+                            value={classData.studentsCount}
+                        />
+                        <DetailMetric
+                            label="Matières"
+                            value={classData.subjectsCount}
+                        />
+                        <DetailMetric
+                            label="Heures / semaine"
+                            value={classData.hoursPerWeek}
+                        />
+                        <DetailMetric
+                            label="Moyenne générale"
+                            value={`${numberFormatter.format(
+                                classData.generalAverage
+                            )}/20`}
+                        />
+                    </section>
 
-                            <div className="grid gap-6 md:grid-cols-2">
-                                <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
-                                    <p className="text-sm font-semibold text-muted-foreground">
-                                        Organisation annuelle
-                                    </p>
-                                    <ul className="mt-4 space-y-2 text-sm">
-                                        <li>
-                                            <span className="text-muted-foreground">
-                                                Établissement&nbsp;:
-                                            </span>{" "}
-                                            {classData.school}
-                                        </li>
-                                        <li>
-                                            <span className="text-muted-foreground">
-                                                Année scolaire&nbsp;:
-                                            </span>{" "}
-                                            {classData.year}
-                                        </li>
-                                        <li>
-                                            <span className="text-muted-foreground">
-                                                Niveau&nbsp;:
-                                            </span>{" "}
-                                            {classData.level}
-                                        </li>
-                                    </ul>
-                                </div>
+                    <div className="grid grid-cols-2 gap-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Cours donnés</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {classData.subjects.map((subject) => {
+                                    const SubjectIcon =
+                                        subjectIconMap[subject.name] ||
+                                        BookOpen;
+                                    const iconBg =
+                                        subjectIconBgClasses[subject.color] ||
+                                        "bg-muted";
+                                    const iconColor =
+                                        subjectIconColorClasses[
+                                            subject.color
+                                        ] || "text-muted-foreground";
 
-                                <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
-                                    <p className="text-sm font-semibold text-muted-foreground">
-                                        Intervenir auprès des élèves
-                                    </p>
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() =>
-                                                console.log("Plan support")
-                                            }
+                                    return (
+                                        <div
+                                            key={subject.id}
+                                            className="flex items-center justify-between rounded-lg  bg-background px-4 py-3"
                                         >
-                                            Plan de soutien
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() =>
-                                                console.log("Send message")
-                                            }
-                                        >
-                                            Envoyer un message
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() =>
-                                                console.log("Create report")
-                                            }
-                                        >
-                                            Créer un rapport
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Programme & options</CardTitle>
-                            <CardDescription>
-                                Aperçu des matières et de leur répartition
-                                horaire.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {classData.subjects.map((subject) => {
-                                const isOption =
-                                    subject.hoursPerWeek <
-                                    classData.hoursPerWeek /
-                                        Math.max(1, classData.subjects.length);
-
-                                return (
-                                    <div
-                                        key={subject.id}
-                                        className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-4 py-3"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span
-                                                className={cn(
-                                                    "size-2 rounded-full",
-                                                    distributionColorToClassName[
-                                                        subject.color
-                                                    ] || "bg-primary"
-                                                )}
-                                            />
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">
-                                                    {subject.name}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {subject.hoursPerWeek}h /
-                                                    semaine
-                                                </span>
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className={cn(
+                                                        "flex size-10 items-center justify-center rounded-lg",
+                                                        iconBg,
+                                                        iconColor
+                                                    )}
+                                                >
+                                                    <SubjectIcon className="size-5" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="font-medium">
+                                                        {subject.name}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {subject.hoursPerWeek}h
+                                                        / semaine
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <Badge
-                                            variant={
-                                                isOption ? "default" : "outline"
-                                            }
-                                        >
-                                            {isOption
-                                                ? "Option"
-                                                : "Tronc commun"}
-                                        </Badge>
-                                    </div>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
+                                    );
+                                })}
+                            </CardContent>
+                        </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Prochains cours</CardTitle>
-                            <CardDescription>
-                                Les trois prochaines séances planifiées.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {classData.upcomingCourses.length === 0 ? (
-                                <EmptyState
-                                    title="Aucun cours planifié prochainement"
-                                    description="Ajoutez une séance pour qu'elle s'affiche ici."
-                                />
-                            ) : (
-                                classData.upcomingCourses.map((course) => (
-                                    <div
-                                        key={course.id}
-                                        className="flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm"
-                                    >
-                                        <span
-                                            className={cn(
-                                                "font-semibold text-foreground",
-                                                distributionColorToClassName[
-                                                    course.color
-                                                ]
-                                                    ? distributionColorToClassName[
-                                                          course.color
-                                                      ].replace("bg-", "text-")
-                                                    : ""
-                                            )}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Prochaines leçons</CardTitle>
+                                <CardDescription>
+                                    Les trois prochaines séances planifiées.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {classData.upcomingCourses.length === 0 ? (
+                                    <EmptyState
+                                        title="Aucun cours planifié prochainement"
+                                        description="Ajoutez une séance pour qu'elle s'affiche ici."
+                                    />
+                                ) : (
+                                    classData.upcomingCourses.map((course) => (
+                                        <div
+                                            key={course.id}
+                                            className="flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm"
                                         >
-                                            {course.subject} — {course.title}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {course.date} • {course.time}
-                                        </span>
-                                    </div>
-                                ))
-                            )}
-                        </CardContent>
-                    </Card>
+                                            <span
+                                                className={cn(
+                                                    "font-semibold text-foreground",
+                                                    distributionColorToClassName[
+                                                        course.color
+                                                    ]
+                                                        ? distributionColorToClassName[
+                                                              course.color
+                                                          ].replace(
+                                                              "bg-",
+                                                              "text-"
+                                                          )
+                                                        : ""
+                                                )}
+                                            >
+                                                {course.subject} —{" "}
+                                                {course.title}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {course.date} • {course.time}
+                                            </span>
+                                        </div>
+                                    ))
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
 
                     <Card>
                         <CardHeader>
@@ -388,83 +330,39 @@ function ClassDetailPage() {
                         </CardContent>
                     </Card>
                 </div>
-
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Statistiques</CardTitle>
-                            <CardDescription>
-                                Indicateurs de suivi de la classe.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <SummaryStat
-                                label="Présence moyenne"
-                                value={`${classData.statistics.averageAttendance}%`}
-                            />
-                            <SummaryStat
-                                label="Devoirs rendus"
-                                value={`${classData.statistics.homeworkSubmitted}%`}
-                            />
-                            <SummaryStat
-                                label="Évaluations réalisées"
-                                value={numberFormatter.format(
-                                    classData.statistics.evaluations
-                                )}
-                            />
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Répartition horaire</CardTitle>
-                            <CardDescription>
-                                Visualisez le poids de chaque matière dans la
-                                semaine.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {classData.subjectDistribution.map(
-                                (distribution) => (
-                                    <div
-                                        key={distribution.subject}
-                                        className="space-y-2"
-                                    >
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="font-medium">
-                                                {distribution.subject}
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                                {distribution.hoursPerWeek}h —{" "}
-                                                {distribution.percentage}%
-                                            </span>
-                                        </div>
-                                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
-                                            <div
-                                                className={cn(
-                                                    "h-full transition-all",
-                                                    distributionColorToClassName[
-                                                        distribution.color
-                                                    ] ?? "bg-primary"
-                                                )}
-                                                style={{
-                                                    transform: `translateX(-${
-                                                        100 -
-                                                        distribution.percentage
-                                                    }%)`,
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                )
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
             </div>
         </div>
     );
 }
+
+type MetricConfig = {
+    icon: ComponentType<{ className?: string }>;
+    iconBg: string;
+    iconColor: string;
+};
+
+const metricConfigs: Record<string, MetricConfig> = {
+    Élèves: {
+        icon: Users,
+        iconBg: "bg-blue-50",
+        iconColor: "text-blue-600",
+    },
+    Matières: {
+        icon: BookOpen,
+        iconBg: "bg-green-50",
+        iconColor: "text-green-600",
+    },
+    "Heures / semaine": {
+        icon: Clock,
+        iconBg: "bg-orange-50",
+        iconColor: "text-orange-600",
+    },
+    "Moyenne générale": {
+        icon: TrendingUp,
+        iconBg: "bg-purple-50",
+        iconColor: "text-purple-600",
+    },
+};
 
 function DetailMetric({
     label,
@@ -473,13 +371,33 @@ function DetailMetric({
     label: string;
     value: string | number;
 }) {
+    const config = metricConfigs[label] || {
+        icon: GraduationCap,
+        iconBg: "bg-muted",
+        iconColor: "text-muted-foreground",
+    };
+    const Icon = config.icon;
+
     return (
-        <div className="rounded-lg border border-border/60 bg-muted/20 px-4 py-3">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-1 text-lg font-semibold text-foreground">
-                {value}
-            </p>
-        </div>
+        <Card className="grow rounded-lg border border-border/60 bg-background px-4 py-3">
+            <div className="flex items-center gap-3">
+                <div
+                    className={cn(
+                        "flex size-10 items-center justify-center rounded-lg",
+                        config.iconBg,
+                        config.iconColor
+                    )}
+                >
+                    <Icon className="size-5" />
+                </div>
+                <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="mt-1 text-xl font-semibold text-foreground">
+                        {value}
+                    </p>
+                </div>
+            </div>
+        </Card>
     );
 }
 
