@@ -18,9 +18,9 @@ export default function Sidebar() {
     return (
         <>
             <aside
-                className={`fixed left-0  ${
+                className={`fixed left-0 ${
                     isOpen ? "w-80" : "w-20"
-                } h-[calc(100vh)] bg-white border border-right z-40 transform transition-all duration-300 ease-in-out flex flex-col relative`}
+                } h-[calc(100vh-4rem)] bg-white border border-right z-40 transform transition-all duration-300 ease-in-out flex flex-col relative`}
             >
                 {/* Expand button - shows when sidebar is collapsed */}
                 {!isOpen && (
