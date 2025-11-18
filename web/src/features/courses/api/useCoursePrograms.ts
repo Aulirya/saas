@@ -3,7 +3,7 @@ import { Atom, Calculator, FlaskConical } from "lucide-react";
 
 import type { CourseProgram } from "../types";
 
-const demoPrograms: CourseProgram[] = [
+export const demoPrograms: CourseProgram[] = [
     {
         id: "math-terminale-s",
         subject: "Mathématiques",
