@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { breakpoints } from "@/lib/media";
 import { useMediaQuery } from "usehooks-ts";
 
-import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Route as CourseDetailRoute } from "./$courseId";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Eye, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/ui/badge";
 import {
     Card,
     CardAction,
@@ -26,29 +26,21 @@ import {
 } from "@/components/ui/sheet";
 import { SummaryStat } from "@/components/ui/summary-stat";
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
-import type {
-    CourseProgram,
-    CourseProgramStatus,
-} from "@/features/courses/types";
-import { cn } from "@/lib/utils";
-
-const statusToBadgeVariant: Record<
-    CourseProgramStatus,
-    "success" | "warning" | "muted"
-> = {
-    defined: "success",
-    partial: "warning",
-    draft: "muted",
-};
+import type { CourseProgram } from "@/features/courses/types";
+import { cn, getColorFromText } from "@/lib/utils";
+import { CreateCourseModal } from "@/features/courses/components/CreateCourseModal";
 
 const numberFormatter = new Intl.NumberFormat("fr-FR");
 
-export const Route = createFileRoute("/courses")({ component: CoursesPage });
+export const Route = createFileRoute("/_protected/courses/")({
+    component: CoursesPage,
+});
 
 function CoursesPage() {
     const { data: programs = [], isLoading } = useCoursePrograms();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
     useEffect(() => {
         if (!isMobile) setIsModalOpen(false);
@@ -83,20 +75,20 @@ function CoursesPage() {
     };
 
     return (
-        <div className="space-y-10 ">
+        <div className="flex flex-col h-full">
             <PageHeader
-                title="Mes cours"
-                subtitle="Gérez vos programmes et planifiez vos cours avec l'IA"
+                title="Progression des cours"
                 primaryAction={{
                     label: "Nouveau cours",
                     icon: Plus,
                     onClick: () => {
-                        console.log("Create new course");
+                        setIsCreateModalOpen(true);
                     },
                 }}
+                className="mb-10"
             />
 
-            <div className=" grid grid-cols-7  gap-6">
+            <div className="grid grid-cols-7 gap-6 flex-1 min-h-0">
                 <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5">
                     {isLoading ? (
                         <Card className="animate-pulse border-dashed">
@@ -130,9 +122,7 @@ function CoursesPage() {
                             </CardHeader>
                             <CardFooter>
                                 <Button
-                                    onClick={() =>
-                                        console.log("Create new course")
-                                    }
+                                    onClick={() => setIsCreateModalOpen(true)}
                                 >
                                     <Plus className="size-4" />
                                     Nouveau cours
@@ -143,7 +133,7 @@ function CoursesPage() {
                 </div>
 
                 {/* Desktop sidebar - hidden on mobile */}
-                <div className="space-y-4 hidden lg:block lg:col-span-3 xl:col-span-2  xl:sticky xl:top-28">
+                <div className="hidden lg:block lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 xl:h-full xl:flex xl:flex-col">
                     <ProgramSummary program={selectedProgram} />
                 </div>
             </div>
@@ -159,6 +149,12 @@ function CoursesPage() {
                 }}
                 program={selectedProgram}
             />
+
+            {/* Create Course Modal */}
+            <CreateCourseModal
+                open={isCreateModalOpen}
+                onOpenChange={setIsCreateModalOpen}
+            />
         </div>
     );
 }
@@ -173,14 +169,9 @@ function ProgramCard({
     onSelect: (id: string) => void;
 }) {
     const Icon = program.icon;
-    const totalHours = numberFormatter.format(program.totalHours);
-    const completedHours = numberFormatter.format(program.completedHours);
-    const remainingHours = numberFormatter.format(
-        Math.max(0, program.totalHours - program.completedHours)
-    );
-    const progressValue = Math.round(
-        (program.completedHours / Math.max(program.totalHours, 1)) * 100
-    );
+
+    // Get color scheme based on subject text
+    const colorScheme = getColorFromText(program.subject);
 
     return (
         <Card
@@ -196,13 +187,19 @@ function ProgramCard({
             className={cn(
                 "group cursor-pointer border-border/70 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 isSelected
-                    ? "border-primary shadow-sm"
-                    : "hover:border-primary/50 hover:shadow-sm"
+                    ? "border-muted-foreground/80 shadow-sm"
+                    : "hover:border-muted-foreground/50 hover:shadow-sm"
             )}
         >
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-4">
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <div
+                        className={cn(
+                            "flex size-12 items-center justify-center rounded-xl",
+                            colorScheme.bgLight,
+                            colorScheme.text
+                        )}
+                    >
                         <Icon className="size-6" aria-hidden />
                     </div>
                     <div className="space-y-1">
@@ -220,35 +217,20 @@ function ProgramCard({
                 </div>
 
                 <CardAction>
-                    <Badge variant={statusToBadgeVariant[program.status]}>
-                        {program.statusLabel}
-                    </Badge>
+                    <Button
+                        asChild
+                        aria-label="Voir le cours"
+                        className={cn("shrink-0", colorScheme.button)}
+                    >
+                        <Link
+                            to={CourseDetailRoute.to}
+                            params={{ courseId: program.id }}
+                        >
+                            <Eye className="size-4" /> Voir le cours
+                        </Link>
+                    </Button>
                 </CardAction>
             </CardHeader>
-
-            <CardContent className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-4">
-                    <ProgramMetric
-                        label="Heures totales"
-                        value={`${totalHours}`}
-                    />
-                    <ProgramMetric
-                        label="Heures faites"
-                        value={`${completedHours}`}
-                        tint="success"
-                    />
-                    <ProgramMetric
-                        label="Heures restantes"
-                        value={`${remainingHours}`}
-                        tint="warning"
-                    />
-                    <ProgramMetric
-                        label="Avancement"
-                        value={`${progressValue}%`}
-                        tint={progressValue < 50 ? "warning" : "success"}
-                    />
-                </div>
-            </CardContent>
         </Card>
     );
 }
@@ -258,7 +240,6 @@ function ProgramSummary({ program }: { program: CourseProgram | undefined }) {
         return (
             <Card className="border-dashed">
                 <CardHeader>
-                    <CardTitle>Résumé sélectionné</CardTitle>
                     <CardDescription>
                         Sélectionnez un cours pour afficher sa progression et
                         ses statistiques.
@@ -278,19 +259,18 @@ function ProgramSummary({ program }: { program: CourseProgram | undefined }) {
     )} heures (${progressValue}%)`;
 
     return (
-        <Card className="h-content">
-            <CardHeader className="space-y-3  border-b">
+        <Card className="h-full flex flex-col">
+            <CardHeader className=" border-b">
                 <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                         <CardTitle>
                             {" "}
                             {program.subject} • {program.level}
                         </CardTitle>
-                        <CardDescription>Résumé sélectionné</CardDescription>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-6">
+            <CardContent className="flex flex-col gap-6 flex-1">
                 <section className="">
                     <p className=" font-medium pb-3">Progression actuelle</p>
                     <Progress value={progressValue} />
@@ -321,24 +301,16 @@ function ProgramSummary({ program }: { program: CourseProgram | undefined }) {
                         ))}
                     </div>
                 </section>
-
-                <section className="space-y-3">
-                    <p className=" font-medium">Statistiques</p>
-                    <div className="flex flex-col gap-3">
-                        <SummaryStat
-                            label="Supports uploadés"
-                            value={numberFormatter.format(
-                                program.stats.uploads
-                            )}
-                        />
-                        <SummaryStat
-                            label="Évaluations"
-                            value={numberFormatter.format(
-                                program.stats.evaluations
-                            )}
-                        />
-                    </div>
-                </section>
+                <CardFooter className="mt-auto">
+                    <Button variant="outline" className="w-full" asChild>
+                        <Link
+                            to={CourseDetailRoute.to}
+                            params={{ courseId: program.id }}
+                        >
+                            Voir la fiche détaillée
+                        </Link>
+                    </Button>
+                </CardFooter>
             </CardContent>
         </Card>
     );
@@ -398,6 +370,14 @@ function ProgramSummaryContent({
 
     return (
         <div className="flex flex-col gap-6">
+            <Button variant="outline" className="w-full" asChild>
+                <Link
+                    to={CourseDetailRoute.to}
+                    params={{ courseId: program.id }}
+                >
+                    Voir la fiche détaillée
+                </Link>
+            </Button>
             <section>
                 <p className="font-medium pb-3">Progression actuelle</p>
                 <Progress value={progressValue} />
@@ -443,39 +423,6 @@ function ProgramSummaryContent({
                     />
                 </div>
             </section>
-        </div>
-    );
-}
-
-function ProgramMetric({
-    label,
-    value,
-    tint,
-}: {
-    label: string;
-    value: string;
-    tint?: "success" | "warning";
-}) {
-    return (
-        <div
-            className={cn(
-                "rounded-lg  transition-colors",
-                tint === "success" && "text-green-500",
-                tint === "warning" && "text-yellow"
-            )}
-        >
-            <p
-                className={cn(
-                    "mt-2 text-2xl font-black text-center text-primary",
-                    tint === "success" && "text-green-500",
-                    tint === "warning" && "text-yellow-500"
-                )}
-            >
-                {value}
-            </p>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
-                {label}
-            </p>
         </div>
     );
 }
