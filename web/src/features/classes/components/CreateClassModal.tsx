@@ -3,15 +3,8 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { orpc } from "@/orpc/client";
 
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetFooter,
-    SheetClose,
-    SheetDescription,
-} from "@/components/ui/sheet";
+import { FormSheet } from "@/components/ui/form-sheet";
+import { SheetClose } from "@/components/ui/sheet";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { z } from "zod";
+import { school_class_create_input } from "@saas/shared";
 
 const classLevels = [
     "6ème",
@@ -40,15 +33,8 @@ const classLevels = [
     "Terminale",
 ] as const;
 
-const formSchema = z.object({
-    name: z.string().min(1, "Le nom de la classe est requis"),
-    level: z.string().min(1, "Le niveau est requis"),
-    school: z.string().min(1, "Le nom de l'établissement est requis"),
-    students_count: z
-        .number()
-        .min(1, "Le nombre d'élèves doit être supérieur à 0")
-        .int("Le nombre d'élèves doit être un nombre entier"),
-});
+// Use the shared schema directly - validation is already defined there
+const formSchema = school_class_create_input;
 
 interface CreateClassModalProps {
     open: boolean;
@@ -108,16 +94,11 @@ export function CreateClassModal({
     };
 
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right">
-                <SheetHeader>
-                    <SheetTitle>Nouvelle classe</SheetTitle>
-                    <SheetDescription>
-                        Créez une nouvelle classe pour gérer vos élèves et
-                        suivre leurs performances.
-                    </SheetDescription>
-                </SheetHeader>
-
+        <FormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Créer  une nouvelle classe"
+            fields={
                 <form
                     id="create-class-form"
                     onSubmit={(e) => {
@@ -289,50 +270,48 @@ export function CreateClassModal({
                         />
                     </FieldGroup>
                 </form>
+            }
+            footer={
+                <div className="flex w-full items-center justify-end gap-2">
+                    <SheetClose asChild>
+                        <form.Subscribe
+                            selector={(state) => [
+                                state.canSubmit,
+                                state.isSubmitting,
+                            ]}
+                            children={([canSubmit, isSubmitting]) => (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        type="reset"
+                                        onClick={(e) => {
+                                            // Avoid unexpected resets of form elements (especially <select> elements)
+                                            handleClose(false);
+                                            e.preventDefault();
+                                            form.reset();
+                                        }}
+                                        disabled={isSubmitting}
+                                    >
+                                        Annuler
+                                    </Button>
 
-                <SheetFooter>
-                    <div className="flex w-full items-center justify-end gap-2">
-                        <SheetClose asChild>
-                            <form.Subscribe
-                                selector={(state) => [
-                                    state.canSubmit,
-                                    state.isSubmitting,
-                                ]}
-                                children={([canSubmit, isSubmitting]) => (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            type="reset"
-                                            onClick={(e) => {
-                                                // Avoid unexpected resets of form elements (especially <select> elements)
-                                                handleClose(false);
-                                                e.preventDefault();
-                                                form.reset();
-                                            }}
-                                            disabled={isSubmitting}
-                                        >
-                                            Annuler
-                                        </Button>
-
-                                        <Button
-                                            type="submit"
-                                            form="create-class-form"
-                                            disabled={
-                                                !canSubmit ||
-                                                !form.state.isValid
-                                            }
-                                        >
-                                            {isSubmitting
-                                                ? "Création..."
-                                                : "Créer la classe"}
-                                        </Button>
-                                    </>
-                                )}
-                            />
-                        </SheetClose>
-                    </div>
-                </SheetFooter>
-            </SheetContent>
-        </Sheet>
+                                    <Button
+                                        type="submit"
+                                        form="create-class-form"
+                                        disabled={
+                                            !canSubmit || !form.state.isValid
+                                        }
+                                    >
+                                        {isSubmitting
+                                            ? "Création..."
+                                            : "Créer la classe"}
+                                    </Button>
+                                </>
+                            )}
+                        />
+                    </SheetClose>
+                </div>
+            }
+        />
     );
 }
