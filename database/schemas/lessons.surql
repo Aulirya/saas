@@ -1,14 +1,24 @@
 -- Define the lessons table
-DEFINE TABLE lessons TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
+DEFINE TABLE lessons PERMISSIONS none;
+-- mandatory
+DEFINE FIELD subject_id ON TABLE lessons TYPE record<subjects>;
+DEFINE FIELD user_id ON TABLE lessons TYPE record<users>;
+DEFINE FIELD description ON TABLE lessons TYPE string;
 
--- Define fields
-DEFINE FIELD average_duration ON lessons TYPE number PERMISSIONS FULL;
-DEFINE FIELD class_id ON lessons TYPE record<classes> PERMISSIONS FULL;
-DEFINE FIELD created_at ON lessons TYPE datetime DEFAULT time::now() PERMISSIONS FULL;
-DEFINE FIELD date ON lessons TYPE option<datetime> PERMISSIONS FULL;
-DEFINE FIELD duration_minutes ON lessons TYPE number PERMISSIONS FULL;
-DEFINE FIELD status ON lessons TYPE 'backlog' | 'planned' | 'in progress' | 'done' | 'late' PERMISSIONS FULL;
-DEFINE FIELD subject_id ON lessons TYPE record<subjects> PERMISSIONS FULL;
-DEFINE FIELD title ON lessons TYPE string PERMISSIONS FULL;
-DEFINE FIELD user_id ON lessons TYPE record<users> PERMISSIONS FULL;
-DEFINE FIELD updated_at ON lessons TYPE datetime VALUE time::now() PERMISSIONS FULL;
+DEFINE FIELD comments ON TABLE lessons TYPE array<object>;
+-- DEFINE comment OBJECT
+DEFINE FIELD comments.*.title        ON TABLE lessons TYPE option<string>;
+DEFINE FIELD comments.*.description  ON TABLE lessons TYPE string;
+DEFINE FIELD comments.*.created_at   ON TABLE lessons TYPE datetime VALUE time::now();
+DEFINE FIELD comments.*.updated_at   ON TABLE lessons TYPE datetime VALUE time::now();
+
+-- not mandatory
+DEFINE FIELD label ON TABLE lessons TYPE option<string>;
+DEFINE FIELD start_at ON TABLE lessons TYPE option<datetime>;
+DEFINE FIELD end_at ON TABLE lessons TYPE option<datetime>;
+
+-- system value
+DEFINE FIELD created_at ON TABLE lessons TYPE datetime VALUE time::now();
+DEFINE FIELD updated_at ON TABLE lessons TYPE datetime VALUE time::now();
+
+
