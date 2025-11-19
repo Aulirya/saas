@@ -183,32 +183,29 @@ function CourseDetailPage() {
                             <CardTitle>Prochains chapitres</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {courseData.nextChapters.length === 0 ? (
+                            {courseData.nextLessons.length === 0 ? (
                                 <EmptyState
                                     title="Aucun chapitre planifié"
                                     description="Ajoutez un chapitre pour qu'il s'affiche ici."
                                 />
                             ) : (
-                                courseData.nextChapters.map(
-                                    (chapter, index) => (
-                                        <div
-                                            key={chapter.id}
-                                            className={cn(
-                                                "flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm transition-colors",
-                                                index === 0 &&
-                                                    "border-primary/50 bg-primary/5"
-                                            )}
-                                        >
-                                            <span className="font-medium text-foreground">
-                                                {chapter.title}
-                                            </span>
-                                            <span className="text-primary text-xs">
-                                                {chapter.plannedHours}h
-                                                planifiées
-                                            </span>
-                                        </div>
-                                    )
-                                )
+                                courseData.nextLessons.map((chapter, index) => (
+                                    <div
+                                        key={chapter.id}
+                                        className={cn(
+                                            "flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm transition-colors",
+                                            index === 0 &&
+                                                "border-primary/50 bg-primary/5"
+                                        )}
+                                    >
+                                        <span className="font-medium text-foreground">
+                                            {chapter.title}
+                                        </span>
+                                        <span className="text-primary text-xs">
+                                            {chapter.plannedHours}h planifiées
+                                        </span>
+                                    </div>
+                                ))
                             )}
                         </CardContent>
                     </Card>
