@@ -101,15 +101,13 @@ function ClassesPage() {
     const [isMobile, setIsMobile] = useState(false);
     const [schoolFilter, setSchoolFilter] = useState<SchoolFilterValue>("all");
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
-    const [searchTerm, setSearchTerm] = useState("");
 
     const queryFilters = useMemo<SchoolClassesFilters>(
         () => ({
             school: schoolFilter !== "all" ? schoolFilter : null,
             level: levelFilter !== "all" ? levelFilter : null,
-            search: searchTerm.trim() || null,
         }),
-        [schoolFilter, levelFilter, searchTerm]
+        [schoolFilter, levelFilter]
     );
 
     const { data: classes = [], isLoading } = useSchoolClasses(queryFilters);
@@ -175,25 +173,8 @@ function ClassesPage() {
                 }}
             />
 
-            <section className="">
+            <section className="mb-6">
                 <div className="flex flex-row gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="class-search">Rechercher</Label>
-                        <div className="relative">
-                            <Search className="bg-white pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                id="class-search"
-                                type="search"
-                                placeholder="Rechercher une classe, un élève, une matière..."
-                                value={searchTerm}
-                                onChange={(event) =>
-                                    setSearchTerm(event.target.value)
-                                }
-                                className="pl-9"
-                            />
-                        </div>
-                    </div>
-
                     <div className="space-y-2">
                         <Label htmlFor="class-school-filter">École</Label>
                         <Select
@@ -541,92 +522,6 @@ function ClassSummarySidebar({
                         </Link>
                     </Button>
                 </CardFooter>
-            </Card>
-
-            {/* Statistics Card */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Statistiques</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-3">
-                    <SummaryStat
-                        label="Présence moyenne"
-                        value={`${classData.statistics.averageAttendance}%`}
-                    />
-                    <SummaryStat
-                        label="Devoirs rendus"
-                        value={`${classData.statistics.homeworkSubmitted}%`}
-                    />
-                    <SummaryStat
-                        label="Évaluations"
-                        value={numberFormatter.format(
-                            classData.statistics.evaluations
-                        )}
-                    />
-                </CardContent>
-            </Card>
-
-            {/* Class Analysis Card */}
-            {classData.analyses.length > 0 && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <svg
-                                className="size-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                                />
-                            </svg>
-                            Analyses de classe
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                        {classData.analyses.map((analysis, index) => (
-                            <div
-                                key={index}
-                                className={cn(
-                                    "rounded-lg border px-4 py-3 text-sm",
-                                    analysis.type === "success" &&
-                                        "bg-emerald-50 border-emerald-200 text-emerald-700",
-                                    analysis.type === "warning" &&
-                                        "bg-amber-50 border-amber-200 text-amber-700"
-                                )}
-                            >
-                                {analysis.message}
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Quick Actions Card */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Actions rapides</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                    <button
-                        className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
-                        onClick={() => console.log("Add student")}
-                    >
-                        <UserPlus className="size-4" />
-                        Ajouter élève
-                    </button>
-                    <button
-                        className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
-                        onClick={() => console.log("Export list")}
-                    >
-                        <Download className="size-4" />
-                        Exporter liste
-                    </button>
-                </CardContent>
             </Card>
         </div>
     );
