@@ -20,6 +20,13 @@ migrate: ## Run database migrations
 	docker-compose run --rm surrealdb-migrate
 	@echo "✅ Migrations complete!"
 
+seed: ## Seed the database with test data (WARNING: Deletes all existing data)
+	docker-compose up -d surrealdb
+	@echo "⚠️  WARNING: This will delete all existing data!"
+	@echo "Seeding database..."
+	docker-compose run --rm surrealdb-seed
+	@echo "✅ Database seeding complete!"
+
 migration-create: ## Create a new migration file (usage: make migration-create NAME=add_users_table)
 	@if [ -z "$(NAME)" ]; then \
 		echo "❌ Error: NAME is required. Usage: make migration-create NAME=add_users_table"; \

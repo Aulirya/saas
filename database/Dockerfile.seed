@@ -1,0 +1,12 @@
+# Seed runner for SurrealDB
+FROM alpine:latest
+
+# Install curl for HTTP requests
+RUN apk add --no-cache curl bash grep
+
+# Copy the seed script
+COPY scripts/seed.sh /seed.sh
+RUN chmod +x /seed.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/seed.sh"]

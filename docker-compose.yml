@@ -27,6 +27,8 @@ services:
     build:
       context: ./database
       dockerfile: Dockerfile
+    profiles:
+      - tools
     depends_on:
       surrealdb:
         condition: service_started
@@ -41,6 +43,28 @@ services:
     networks:
       - saas-network
     restart: on-failure:3
+
+  surrealdb-seed:
+    container_name: saas-surrealdb-seed
+    build:
+      context: ./database
+      dockerfile: Dockerfile.seed
+    profiles:
+      - tools
+    depends_on:
+      surrealdb:
+        condition: service_started
+    volumes:
+      - ./database/seeds:/seeds:ro
+    environment:
+      - SURREALDB_URL=http://surrealdb:8000
+      - SURREALDB_USER=${SURREALDB_USER:-root}
+      - SURREALDB_PASS=${SURREALDB_PASS:-root}
+      - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
+      - SURREALDB_DB=${SURREALDB_DB:-saas}
+    networks:
+      - saas-network
+    restart: "no"
 
   frontend:
     container_name: saas-frontend
