@@ -4,7 +4,7 @@ import { useMediaQuery } from "usehooks-ts";
 
 import { Route as CourseDetailRoute } from "./$courseId";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Eye, Plus, Search } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -25,21 +25,15 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
-import { SummaryStat } from "@/components/ui/summary-stat";
+import { FormSheet } from "@/components/ui/form-sheet";
+import { CardInfoLayout } from "@/components/ui/card-info-layout";
+import { ViewDetailButton } from "@/components/ui/view-detail-button";
+
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
 import type { CourseProgram } from "@/features/courses/types";
 import { cn, getColorFromText } from "@/lib/utils";
 import { CreateCourseModal } from "@/features/courses/components/CreateCourseModal";
-
-const numberFormatter = new Intl.NumberFormat("fr-FR");
 
 // School filter options - static for now since data doesn't have school field yet
 const SCHOOL_FILTER_OPTIONS = [
@@ -48,7 +42,8 @@ const SCHOOL_FILTER_OPTIONS = [
     { value: "Collège Saint-Exupéry", label: "Collège Saint-Exupéry" },
 ] as const;
 
-type SchoolFilterValue = (typeof SCHOOL_FILTER_OPTIONS)[number]["value"];
+// DON'T PAY ATTENTION TO THE LOGIC OF FILTERS, IT'S JUST FOR DEMO PURPOSES
+type SchoolFilterValue = string;
 type ClassFilterValue = string;
 type SubjectFilterValue = string;
 
@@ -57,15 +52,20 @@ export const Route = createFileRoute("/_protected/courses/")({
 });
 
 function CoursesPage() {
+    const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
+
     const { data: allPrograms = [], isLoading } = useCoursePrograms();
+
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    // DON'T PAY ATTENTION TO THE LOGIC OF FILTERS, IT'S JUST FOR DEMO PURPOSES
+    // ------- START OF FILTERS LOGIC (NOT FOR PRODUCTION) -------
     const [schoolFilter, setSchoolFilter] = useState<SchoolFilterValue>("all");
     const [classFilter, setClassFilter] = useState<ClassFilterValue>("all");
     const [subjectFilter, setSubjectFilter] =
         useState<SubjectFilterValue>("all");
-    const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
 
     // Generate filter options dynamically from data
     const classFilterOptions = useMemo(() => {
@@ -94,8 +94,6 @@ function CoursesPage() {
     // Frontend filtering logic
     const programs = useMemo(() => {
         return allPrograms.filter((program) => {
-            // Search filter - search in subject, level, and other text fields
-
             // Subject filter
             if (subjectFilter !== "all" && program.subject !== subjectFilter) {
                 return false;
@@ -106,36 +104,28 @@ function CoursesPage() {
                 return false;
             }
 
-            // School filter - for now, we'll skip this since data doesn't have school field
-            // This will be handled in backend later
-            // if (schoolFilter !== "all") {
-            //     // TODO: Add school field to CourseProgram type when backend is ready
-            //     return false;
-            // }
-
             return true;
         });
     }, [allPrograms, schoolFilter, classFilter, subjectFilter]);
 
+    // ------- END OF FILTERS LOGIC (NOT FOR PRODUCTION) -------
+
+    // If desktop and no selection, select the first program
+    if (!isMobile && !selectedId && programs.length > 0) {
+        setSelectedId(programs[0].id);
+    }
+
+    // If mobile and modal is closed, reset the selection
+    if (isMobile && !isModalOpen && selectedId) {
+        setSelectedId(null);
+    }
+
+    // If desktop and modal is open, close it
     useEffect(() => {
-        if (!isMobile) setIsModalOpen(false);
-        else setSelectedId(null);
+        if (!isMobile) {
+            setIsModalOpen(false);
+        }
     }, [isMobile]);
-
-    useEffect(() => {
-        if (!programs.length) {
-            setSelectedId(null);
-            return;
-        }
-
-        if (
-            !isMobile &&
-            (!selectedId ||
-                !programs.some((program) => program.id === selectedId))
-        ) {
-            setSelectedId(programs[0].id);
-        }
-    }, [programs, selectedId, isMobile]);
 
     const selectedProgram = useMemo(() => {
         return programs.find((program) => program.id === selectedId);
@@ -162,6 +152,7 @@ function CoursesPage() {
                 }}
             />
 
+            {/* Filters */}
             <section className="mb-6">
                 <div className="flex flex-row gap-6">
                     <div className="space-y-2">
@@ -238,6 +229,7 @@ function CoursesPage() {
                 </div>
             </section>
 
+            {/* Programs list */}
             <div className="grid grid-cols-7 gap-6 flex-1 min-h-0">
                 <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5">
                     {isLoading ? (
@@ -399,70 +391,18 @@ function ProgramSummary({ program }: { program: CourseProgram | undefined }) {
         );
     }
 
-    const progressValue = Math.round(
-        (program.completedHours / Math.max(program.totalHours, 1)) * 100
-    );
-    const completedText = `${numberFormatter.format(
-        program.completedHours
-    )} / ${numberFormatter.format(
-        program.totalHours
-    )} heures (${progressValue}%)`;
-
     return (
-        <Card className="h-full flex flex-col">
-            <CardHeader className=" border-b">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                        <CardTitle>
-                            {" "}
-                            {program.subject} • {program.level}
-                        </CardTitle>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-6 flex-1">
-                <section className="">
-                    <p className=" font-medium pb-3">Progression actuelle</p>
-                    <Progress value={progressValue} />
-                    <p className="text-xs text-muted-foreground pt-1">
-                        {completedText}
-                    </p>
-                </section>
-
-                <section className="space-y-3">
-                    <p className=" font-medium">Prochains chapitres</p>
-                    <div className="space-y-2">
-                        {program.nextChapters.map((chapter, index) => (
-                            <div
-                                key={chapter.id}
-                                className={cn(
-                                    "flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm transition-colors",
-                                    index === 0 &&
-                                        "border-primary/50 bg-primary/5"
-                                )}
-                            >
-                                <span className="font-medium text-foreground">
-                                    {chapter.title}
-                                </span>
-                                <span className="text-primary text-xs ">
-                                    {chapter.plannedHours}h planifiées
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-                <CardFooter className="mt-auto">
-                    <Button variant="outline" className="w-full" asChild>
-                        <Link
-                            to={CourseDetailRoute.to}
-                            params={{ courseId: program.id }}
-                        >
-                            Voir la fiche détaillée
-                        </Link>
-                    </Button>
-                </CardFooter>
-            </CardContent>
-        </Card>
+        <CardInfoLayout
+            title={`${program.subject} • ${program.level}`}
+            footer={
+                <ViewDetailButton
+                    to={CourseDetailRoute.to}
+                    params={{ courseId: program.id }}
+                />
+            }
+        >
+            <ProgramSummaryContent program={program} />
+        </CardInfoLayout>
     );
 }
 
@@ -476,20 +416,28 @@ function ProgramSummaryModal({
     program: CourseProgram | undefined;
 }) {
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="overflow-y-auto">
-                <SheetHeader>
-                    <SheetTitle>
-                        {program
-                            ? `${program.subject} • ${program.level}`
-                            : "Résumé du programme"}
-                    </SheetTitle>
-                </SheetHeader>
-                <div className="mt-6">
+        <FormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title={
+                program
+                    ? `${program.subject} • ${program.level}`
+                    : "Résumé du programme"
+            }
+            children={
+                <>
                     <ProgramSummaryContent program={program} />
-                </div>
-            </SheetContent>
-        </Sheet>
+                </>
+            }
+            footer={
+                program && (
+                    <ViewDetailButton
+                        to={CourseDetailRoute.to}
+                        params={{ courseId: program.id }}
+                    />
+                )
+            }
+        ></FormSheet>
     );
 }
 
@@ -512,65 +460,44 @@ function ProgramSummaryContent({
     const progressValue = Math.round(
         (program.completedHours / Math.max(program.totalHours, 1)) * 100
     );
-    const completedText = `${numberFormatter.format(
-        program.completedHours
-    )} / ${numberFormatter.format(
-        program.totalHours
-    )} heures (${progressValue}%)`;
+    const completedText = `${program.completedHours} / ${program.totalHours} heures (${progressValue}%)`;
+
+    const colorScheme = getColorFromText(program.subject);
+    console.log(colorScheme);
 
     return (
         <div className="flex flex-col gap-6">
-            <Button variant="outline" className="w-full" asChild>
-                <Link
-                    to={CourseDetailRoute.to}
-                    params={{ courseId: program.id }}
-                >
-                    Voir la fiche détaillée
-                </Link>
-            </Button>
             <section>
                 <p className="font-medium pb-3">Progression actuelle</p>
-                <Progress value={progressValue} />
+                <Progress
+                    value={progressValue}
+                    indicatorClassName={colorScheme.bg}
+                />
                 <p className="text-xs text-muted-foreground pt-1">
                     {completedText}
                 </p>
             </section>
 
             <section className="space-y-3">
-                <p className="font-medium">Prochains chapitres</p>
+                <p className="font-medium">Prochaines leçons</p>
                 <div className="space-y-2">
-                    {program.nextChapters.map((chapter, index) => (
+                    {program.nextLessons.map((lesson) => (
                         <div
-                            key={chapter.id}
+                            key={lesson.id}
                             className={cn(
-                                "flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm transition-colors",
-                                index === 0 && "border-primary/50 bg-primary/5"
+                                "flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm transition-colors"
                             )}
                         >
                             <span className="font-medium text-foreground">
-                                {chapter.title}
+                                {lesson.title}
                             </span>
-                            <span className="text-primary text-xs">
-                                {chapter.plannedHours}h planifiées
+                            <span className="text-xs text-muted-foreground">
+                                {lesson?.date
+                                    ? lesson.date.toLocaleDateString()
+                                    : "Date à préciser"}
                             </span>
                         </div>
                     ))}
-                </div>
-            </section>
-
-            <section className="space-y-3">
-                <p className="font-medium">Statistiques</p>
-                <div className="flex flex-col gap-3">
-                    <SummaryStat
-                        label="Supports uploadés"
-                        value={numberFormatter.format(program.stats.uploads)}
-                    />
-                    <SummaryStat
-                        label="Évaluations"
-                        value={numberFormatter.format(
-                            program.stats.evaluations
-                        )}
-                    />
                 </div>
             </section>
         </div>
