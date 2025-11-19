@@ -100,7 +100,7 @@ export function CreateCourseModal({
             open={open}
             onOpenChange={handleClose}
             title="Créer un nouveau cours"
-            fields={
+            children={
                 <form
                     id="create-course-form"
                     onSubmit={(e) => {

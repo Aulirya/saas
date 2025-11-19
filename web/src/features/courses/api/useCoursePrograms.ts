@@ -15,13 +15,31 @@ export const demoPrograms: CourseProgram[] = [
         completedHours: 42,
         status: "defined",
         statusLabel: "Programme défini",
-        nextChapters: [
+        nextLessons: [
             {
-                id: "log-functions",
-                title: "Fonctions logarithmes",
+                id: "log-functions-1",
+                title: "Fonctions logarithmes 1/3",
                 plannedHours: 8,
+                date: new Date("2025-11-19"),
             },
-            { id: "integrales", title: "Intégrales", plannedHours: 12 },
+            {
+                id: "log-functions-2",
+                title: "Fonctions logarithmes 2/3",
+                plannedHours: 8,
+                date: new Date("2025-11-20"),
+            },
+            {
+                id: "log-functions-3",
+                title: "Fonctions logarithmes 3/3",
+                plannedHours: 8,
+                date: new Date("2025-11-21"),
+            },
+            {
+                id: "integrales",
+                title: "Intégrales",
+                plannedHours: 12,
+                date: new Date("2025-11-22"),
+            },
         ],
         stats: {
             uploads: 24,
@@ -40,7 +58,7 @@ export const demoPrograms: CourseProgram[] = [
         completedHours: 38,
         status: "partial",
         statusLabel: "Programme partiel",
-        nextChapters: [
+        nextLessons: [
             { id: "optics", title: "Optique avancée", plannedHours: 6 },
             {
                 id: "thermodynamics",
@@ -65,7 +83,7 @@ export const demoPrograms: CourseProgram[] = [
         completedHours: 28,
         status: "draft",
         statusLabel: "Programme à définir",
-        nextChapters: [
+        nextLessons: [
             { id: "stoichiometry", title: "Stœchiométrie", plannedHours: 5 },
             {
                 id: "chemical-bonds",

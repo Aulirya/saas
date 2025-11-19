@@ -98,7 +98,7 @@ export function CreateClassModal({
             open={open}
             onOpenChange={onOpenChange}
             title="Créer  une nouvelle classe"
-            fields={
+            children={
                 <form
                     id="create-class-form"
                     onSubmit={(e) => {

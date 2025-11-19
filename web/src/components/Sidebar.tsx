@@ -101,8 +101,9 @@ export default function Sidebar() {
 
                     <Link
                         to="/analytics"
+                        disabled={true}
                         onClick={() => setIsOpen(false)}
-                        className={`flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors mb-2 text-slate-700 ${
+                        className={`flex items-center gap-3 p-3 rounded-lg transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
                         activeProps={{
@@ -113,7 +114,12 @@ export default function Sidebar() {
                     >
                         <LineChart size={20} />
                         {isOpen && (
-                            <span className="font-medium">Analyses IA</span>
+                            <>
+                                <span className="font-medium">Analyses IA</span>
+                                <span className="ml-auto text-xs bg-orange-400 text-white px-2 py-0.5 rounded-full">
+                                    Bientôt
+                                </span>
+                            </>
                         )}
                     </Link>
 

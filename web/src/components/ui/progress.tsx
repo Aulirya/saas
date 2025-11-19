@@ -6,8 +6,9 @@ const Progress = React.forwardRef<
     HTMLDivElement,
     React.ComponentPropsWithoutRef<"div"> & {
         value?: number;
+        indicatorClassName?: string;
     }
->(({ className, value = 0, ...props }, ref) => (
+>(({ className, value = 0, indicatorClassName, ...props }, ref) => (
     <div
         ref={ref}
         role="progressbar"
@@ -16,14 +17,17 @@ const Progress = React.forwardRef<
         aria-valuenow={value}
         data-slot="progress"
         className={cn(
-            "relative h-2 w-full overflow-hidden rounded-full bg-secondary",
+            "relative h-2 w-full overflow-hidden rounded-full bg-primary/20",
             className
         )}
         {...props}
     >
         <div
             data-slot="progress-indicator"
-            className="h-full w-full flex-1 bg-primary transition-all"
+            className={cn(
+                "h-full w-full flex-1 bg-primary transition-all",
+                indicatorClassName
+            )}
             style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
         />
     </div>

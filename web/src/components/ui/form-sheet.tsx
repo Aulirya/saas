@@ -12,7 +12,7 @@ interface FormSheetProps {
     onOpenChange: (open: boolean) => void;
     title: string;
     formId?: string;
-    fields: React.ReactNode;
+    children: React.ReactNode;
     footer: React.ReactNode;
     side?: "top" | "right" | "bottom" | "left";
 }
@@ -21,7 +21,7 @@ export function FormSheet({
     open,
     onOpenChange,
     title,
-    fields,
+    children,
     footer,
     side = "right",
 }: FormSheetProps) {
@@ -32,7 +32,7 @@ export function FormSheet({
                     <SheetTitle>{title}</SheetTitle>
                 </SheetHeader>
 
-                {fields}
+                {children}
 
                 <SheetFooter>{footer}</SheetFooter>
             </SheetContent>

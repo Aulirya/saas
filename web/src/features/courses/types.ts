@@ -6,6 +6,7 @@ export type CourseChapter = {
     id: string;
     title: string;
     plannedHours: number;
+    date: Date;
 };
 
 export type CourseProgramStats = {
@@ -25,6 +26,6 @@ export type CourseProgram = {
     completedHours: number;
     status: CourseProgramStatus;
     statusLabel: string;
-    nextChapters: CourseChapter[];
+    nextLessons: CourseChapter[];
     stats: CourseProgramStats;
 };
