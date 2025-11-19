@@ -4,7 +4,7 @@ import { useMediaQuery } from "usehooks-ts";
 
 import { Route as CourseDetailRoute } from "./$courseId";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Eye, Plus } from "lucide-react";
+import { Eye, Plus, Search } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -19,6 +19,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
     Sheet,
     SheetContent,
     SheetHeader,
@@ -32,16 +41,82 @@ import { CreateCourseModal } from "@/features/courses/components/CreateCourseMod
 
 const numberFormatter = new Intl.NumberFormat("fr-FR");
 
+// School filter options - static for now since data doesn't have school field yet
+const SCHOOL_FILTER_OPTIONS = [
+    { value: "all", label: "Toutes les écoles" },
+    { value: "Lycée Jean Moulin", label: "Lycée Jean Moulin" },
+    { value: "Collège Saint-Exupéry", label: "Collège Saint-Exupéry" },
+] as const;
+
+type SchoolFilterValue = (typeof SCHOOL_FILTER_OPTIONS)[number]["value"];
+type ClassFilterValue = string;
+type SubjectFilterValue = string;
+
 export const Route = createFileRoute("/_protected/courses/")({
     component: CoursesPage,
 });
 
 function CoursesPage() {
-    const { data: programs = [], isLoading } = useCoursePrograms();
+    const { data: allPrograms = [], isLoading } = useCoursePrograms();
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [schoolFilter, setSchoolFilter] = useState<SchoolFilterValue>("all");
+    const [classFilter, setClassFilter] = useState<ClassFilterValue>("all");
+    const [subjectFilter, setSubjectFilter] =
+        useState<SubjectFilterValue>("all");
     const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
+
+    // Generate filter options dynamically from data
+    const classFilterOptions = useMemo(() => {
+        const uniqueLevels = Array.from(
+            new Set(allPrograms.map((p) => p.level))
+        ).sort();
+        return [
+            { value: "all", label: "Toutes les classes" },
+            ...uniqueLevels.map((level) => ({ value: level, label: level })),
+        ];
+    }, [allPrograms]);
+
+    const subjectFilterOptions = useMemo(() => {
+        const uniqueSubjects = Array.from(
+            new Set(allPrograms.map((p) => p.subject))
+        ).sort();
+        return [
+            { value: "all", label: "Toutes les matières" },
+            ...uniqueSubjects.map((subject) => ({
+                value: subject,
+                label: subject,
+            })),
+        ];
+    }, [allPrograms]);
+
+    // Frontend filtering logic
+    const programs = useMemo(() => {
+        return allPrograms.filter((program) => {
+            // Search filter - search in subject, level, and other text fields
+
+            // Subject filter
+            if (subjectFilter !== "all" && program.subject !== subjectFilter) {
+                return false;
+            }
+
+            // Class filter (using level field)
+            if (classFilter !== "all" && program.level !== classFilter) {
+                return false;
+            }
+
+            // School filter - for now, we'll skip this since data doesn't have school field
+            // This will be handled in backend later
+            // if (schoolFilter !== "all") {
+            //     // TODO: Add school field to CourseProgram type when backend is ready
+            //     return false;
+            // }
+
+            return true;
+        });
+    }, [allPrograms, schoolFilter, classFilter, subjectFilter]);
+
     useEffect(() => {
         if (!isMobile) setIsModalOpen(false);
         else setSelectedId(null);
@@ -75,7 +150,7 @@ function CoursesPage() {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="space-y-6 lg:space-y-6">
             <PageHeader
                 title="Progression des cours"
                 primaryAction={{
@@ -85,8 +160,83 @@ function CoursesPage() {
                         setIsCreateModalOpen(true);
                     },
                 }}
-                className="mb-10"
             />
+
+            <section className="mb-6">
+                <div className="flex flex-row gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="course-school-filter">École</Label>
+                        <Select
+                            value={schoolFilter}
+                            onValueChange={(value) =>
+                                setSchoolFilter(value as SchoolFilterValue)
+                            }
+                        >
+                            <SelectTrigger id="course-school-filter">
+                                <SelectValue placeholder="Toutes les écoles" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {SCHOOL_FILTER_OPTIONS.map((option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="course-class-filter">Classe</Label>
+                        <Select
+                            value={classFilter}
+                            onValueChange={(value) =>
+                                setClassFilter(value as ClassFilterValue)
+                            }
+                        >
+                            <SelectTrigger id="course-class-filter">
+                                <SelectValue placeholder="Toutes les classes" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {classFilterOptions.map((option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="course-subject-filter">Matière</Label>
+                        <Select
+                            value={subjectFilter}
+                            onValueChange={(value) =>
+                                setSubjectFilter(value as SubjectFilterValue)
+                            }
+                        >
+                            <SelectTrigger id="course-subject-filter">
+                                <SelectValue placeholder="Toutes les matières" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {subjectFilterOptions.map((option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </section>
 
             <div className="grid grid-cols-7 gap-6 flex-1 min-h-0">
                 <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5">
