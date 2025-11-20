@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as ProtectedRouteImport } from './routes/_protected'
@@ -22,12 +21,16 @@ import { Route as DemoStorybookRouteImport } from './routes/demo/storybook'
 import { Route as DemoOrpcTodoRouteImport } from './routes/demo/orpc-todo'
 import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
 import { Route as ProtectedTodosRouteImport } from './routes/_protected/todos'
+import { Route as ProtectedCoursesIndexRouteImport } from './routes/_protected/courses/index'
+import { Route as ProtectedClassesIndexRouteImport } from './routes/_protected/classes/index'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
 import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
 import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
+import { Route as ProtectedCoursesCourseIdRouteImport } from './routes/_protected/courses/$courseId'
+import { Route as ProtectedClassesClassIdRouteImport } from './routes/_protected/classes/$classId'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
@@ -41,11 +44,6 @@ const ResourcesRoute = ResourcesRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CoursesRoute = CoursesRouteImport.update({
-  id: '/courses',
-  path: '/courses',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityRoute = CommunityRouteImport.update({
@@ -97,6 +95,16 @@ const ProtectedTodosRoute = ProtectedTodosRouteImport.update({
   path: '/todos',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedCoursesIndexRoute = ProtectedCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedClassesIndexRoute = ProtectedClassesIndexRouteImport.update({
+  id: '/classes/',
+  path: '/classes/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
   id: '/demo/start/server-funcs',
   path: '/demo/start/server-funcs',
@@ -127,6 +135,17 @@ const DemoApiNamesRoute = DemoApiNamesRouteImport.update({
   path: '/demo/api/names',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProtectedCoursesCourseIdRoute =
+  ProtectedCoursesCourseIdRouteImport.update({
+    id: '/courses/$courseId',
+    path: '/courses/$courseId',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
+const ProtectedClassesClassIdRoute = ProtectedClassesClassIdRouteImport.update({
+  id: '/classes/$classId',
+  path: '/classes/$classId',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   id: '/demo/start/ssr/',
   path: '/demo/start/ssr/',
@@ -152,7 +171,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
-  '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
   '/todos': typeof ProtectedTodosRoute
@@ -161,12 +179,16 @@ export interface FileRoutesByFullPath {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/classes/$classId': typeof ProtectedClassesClassIdRoute
+  '/courses/$courseId': typeof ProtectedCoursesCourseIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/classes': typeof ProtectedClassesIndexRoute
+  '/courses': typeof ProtectedCoursesIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -176,7 +198,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
-  '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
   '/todos': typeof ProtectedTodosRoute
@@ -185,12 +206,16 @@ export interface FileRoutesByTo {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/classes/$classId': typeof ProtectedClassesClassIdRoute
+  '/courses/$courseId': typeof ProtectedCoursesCourseIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/classes': typeof ProtectedClassesIndexRoute
+  '/courses': typeof ProtectedCoursesIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -202,7 +227,6 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/analytics': typeof AnalyticsRoute
   '/community': typeof CommunityRoute
-  '/courses': typeof CoursesRoute
   '/dashboard': typeof DashboardRoute
   '/resources': typeof ResourcesRoute
   '/_protected/todos': typeof ProtectedTodosRoute
@@ -211,12 +235,16 @@ export interface FileRoutesById {
   '/demo/storybook': typeof DemoStorybookRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/_protected/classes/$classId': typeof ProtectedClassesClassIdRoute
+  '/_protected/courses/$courseId': typeof ProtectedCoursesCourseIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/form/address': typeof DemoFormAddressRoute
   '/demo/form/simple': typeof DemoFormSimpleRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/_protected/classes/': typeof ProtectedClassesIndexRoute
+  '/_protected/courses/': typeof ProtectedCoursesIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -228,7 +256,6 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/community'
-    | '/courses'
     | '/dashboard'
     | '/resources'
     | '/todos'
@@ -237,12 +264,16 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/classes/$classId'
+    | '/courses/$courseId'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/classes'
+    | '/courses'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -252,7 +283,6 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/community'
-    | '/courses'
     | '/dashboard'
     | '/resources'
     | '/todos'
@@ -261,12 +291,16 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/classes/$classId'
+    | '/courses/$courseId'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/classes'
+    | '/courses'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -277,7 +311,6 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/analytics'
     | '/community'
-    | '/courses'
     | '/dashboard'
     | '/resources'
     | '/_protected/todos'
@@ -286,12 +319,16 @@ export interface FileRouteTypes {
     | '/demo/storybook'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/_protected/classes/$classId'
+    | '/_protected/courses/$courseId'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/form/address'
     | '/demo/form/simple'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/_protected/classes/'
+    | '/_protected/courses/'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -303,7 +340,6 @@ export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
   AnalyticsRoute: typeof AnalyticsRoute
   CommunityRoute: typeof CommunityRoute
-  CoursesRoute: typeof CoursesRoute
   DashboardRoute: typeof DashboardRoute
   ResourcesRoute: typeof ResourcesRoute
   DemoClerkRoute: typeof DemoClerkRoute
@@ -337,13 +373,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/courses': {
-      id: '/courses'
-      path: '/courses'
-      fullPath: '/courses'
-      preLoaderRoute: typeof CoursesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community': {
@@ -416,6 +445,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedTodosRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/courses/': {
+      id: '/_protected/courses/'
+      path: '/courses'
+      fullPath: '/courses'
+      preLoaderRoute: typeof ProtectedCoursesIndexRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/classes/': {
+      id: '/_protected/classes/'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof ProtectedClassesIndexRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/demo/start/server-funcs': {
       id: '/demo/start/server-funcs'
       path: '/demo/start/server-funcs'
@@ -458,6 +501,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoApiNamesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_protected/courses/$courseId': {
+      id: '/_protected/courses/$courseId'
+      path: '/courses/$courseId'
+      fullPath: '/courses/$courseId'
+      preLoaderRoute: typeof ProtectedCoursesCourseIdRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/classes/$classId': {
+      id: '/_protected/classes/$classId'
+      path: '/classes/$classId'
+      fullPath: '/classes/$classId'
+      preLoaderRoute: typeof ProtectedClassesClassIdRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/demo/start/ssr/': {
       id: '/demo/start/ssr/'
       path: '/demo/start/ssr'
@@ -491,10 +548,18 @@ declare module '@tanstack/react-router' {
 
 interface ProtectedRouteChildren {
   ProtectedTodosRoute: typeof ProtectedTodosRoute
+  ProtectedClassesClassIdRoute: typeof ProtectedClassesClassIdRoute
+  ProtectedCoursesCourseIdRoute: typeof ProtectedCoursesCourseIdRoute
+  ProtectedClassesIndexRoute: typeof ProtectedClassesIndexRoute
+  ProtectedCoursesIndexRoute: typeof ProtectedCoursesIndexRoute
 }
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedTodosRoute: ProtectedTodosRoute,
+  ProtectedClassesClassIdRoute: ProtectedClassesClassIdRoute,
+  ProtectedCoursesCourseIdRoute: ProtectedCoursesCourseIdRoute,
+  ProtectedClassesIndexRoute: ProtectedClassesIndexRoute,
+  ProtectedCoursesIndexRoute: ProtectedCoursesIndexRoute,
 }
 
 const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
@@ -506,7 +571,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
   AnalyticsRoute: AnalyticsRoute,
   CommunityRoute: CommunityRoute,
-  CoursesRoute: CoursesRoute,
   DashboardRoute: DashboardRoute,
   ResourcesRoute: ResourcesRoute,
   DemoClerkRoute: DemoClerkRoute,

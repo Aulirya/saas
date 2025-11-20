@@ -1,6 +1,5 @@
 import * as z from "zod";
 import { useForm } from "@tanstack/react-form";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
     Field,
@@ -102,7 +101,9 @@ export function LessonModal({
             <SheetContent side="right">
                 <SheetHeader>
                     <SheetTitle>
-                        {initialCourse ? "Modifier une leçon" : "Ajouter une leçon"}
+                        {initialCourse
+                            ? "Modifier une leçon"
+                            : "Ajouter une leçon"}
                     </SheetTitle>
                 </SheetHeader>
 
@@ -329,7 +330,9 @@ export function LessonModal({
                                             >
                                                 {isSubmitting
                                                     ? "..."
-                                                    : initialCourse? "Modifier" : "Ajouter"}
+                                                    : initialCourse
+                                                    ? "Modifier"
+                                                    : "Ajouter"}
                                             </Button>
                                             <Button
                                                 type="reset"

@@ -16,6 +16,7 @@ export interface PageHeaderAction {
     onClick: () => void;
     variant?: "default" | "outline" | "secondary" | "destructive" | "ghost";
     className?: string;
+    disabled?: boolean;
 }
 
 export interface PageHeaderDropdown {
@@ -75,7 +76,7 @@ export function PageHeader({
         dropdown;
 
     return (
-        <div className={cn(isDetailed && "border-b", className)}>
+        <div className={cn(className)}>
             <div
                 className={cn(
                     "flex flex-col gap-4",
@@ -127,7 +128,7 @@ export function PageHeader({
                     >
                         <h1
                             className={cn(
-                                "font-semibold text-foreground",
+                                "font-bold text-foreground",
                                 isDetailed ? "text-xl" : "text-2xl",
                                 isMobile && isDetailed && "text-lg"
                             )}
@@ -194,6 +195,7 @@ export function PageHeader({
                                 <Button
                                     key={index}
                                     variant={action.variant || "default"}
+                                    disabled={action.disabled}
                                     onClick={action.onClick}
                                     className={cn(
                                         isMobile && action.label && "flex-1",
