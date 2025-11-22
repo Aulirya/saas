@@ -1,121 +1,159 @@
 services:
-  surrealdb:
-    container_name: saas-surrealdb
-    image: surrealdb/surrealdb:v3.0.0-alpha.12
-    user: root
-    ports:
-      - "8000:8000"
-    environment:
-      - SURREAL_CAPS_ALLOW_EXPERIMENTAL=files
-    command:
-      - start
-      - --user
-      - root
-      - --pass
-      - root
-      - --bind
-      - 0.0.0.0:8000
-      - rocksdb:/data/database.db
-    volumes:
-      - surrealdb-data:/data
-    networks:
-      - saas-network
-    restart: unless-stopped
+    surrealdb:
+        container_name: saas-surrealdb
+        image: surrealdb/surrealdb:v3.0.0-alpha.12
+        user: root
+        ports:
+            - "8000:8000"
+        environment:
+            - SURREAL_CAPS_ALLOW_EXPERIMENTAL=files
+        command:
+            - start
+            - --user
+            - root
+            - --pass
+            - root
+            - --bind
+            - 0.0.0.0:8000
+            - rocksdb:/data/database.db
+        volumes:
+            - surrealdb-data:/data
+        networks:
+            - saas-network
+        restart: unless-stopped
 
-  surrealdb-migrate:
-    container_name: saas-surrealdb-migrate
-    build:
-      context: ./database
-      dockerfile: Dockerfile
-    depends_on:
-      surrealdb:
-        condition: service_started
-    volumes:
-      - ./database/migrations:/migrations:ro
-    environment:
-      - SURREALDB_URL=http://surrealdb:8000
-      - SURREALDB_USER=${SURREALDB_USER:-root}
-      - SURREALDB_PASS=${SURREALDB_PASS:-root}
-      - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
-      - SURREALDB_DB=${SURREALDB_DB:-saas}
-    networks:
-      - saas-network
-    restart: on-failure:3
+    surrealdb-migrate:
+        container_name: saas-surrealdb-migrate
+        build:
+            context: ./database
+            dockerfile: Dockerfile
+        profiles:
+            - tools
+        depends_on:
+            surrealdb:
+                condition: service_started
+        volumes:
+            - ./database/migrations:/migrations:ro
+        environment:
+            - SURREALDB_URL=http://surrealdb:8000
+            - SURREALDB_USER=${SURREALDB_USER:-root}
+            - SURREALDB_PASS=${SURREALDB_PASS:-root}
+            - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
+            - SURREALDB_DB=${SURREALDB_DB:-saas}
+        networks:
+            - saas-network
+        restart: on-failure:3
 
-  frontend:
-    container_name: saas-frontend
-    build:
-      context: .
-      dockerfile: web/Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY}}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-    volumes:
-      # Bind mount source for hot reload
-      - ./web/src:/app/web/src
-      - ./web/public:/app/web/public
-      - ./shared:/app/shared
-      # Prevent overwriting container's node_modules
-      - /app/node_modules
-      - /app/web/node_modules
-    networks:
-      - saas-network
-    depends_on:
-      backend:
-        condition: service_started
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "bun", "run", "-e", "await fetch('http://localhost:3000')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+    surrealdb-seed:
+        container_name: saas-surrealdb-seed
+        build:
+            context: ./database
+            dockerfile: Dockerfile.seed
+        profiles:
+            - tools
+        depends_on:
+            surrealdb:
+                condition: service_started
+        volumes:
+            - ./database/seeds:/seeds:ro
+        environment:
+            - SURREALDB_URL=http://surrealdb:8000
+            - SURREALDB_USER=${SURREALDB_USER:-root}
+            - SURREALDB_PASS=${SURREALDB_PASS:-root}
+            - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
+            - SURREALDB_DB=${SURREALDB_DB:-saas}
+        networks:
+            - saas-network
+        restart: "no"
 
-  backend:
-    container_name: saas-backend
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - CLERK_WEBHOOK_SIGNING_SECRET=${CLERK_WEBHOOK_SIGNING_SECRET}
-      - SURREALDB_URL=${SURREALDB_URL:-http://surrealdb:8000}
-      - SURREALDB_USER=${SURREALDB_USER:-root}
-      - SURREALDB_PASS=${SURREALDB_PASS:-root}
-      - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
-      - SURREALDB_DB=${SURREALDB_DB:-saas}
-    volumes:
-      # Bind mount source for hot reload
-      - ./backend/src:/app/backend/src
-      - ./shared/entity:/app/shared/entity
-      - ./shared/input:/app/shared/input
-      - ./shared/index.ts:/app/shared/index.ts
-      # Prevent overwriting container's node_modules
-      - /app/node_modules
-      - /app/backend/node_modules
-      - /app/shared/node_modules
-    networks:
-      - saas-network
-    depends_on:
-      surrealdb:
-        condition: service_started
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "bun", "run", "-e", "await fetch('http://localhost:3001/health')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    frontend:
+        container_name: saas-frontend
+        build:
+            context: .
+            dockerfile: web/Dockerfile
+        ports:
+            - "3000:3000"
+        environment:
+            - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY}}
+            - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+        volumes:
+            # Bind mount source for hot reload
+            - ./web/src:/app/web/src
+            - ./web/public:/app/web/public
+            - ./shared:/app/shared
+            # Prevent overwriting container's node_modules
+            - /app/node_modules
+            - /app/web/node_modules
+        networks:
+            - saas-network
+        depends_on:
+            backend:
+                condition: service_started
+        restart: unless-stopped
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "bun",
+                    "run",
+                    "-e",
+                    "await fetch('http://localhost:3000')",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 20s
+
+    backend:
+        container_name: saas-backend
+        build:
+            context: .
+            dockerfile: backend/Dockerfile
+        ports:
+            - "3001:3001"
+        environment:
+            - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+            - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+            - CLERK_WEBHOOK_SIGNING_SECRET=${CLERK_WEBHOOK_SIGNING_SECRET}
+            - SURREALDB_URL=${SURREALDB_URL:-http://surrealdb:8000}
+            - SURREALDB_USER=${SURREALDB_USER:-root}
+            - SURREALDB_PASS=${SURREALDB_PASS:-root}
+            - SURREALDB_NS=${SURREALDB_NS:-Aulirya}
+            - SURREALDB_DB=${SURREALDB_DB:-saas}
+        volumes:
+            # Bind mount source for hot reload
+            - ./backend/src:/app/backend/src
+            - ./shared/entity:/app/shared/entity
+            - ./shared/input:/app/shared/input
+            - ./shared/index.ts:/app/shared/index.ts
+            # Prevent overwriting container's node_modules
+            - /app/node_modules
+            - /app/backend/node_modules
+            - /app/shared/node_modules
+        networks:
+            - saas-network
+        depends_on:
+            surrealdb:
+                condition: service_started
+        restart: unless-stopped
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "bun",
+                    "run",
+                    "-e",
+                    "await fetch('http://localhost:3001/health')",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
 
 networks:
-  saas-network:
-    driver: bridge
+    saas-network:
+        driver: bridge
 
 volumes:
-  surrealdb-data:
-    driver: local
+    surrealdb-data:
+        driver: local
