@@ -13,6 +13,7 @@ import {
   listSubjects,
   patchSubject,
 } from "./subject";
+import { uploadFile, getLastFile } from "./file";
 
 export const router = base.router({
   todo: {
@@ -36,6 +37,10 @@ export const router = base.router({
     get: getLesson,
     create: createLesson,
     patch: patchLesson,
+  },
+  file: {
+    upload: uploadFile,
+    getLastFile: getLastFile,
   },
 });
 
