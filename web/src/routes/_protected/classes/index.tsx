@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { breakpoints } from "@/lib/media";
 
@@ -24,6 +24,15 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination";
 
 import {
     useSchoolClasses,
@@ -64,6 +73,8 @@ function ClassesPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [schoolFilter, setSchoolFilter] = useState<SchoolFilterValue>("all");
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(5); // Items per page
 
     // Fetch data from database
     const { data: classes = [], isLoading } = useSchoolClasses({
@@ -119,6 +130,19 @@ function ClassesPage() {
     const selectedClass = useMemo(() => {
         return classes.find((cls) => cls.id === selectedId);
     }, [classes, selectedId]);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(classes.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedClasses = useMemo(() => {
+        return classes.slice(startIndex, endIndex);
+    }, [classes, startIndex, endIndex]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [schoolFilter, levelFilter]);
 
     // Fetch full class data (with subjects and lessons) only when a class is selected
     // This avoids loading lessons for all classes, only fetching when needed
@@ -232,38 +256,145 @@ function ClassesPage() {
                 </div>
 
                 <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                    <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5 overflow-scroll pr-3">
-                        {isLoading ? (
-                            <SkeletonCard />
-                        ) : classes.length ? (
-                            classes.map((cls) => (
-                                <ClassCard
-                                    key={cls.id}
-                                    classData={cls}
-                                    isSelected={cls.id === selectedId}
-                                    onSelect={handleClassSelect}
-                                />
-                            ))
-                        ) : (
-                            <Card className="border-dashed">
-                                <CardHeader>
-                                    <CardTitle>Aucune classe trouvée</CardTitle>
-                                    <CardDescription>
-                                        Créez votre première classe pour
-                                        commencer à suivre vos élèves.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardFooter>
-                                    <Button
-                                        onClick={() =>
-                                            console.log("Create new class")
-                                        }
-                                    >
-                                        <Plus className="size-4" />
-                                        Nouvelle classe
-                                    </Button>
-                                </CardFooter>
-                            </Card>
+                    <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5 overflow-y-auto pr-3 flex flex-col">
+                        <div className="flex-1 space-y-5">
+                            {isLoading ? (
+                                <SkeletonCard />
+                            ) : paginatedClasses.length ? (
+                                paginatedClasses.map((cls) => (
+                                    <ClassCard
+                                        key={cls.id}
+                                        classData={cls}
+                                        isSelected={cls.id === selectedId}
+                                        onSelect={handleClassSelect}
+                                    />
+                                ))
+                            ) : (
+                                <Card className="border-dashed">
+                                    <CardHeader>
+                                        <CardTitle>
+                                            Aucune classe trouvée
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Créez votre première classe pour
+                                            commencer à suivre vos élèves.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardFooter>
+                                        <Button
+                                            onClick={() =>
+                                                console.log("Create new class")
+                                            }
+                                        >
+                                            <Plus className="size-4" />
+                                            Nouvelle classe
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            )}
+                        </div>
+                        {/* Pagination */}
+                        {!isLoading && classes.length > 0 && totalPages > 1 && (
+                            <div className="mt-6 flex justify-center">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                href="#"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (currentPage > 1) {
+                                                        setCurrentPage(
+                                                            currentPage - 1
+                                                        );
+                                                    }
+                                                }}
+                                                className={
+                                                    currentPage === 1
+                                                        ? "pointer-events-none opacity-50"
+                                                        : "cursor-pointer"
+                                                }
+                                            />
+                                        </PaginationItem>
+
+                                        {/* Page numbers */}
+                                        {Array.from(
+                                            { length: totalPages },
+                                            (_, i) => i + 1
+                                        )
+                                            .filter((page) => {
+                                                // Show first page, last page, current page, and pages around current
+                                                if (
+                                                    page === 1 ||
+                                                    page === totalPages ||
+                                                    (page >= currentPage - 1 &&
+                                                        page <= currentPage + 1)
+                                                ) {
+                                                    return true;
+                                                }
+                                                return false;
+                                            })
+                                            .map((page, index, array) => {
+                                                // Add ellipsis when there's a gap
+                                                const showEllipsisBefore =
+                                                    index > 0 &&
+                                                    array[index - 1] !==
+                                                        page - 1;
+
+                                                return (
+                                                    <React.Fragment key={page}>
+                                                        {showEllipsisBefore && (
+                                                            <PaginationItem>
+                                                                <PaginationEllipsis />
+                                                            </PaginationItem>
+                                                        )}
+                                                        <PaginationItem>
+                                                            <PaginationLink
+                                                                href="#"
+                                                                isActive={
+                                                                    currentPage ===
+                                                                    page
+                                                                }
+                                                                onClick={(
+                                                                    e
+                                                                ) => {
+                                                                    e.preventDefault();
+                                                                    setCurrentPage(
+                                                                        page
+                                                                    );
+                                                                }}
+                                                                className="cursor-pointer"
+                                                            >
+                                                                {page}
+                                                            </PaginationLink>
+                                                        </PaginationItem>
+                                                    </React.Fragment>
+                                                );
+                                            })}
+
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                href="#"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (
+                                                        currentPage < totalPages
+                                                    ) {
+                                                        setCurrentPage(
+                                                            currentPage + 1
+                                                        );
+                                                    }
+                                                }}
+                                                className={
+                                                    currentPage === totalPages
+                                                        ? "pointer-events-none opacity-50"
+                                                        : "cursor-pointer"
+                                                }
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
                         )}
                     </div>
                     {/* Desktop sidebar - hidden on mobile */}
