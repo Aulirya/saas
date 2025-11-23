@@ -1,25 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/orpc/client";
 
-import type { SchoolClassExtended } from "../types";
-import { demoClasses } from "./useSchoolClasses";
-
-export function useSchoolClass(classId: string | undefined) {
+// Not used for the moment, check later if need to remove
+export function useSchoolClass(classId: string) {
     return useQuery({
-        queryKey: ["school-class", classId],
-        enabled: Boolean(classId),
+        ...orpc.schoolClass.get.queryOptions({
+            input: { id: classId },
+        }),
         staleTime: 60_000,
-        queryFn: async (): Promise<SchoolClassExtended> => {
-            if (!classId) {
-                throw new Error("Identifiant de classe manquant");
-            }
+    });
+}
 
-            const classData = demoClasses.find((cls) => cls.id === classId);
-
-            if (!classData) {
-                throw new Error("Classe introuvable");
-            }
-
-            return classData;
-        },
+export function useSchoolClassWithSubjects(classId: string) {
+    return useQuery({
+        ...orpc.schoolClass.getWithSubjects.queryOptions({
+            input: { id: classId },
+        }),
+        staleTime: 60_000,
     });
 }

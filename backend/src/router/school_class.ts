@@ -7,7 +7,23 @@ import {
     school_class_create_input,
     school_class_patch_input,
     type SchoolClass,
+    type SchoolClassWithSubjectsAndLessons,
 } from "@saas/shared";
+import { SubjectModel, SubjectModelMapper } from "../repository/model/subjects";
+import { LessonMapper } from "../repository/mapper/lesson";
+import type { LessonModel } from "../repository/model/lessons";
+
+// Helper function to parse a class ID that might be full (classes:class_01) or partial (class_01)
+function parseClassId(id: string): RecordId {
+    // If the ID already contains a colon, it's a full record ID
+    if (id.includes(":")) {
+        // Parse it: split by colon and create RecordId
+        const [table, recordId] = id.split(":", 2);
+        return new RecordId(table, recordId);
+    }
+    // Otherwise, it's just the ID part
+    return new RecordId("classes", id);
+}
 
 // get all classes
 export const listSchoolClasses = base
@@ -87,13 +103,110 @@ export const getSchoolClass = base
     .input(z.object({ id: z.string() }))
     .handler(async ({ input, context }): Promise<SchoolClass> => {
         const userId = new RecordId("users", context.user_id);
-        const query = surql`SELECT * FROM classes WHERE user_id = ${userId} AND id = ${input.id}`;
+        const classId = parseClassId(input.id);
+        const query = surql`SELECT * FROM classes WHERE user_id = ${userId} AND id = ${classId}`;
+
         const classesModel = await context.db
             .query<[SchoolClassModel[]]>(query)
             .collect();
+
         const classes = classesModel[0].map(SchoolClassMapper.fromModel);
+
+        if (classes.length === 0) {
+            throw new Error("Class not found");
+        }
+
         return classes[0];
     });
+
+// get a class by id with its linked subjects and lessons
+export const getSchoolClassWithSubjects = base
+    .input(z.object({ id: z.string() }))
+    .handler(
+        async ({
+            input,
+            context,
+        }): Promise<SchoolClassWithSubjectsAndLessons> => {
+            const userId = new RecordId("users", context.user_id);
+            const classId = parseClassId(input.id);
+
+            const query = surql`
+              SELECT
+                *,
+                (
+                    SELECT 
+                        subject_id AS id, 
+                        subject_id.*,
+                        (
+                            SELECT *
+                            FROM lessons
+                            WHERE subject_id = $parent.subject_id
+                            ORDER BY start_at ASC
+                            LIMIT 1
+                        ) AS lessons
+                    FROM course_progress 
+                    WHERE class_id = $parent.id
+                ) AS subjects
+                FROM classes
+                WHERE
+                 user_id = ${userId} AND id = ${classId}
+            `;
+
+            const result = await context.db
+                .query<
+                    [
+                        Array<
+                            SchoolClassModel & {
+                                subjects?: Array<
+                                    SubjectModel & {
+                                        lessons?: LessonModel[];
+                                    }
+                                >;
+                            }
+                        >
+                    ]
+                >(query)
+                .collect();
+
+            const classData = result[0][0];
+            if (!classData) {
+                throw new Error("Class not found");
+            }
+
+            const schoolClass = SchoolClassMapper.fromModel(classData);
+
+            // Helper to extract hours_per_week from subject
+            const getSubjectHoursPerWeek = (
+                subject: SubjectModel & { subject_id?: SubjectModel }
+            ): number => {
+                const hours =
+                    (subject as SubjectModel & { subject_id?: SubjectModel })
+                        .subject_id?.hours_per_week ?? subject.hours_per_week;
+                return Number(hours) || 0;
+            };
+
+            // Map subjects with their lessons
+            const subjects =
+                classData.subjects?.map((subject) => ({
+                    ...SubjectModelMapper.fromModel(subject),
+                    lessons: subject.lessons?.map(LessonMapper.fromModel) ?? [],
+                })) ?? [];
+
+            // Calculate total weekly hours
+            const weeklyHours =
+                classData.subjects?.reduce(
+                    (acc, subject) => acc + getSubjectHoursPerWeek(subject),
+                    0
+                ) ?? 0;
+
+            return {
+                ...schoolClass,
+                subjects,
+                subjects_count: classData.subjects?.length ?? 0,
+                weekly_hours: weeklyHours,
+            };
+        }
+    );
 
 export const createSchoolClass = base
     .input(school_class_create_input)

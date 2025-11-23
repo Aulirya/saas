@@ -3,6 +3,7 @@ import { addTodo, listTodos } from "./todos";
 import {
     createSchoolClass,
     getSchoolClass,
+    getSchoolClassWithSubjects,
     listLevels,
     listSchoolClasses,
     listSchools,
@@ -26,6 +27,7 @@ export const router = base.router({
         listSchools: listSchools,
         listLevels: listLevels,
         get: getSchoolClass,
+        getWithSubjects: getSchoolClassWithSubjects,
         patch: patchSchoolClass,
         create: createSchoolClass,
     },
