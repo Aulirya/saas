@@ -81,7 +81,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                         <div className="flex">
                             <Sidebar />
                             <main
-                                className={`px-4 lg:p-6 pb-6 pt-16 max-h-[calc(100vh-4rem)] flex flex-col gap-4  grow transition-all duration-300 ease-in-out overflow-scroll `}
+                                className={`px-4 lg:p-6 pb-6 pt-16 max-h-[calc(100vh-4rem)] flex flex-col gap-4  grow transition-all duration-300 ease-in-out overflow-scroll max-w-screen-2xl mx-auto `}
                             >
                                 {children}
                             </main>

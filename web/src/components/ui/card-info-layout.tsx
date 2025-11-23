@@ -2,6 +2,7 @@ import * as React from "react";
 import {
     Card,
     CardContent,
+    CardDescription,
     CardFooter,
     CardHeader,
     CardTitle,
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 interface CardInfoLayoutProps {
     title: React.ReactNode;
+    description?: React.ReactNode;
     children: React.ReactNode;
     footer?: React.ReactNode;
     className?: string;
@@ -20,6 +22,7 @@ interface CardInfoLayoutProps {
 
 export function CardInfoLayout({
     title,
+    description,
     children,
     footer,
     className,
@@ -33,6 +36,7 @@ export function CardInfoLayout({
                 <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                         <CardTitle>{title}</CardTitle>
+                        <CardDescription>{description}</CardDescription>
                     </div>
                 </div>
             </CardHeader>

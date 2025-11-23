@@ -11,11 +11,15 @@ export function useSchoolClass(classId: string) {
     });
 }
 
-export function useSchoolClassWithSubjects(classId: string) {
+export function useSchoolClassWithSubjects(
+    classId: string,
+    options?: { enabled?: boolean }
+) {
     return useQuery({
         ...orpc.schoolClass.getWithSubjects.queryOptions({
             input: { id: classId },
         }),
         staleTime: 60_000,
+        enabled: options?.enabled !== false && !!classId,
     });
 }

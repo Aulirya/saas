@@ -2,7 +2,10 @@ import type { LucideIcon } from "lucide-react";
 
 export type ClassStatus = "active" | "paused";
 
-export type ClassColorTheme = "blue" | "green" | "orange";
+export type ClassColorTheme = {
+    bg: string;
+    text: string;
+};
 
 export type Subject = {
     id: string;
@@ -55,4 +58,14 @@ export type SchoolClassExtended = {
         percentage: number;
         color: string;
     }>;
+};
+
+export type SchoolClass = {
+    id: string;
+    name: string;
+    level: string;
+    school: string;
+    students_count: number;
+    // year: string;
+    // statusLabel: string;
 };

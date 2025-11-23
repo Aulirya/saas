@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMediaQuery } from "usehooks-ts";
+import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as ClassDetailRoute } from "./$classId";
-import { Download, Plus, Search, UserPlus, Eye } from "lucide-react";
+import { Plus, Eye, GraduationCap } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
     Card,
     CardAction,
-    CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
@@ -22,135 +23,109 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
-import { SummaryStat } from "@/components/ui/summary-stat";
+
 import {
     useSchoolClasses,
-    type SchoolClassesFilters,
+    useSchools,
+    useClassesLevels,
 } from "@/features/classes/api/useSchoolClasses";
+import { useSchoolClassWithSubjects } from "@/features/classes/api/useSchoolClass";
+import { SkeletonCard } from "@/components/ui/skeleton";
 import { CreateClassModal } from "@/features/classes/components/CreateClassModal";
-import type { SchoolClassExtended } from "@/features/classes/types";
+import type { SchoolClass } from "@/features/classes/types";
 import { cn } from "@/lib/utils";
+import { CardInfoLayout } from "@/components/ui/card-info-layout";
+import { ViewDetailButton } from "@/components/ui/view-detail-button";
+import { FormSheet } from "@/components/ui/form-sheet";
+import { SchoolClassWithSubjectsAndLessons } from "@saas/shared";
+import { formatLessonDateTime } from "@/lib/date";
+import type { LessonWithSubject } from "@/types/class.types";
 
-const colorThemeToClasses: Record<
-    "blue" | "green" | "orange",
-    {
-        bg: string;
-        text: string;
-        border: string;
-        button: string;
-        progress: string;
-    }
-> = {
-    blue: {
-        bg: "bg-blue-50",
-        text: "text-blue-600",
-        border: "border-blue-200",
-        button: "bg-blue-600 hover:bg-blue-700",
-        progress: "bg-blue-600",
-    },
-    green: {
-        bg: "bg-green-50",
-        text: "text-green-600",
-        border: "border-green-200",
-        button: "bg-green-600 hover:bg-green-700",
-        progress: "bg-green-600",
-    },
-    orange: {
-        bg: "bg-orange-50",
-        text: "text-orange-600",
-        border: "border-orange-200",
-        button: "bg-orange-600 hover:bg-orange-700",
-        progress: "bg-orange-600",
-    },
-};
-
-const numberFormatter = new Intl.NumberFormat("fr-FR");
-
-const SCHOOL_FILTER_OPTIONS = [
-    { value: "all", label: "Toutes les écoles" },
-    { value: "Lycée Jean Moulin", label: "Lycée Jean Moulin" },
-    { value: "Collège Saint-Exupéry", label: "Collège Saint-Exupéry" },
-] as const;
-
-const LEVEL_FILTER_OPTIONS = [
-    { value: "all", label: "Tous les niveaux" },
-    { value: "Terminale", label: "Terminale" },
-    { value: "Première", label: "Première" },
-    { value: "Seconde", label: "Seconde" },
-] as const;
-
-type SchoolFilterValue = (typeof SCHOOL_FILTER_OPTIONS)[number]["value"];
-type LevelFilterValue = (typeof LEVEL_FILTER_OPTIONS)[number]["value"];
+type SchoolFilterValue = string;
+type LevelFilterValue = string;
 
 export const Route = createFileRoute("/_protected/classes/")({
     component: ClassesPage,
+    // A voir sur tanstack router
+    // loader: async ({ context }) => {
+    //     const schools = await orpc.schoolClass.listSchools.call({});
+    //     const levels = await orpc.schoolClass.listLevels.call({});
+    //     return { schools, levels };
+    // },
 });
 
 function ClassesPage() {
+    // const isMobile = false;
+    const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
+
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const [schoolFilter, setSchoolFilter] = useState<SchoolFilterValue>("all");
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
 
-    const queryFilters = useMemo<SchoolClassesFilters>(
-        () => ({
-            school: schoolFilter !== "all" ? schoolFilter : null,
-            level: levelFilter !== "all" ? levelFilter : null,
-        }),
-        [schoolFilter, levelFilter]
-    );
+    // Fetch data from database
+    const { data: classes = [], isLoading } = useSchoolClasses({
+        school: schoolFilter !== "all" ? schoolFilter : undefined,
+        level: levelFilter !== "all" ? levelFilter : undefined,
+    });
 
-    const { data: classes = [], isLoading } = useSchoolClasses(queryFilters);
+    console.log("classes: ", classes);
 
+    // WORK ON view pre-loading
+    const { data: schools = [], isLoading: isLoadingSchools } = useSchools();
+    const { data: levels = [], isLoading: isLoadingLevels } =
+        useClassesLevels();
+
+    // ----- FILTER OPTIONS -----
+    const schoolFilterOptions = useMemo(() => {
+        return [
+            { value: "all", label: "Toutes les écoles" },
+            ...schools.map((school) => ({
+                value: school,
+                label: school,
+            })),
+        ];
+    }, [schools]);
+
+    const levelFilterOptions = useMemo(() => {
+        return [
+            { value: "all", label: "Tous les niveaux" },
+            ...levels.map((level) => ({
+                value: level,
+                label: level,
+            })),
+        ];
+    }, [levels]);
+
+    // If desktop and no selection, select the first program
+    if (!isMobile && !selectedId && classes.length > 0) {
+        setSelectedId(classes[0].id);
+    }
+
+    // If mobile and modal is closed, reset the selection
+    if (isMobile && !isModalOpen && selectedId) {
+        setSelectedId(null);
+    }
+
+    // If desktop and modal is open, close it
     useEffect(() => {
-        // Check if screen is below lg breakpoint (1024px)
-        const checkMobile = () => {
-            const mobile = window.innerWidth < 1024;
-            setIsMobile(mobile);
-            // Close modal when resizing to desktop
-            if (!mobile && isModalOpen) {
-                setIsModalOpen(false);
-            }
-            if (mobile && !isModalOpen) {
-                setSelectedId(null);
-            }
-        };
-        checkMobile();
-        window.addEventListener("resize", checkMobile);
-        return () => window.removeEventListener("resize", checkMobile);
-    }, [isModalOpen]);
-
-    useEffect(() => {
-        if (!classes.length) {
-            setSelectedId(null);
-            return;
+        if (!isMobile) {
+            setIsModalOpen(false);
         }
-
-        if (isMobile) {
-            if (selectedId && !classes.some((cls) => cls.id === selectedId)) {
-                setSelectedId(null);
-            }
-            return;
-        }
-
-        if (!selectedId || !classes.some((cls) => cls.id === selectedId)) {
-            setSelectedId(classes[0]?.id || null);
-        }
-    }, [classes, selectedId, isMobile]);
+    }, [isMobile]);
 
     const selectedClass = useMemo(() => {
         return classes.find((cls) => cls.id === selectedId);
     }, [classes, selectedId]);
+
+    // Fetch full class data (with subjects and lessons) only when a class is selected
+    // This avoids loading lessons for all classes, only fetching when needed
+    const { data: selectedClassWithDetails, isLoading: isLoadingClassDetails } =
+        useSchoolClassWithSubjects(selectedId ?? "", {
+            enabled: !!selectedId, // Only fetch if a class is selected
+        });
 
     const handleClassSelect = (id: string) => {
         setSelectedId(id);
@@ -161,140 +136,170 @@ function ClassesPage() {
     };
 
     return (
-        <div className="space-y-6 lg:space-y-6">
-            <PageHeader
-                title="Mes classes"
-                primaryAction={{
-                    label: "Nouvelle classe",
-                    icon: Plus,
-                    onClick: () => {
-                        setIsCreateModalOpen(true);
-                    },
-                }}
-            />
+        <>
+            <div id="main" className="h-full flex flex-col">
+                <div className="space-y-6 lg:space-y-6 ">
+                    <PageHeader
+                        title="Mes classes"
+                        primaryAction={{
+                            label: "Nouvelle classe",
+                            icon: Plus,
+                            onClick: () => {
+                                setIsCreateModalOpen(true);
+                            },
+                        }}
+                    />
 
-            <section className="mb-6">
-                <div className="flex flex-row gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="class-school-filter">École</Label>
-                        <Select
-                            value={schoolFilter}
-                            onValueChange={(value) =>
-                                setSchoolFilter(value as SchoolFilterValue)
-                            }
-                        >
-                            <SelectTrigger id="class-school-filter">
-                                <SelectValue placeholder="Toutes les écoles" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {SCHOOL_FILTER_OPTIONS.map((option) => (
-                                    <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                    >
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="class-level-filter">Niveau</Label>
-                        <Select
-                            value={levelFilter}
-                            onValueChange={(value) =>
-                                setLevelFilter(value as LevelFilterValue)
-                            }
-                        >
-                            <SelectTrigger id="class-level-filter">
-                                <SelectValue placeholder="Tous les niveaux" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {LEVEL_FILTER_OPTIONS.map((option) => (
-                                    <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                    >
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            </section>
-
-            <div className="grid grid-cols-7 gap-6">
-                <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5">
-                    {isLoading ? (
-                        <Card className="animate-pulse border-dashed">
-                            <CardHeader>
-                                <CardTitle className="h-6 w-40 rounded bg-muted" />
-                                <CardDescription className="h-4 w-64 rounded bg-muted" />
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="h-3 w-full rounded-full bg-muted" />
-                                <div className="h-3 w-3/5 rounded-full bg-muted" />
-                                <div className="h-3 w-2/5 rounded-full bg-muted" />
-                            </CardContent>
-                        </Card>
-                    ) : classes.length ? (
-                        classes.map((cls) => (
-                            <ClassCard
-                                key={cls.id}
-                                classData={cls}
-                                isSelected={cls.id === selectedId}
-                                onSelect={handleClassSelect}
-                            />
-                        ))
-                    ) : (
-                        <Card className="border-dashed">
-                            <CardHeader>
-                                <CardTitle>Aucune classe trouvée</CardTitle>
-                                <CardDescription>
-                                    Créez votre première classe pour commencer à
-                                    suivre vos élèves.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardFooter>
-                                <Button
-                                    onClick={() =>
-                                        console.log("Create new class")
+                    <section className="mb-6 ">
+                        <div className="flex flex-row gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="class-school-filter">
+                                    École
+                                </Label>
+                                <Select
+                                    value={schoolFilter}
+                                    onValueChange={(value: string) =>
+                                        setSchoolFilter(
+                                            value as SchoolFilterValue
+                                        )
                                     }
                                 >
-                                    <Plus className="size-4" />
-                                    Nouvelle classe
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    )}
+                                    <SelectTrigger id="class-school-filter">
+                                        <SelectValue placeholder="Toutes les écoles" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {isLoadingSchools ? (
+                                            <SelectItem
+                                                value="loading"
+                                                disabled
+                                            >
+                                                Chargement...
+                                            </SelectItem>
+                                        ) : (
+                                            schoolFilterOptions.map(
+                                                (option) => (
+                                                    <SelectItem
+                                                        key={option.value}
+                                                        value={option.value}
+                                                    >
+                                                        {option.label}
+                                                    </SelectItem>
+                                                )
+                                            )
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="class-level-filter">
+                                    Niveau
+                                </Label>
+                                <Select
+                                    value={levelFilter}
+                                    onValueChange={(value) =>
+                                        setLevelFilter(
+                                            value as LevelFilterValue
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="class-level-filter">
+                                        <SelectValue placeholder="Tous les niveaux" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {isLoadingLevels ? (
+                                            <SelectItem
+                                                value="loading"
+                                                disabled
+                                            >
+                                                Chargement...
+                                            </SelectItem>
+                                        ) : (
+                                            levelFilterOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                >
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </section>
                 </div>
 
-                {/* Desktop sidebar - hidden on mobile */}
-                <div className="space-y-4 hidden lg:block lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28">
-                    <ClassSummarySidebar classData={selectedClass} />
+                <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
+                    <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5 overflow-scroll pr-3">
+                        {isLoading ? (
+                            <SkeletonCard />
+                        ) : classes.length ? (
+                            classes.map((cls) => (
+                                <ClassCard
+                                    key={cls.id}
+                                    classData={cls}
+                                    isSelected={cls.id === selectedId}
+                                    onSelect={handleClassSelect}
+                                />
+                            ))
+                        ) : (
+                            <Card className="border-dashed">
+                                <CardHeader>
+                                    <CardTitle>Aucune classe trouvée</CardTitle>
+                                    <CardDescription>
+                                        Créez votre première classe pour
+                                        commencer à suivre vos élèves.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardFooter>
+                                    <Button
+                                        onClick={() =>
+                                            console.log("Create new class")
+                                        }
+                                    >
+                                        <Plus className="size-4" />
+                                        Nouvelle classe
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        )}
+                    </div>
+                    {/* Desktop sidebar - hidden on mobile */}
+                    <div
+                        className="space-y-4 hidden lg:block lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
+                        style={{ top: "auto" }}
+                    >
+                        <ClassSummarySidebar
+                            classData={
+                                selectedClassWithDetails ?? selectedClass
+                            }
+                            isLoading={isLoadingClassDetails}
+                        />
+                    </div>
                 </div>
+
+                {/* Mobile modal - only visible on screens < lg */}
+                <ClassSummaryModal
+                    open={isModalOpen}
+                    onOpenChange={(isOpen) => {
+                        setIsModalOpen(isOpen);
+                        if (!isOpen && isMobile) {
+                            setSelectedId(null);
+                        }
+                    }}
+                    classData={selectedClassWithDetails ?? selectedClass}
+                    isLoading={isLoadingClassDetails}
+                />
+
+                {/* Create Class Modal */}
+                <CreateClassModal
+                    open={isCreateModalOpen}
+                    onOpenChange={setIsCreateModalOpen}
+                />
             </div>
-
-            {/* Mobile modal - only visible on screens < lg */}
-            <ClassSummaryModal
-                open={isModalOpen}
-                onOpenChange={(isOpen) => {
-                    setIsModalOpen(isOpen);
-                    if (!isOpen && isMobile) {
-                        setSelectedId(null);
-                    }
-                }}
-                classData={selectedClass}
-            />
-
-            {/* Create Class Modal */}
-            <CreateClassModal
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-            />
-        </div>
+        </>
     );
 }
 
@@ -303,12 +308,11 @@ function ClassCard({
     isSelected,
     onSelect,
 }: {
-    classData: SchoolClassExtended;
+    classData: SchoolClass;
     isSelected: boolean;
     onSelect: (id: string) => void;
 }) {
-    const Icon = classData.icon;
-    const colorTheme = colorThemeToClasses[classData.colorTheme];
+    // const colorTheme = classData.colorTheme;
 
     return (
         <Card
@@ -332,21 +336,19 @@ function ClassCard({
                 <div className="flex items-start gap-4">
                     <div
                         className={cn(
-                            "flex size-12 items-center justify-center rounded-xl",
-                            colorTheme.bg,
-                            colorTheme.text
+                            "flex size-12 items-center justify-center rounded-xl"
+                            // colorTheme?.bg,
+                            // colorTheme?.text
                         )}
                     >
-                        <Icon className="size-6" aria-hidden />
+                        <GraduationCap className="size-6" aria-hidden />
                     </div>
                     <div className="space-y-1">
-                        <CardTitle className="text-xl sm:text-2xl">
-                            {classData.name}
-                        </CardTitle>
+                        <CardTitle className="">{classData.name}</CardTitle>
                         <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
                             <span>{classData.school}</span>
                             <span className="text-muted-foreground">•</span>
-                            <span>Année {classData.year}</span>
+                            <span>Année "to be defined"</span>
                         </CardDescription>
                     </div>
                 </div>
@@ -354,10 +356,7 @@ function ClassCard({
                 <CardAction>
                     <Button
                         asChild
-                        className={cn(
-                            "shrink-0",
-                            colorThemeToClasses[classData.colorTheme].button
-                        )}
+                        className="shrink-0 bg-primary hover:bg-primary/90"
                         aria-label="Voir la classe"
                     >
                         <Link
@@ -373,46 +372,18 @@ function ClassCard({
     );
 }
 
-function ClassMetric({
-    label,
-    value,
-    color,
-}: {
-    label: string;
-    value: string;
-    color?: "blue" | "green" | "orange" | "purple";
-}) {
-    return (
-        <div className="rounded-lg transition-colors">
-            <p
-                className={cn(
-                    "mt-2 text-xl font-bold text-center",
-                    color === "blue" && "text-blue-500",
-                    color === "green" && "text-green-500",
-                    color === "orange" && "text-orange-500",
-                    color === "purple" && "text-purple-500",
-                    !color && "text-primary"
-                )}
-            >
-                {value}
-            </p>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-center">
-                {label}
-            </p>
-        </div>
-    );
-}
-
 function ClassSummarySidebar({
     classData,
+    isLoading = false,
 }: {
-    classData: SchoolClassExtended | undefined;
+    classData: SchoolClassWithSubjectsAndLessons | SchoolClass | undefined;
+    isLoading?: boolean;
 }) {
     if (!classData) {
         return (
             <Card className="border-dashed">
                 <CardHeader>
-                    <CardTitle>Résumé sélectionné</CardTitle>
+                    <CardTitle>Sélectionnez une classe</CardTitle>
                     <CardDescription>
                         Sélectionnez une classe pour afficher son résumé et ses
                         statistiques.
@@ -423,107 +394,18 @@ function ClassSummarySidebar({
     }
 
     return (
-        <div className="space-y-4">
-            {/* New Class Button */}
-
-            {/* Summary Card */}
-            <Card>
-                <CardHeader className="space-y-3 border-b">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-1">
-                            <CardTitle>Résumé sélectionné</CardTitle>
-                            <CardDescription>
-                                {classData.name} - {classData.school}
-                            </CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-6 pt-6">
-                    {/* Subject Distribution */}
-                    <section>
-                        <p className="font-medium pb-3">
-                            Répartition par matière
-                        </p>
-                        <div className="space-y-3">
-                            {classData.subjectDistribution.map((dist) => (
-                                <div key={dist.subject} className="space-y-1">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="font-medium">
-                                            {dist.subject}
-                                        </span>
-                                        <span className="text-muted-foreground">
-                                            {dist.hoursPerWeek}h/sem
-                                        </span>
-                                    </div>
-                                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
-                                        <div
-                                            className={cn(
-                                                "h-full transition-all",
-                                                dist.color === "blue" &&
-                                                    "bg-blue-600",
-                                                dist.color === "green" &&
-                                                    "bg-green-600",
-                                                dist.color === "purple" &&
-                                                    "bg-purple-600",
-                                                dist.color === "orange" &&
-                                                    "bg-orange-600"
-                                            )}
-                                            style={{
-                                                transform: `translateX(-${
-                                                    100 - dist.percentage
-                                                }%)`,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    {/* Upcoming Courses */}
-                    {classData.upcomingCourses.length > 0 && (
-                        <section className="space-y-3">
-                            <p className="font-medium">Prochains cours</p>
-                            <div className="space-y-2">
-                                {classData.upcomingCourses.map((course) => (
-                                    <div
-                                        key={course.id}
-                                        className="flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm"
-                                    >
-                                        <span
-                                            className={cn(
-                                                "font-medium",
-                                                course.color === "blue" &&
-                                                    "text-blue-600",
-                                                course.color === "green" &&
-                                                    "text-green-600",
-                                                course.color === "purple" &&
-                                                    "text-purple-600"
-                                            )}
-                                        >
-                                            {course.subject} - {course.title}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {course.date} {course.time}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </CardContent>
-                <CardFooter>
-                    <Button variant="outline" className="w-full" asChild>
-                        <Link
-                            to={ClassDetailRoute.to}
-                            params={{ classId: classData.id }}
-                        >
-                            Voir la fiche détaillée
-                        </Link>
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
+        <CardInfoLayout
+            title={`${classData.name}`}
+            description={`${classData.school} - ${classData.level}`}
+            footer={
+                <ViewDetailButton
+                    to={ClassDetailRoute.to}
+                    params={{ classId: classData.id }}
+                />
+            }
+        >
+            <ClassSummaryContent classData={classData} isLoading={isLoading} />
+        </CardInfoLayout>
     );
 }
 
@@ -531,33 +413,48 @@ function ClassSummaryModal({
     open,
     onOpenChange,
     classData,
+    isLoading = false,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    classData: SchoolClassExtended | undefined;
+    classData: SchoolClassWithSubjectsAndLessons | SchoolClass | undefined;
+    isLoading?: boolean;
 }) {
     return (
-        <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="right" className="overflow-y-auto">
-                <SheetHeader>
-                    <SheetTitle>
-                        {classData
-                            ? `${classData.name} - ${classData.school}`
-                            : "Résumé de la classe"}
-                    </SheetTitle>
-                </SheetHeader>
-                <div className="mt-6">
-                    <ClassSummaryContent classData={classData} />
-                </div>
-            </SheetContent>
-        </Sheet>
+        <FormSheet
+            open={open}
+            onOpenChange={onOpenChange}
+            title={
+                classData
+                    ? `${classData.name} - ${classData.school}`
+                    : "Résumé de la classe"
+            }
+            children={
+                <>
+                    <ClassSummaryContent
+                        classData={classData}
+                        isLoading={isLoading}
+                    />
+                </>
+            }
+            footer={
+                classData && (
+                    <ViewDetailButton
+                        to={ClassDetailRoute.to}
+                        params={{ classId: classData.id }}
+                    />
+                )
+            }
+        ></FormSheet>
     );
 }
 
 function ClassSummaryContent({
     classData,
+    isLoading = false,
 }: {
-    classData: SchoolClassExtended | undefined;
+    classData: SchoolClassWithSubjectsAndLessons | SchoolClass | undefined;
+    isLoading?: boolean;
 }) {
     if (!classData) {
         return (
@@ -570,151 +467,93 @@ function ClassSummaryContent({
         );
     }
 
-    const numberFormatter = new Intl.NumberFormat("fr-FR");
+    // Extract upcoming lessons if the class has subjects with lessons
+    const upcomingLessons = useMemo(() => {
+        // Check if classData has subjects (it's SchoolClassWithSubjectsAndLessons)
+        if (
+            "subjects" in classData &&
+            Array.isArray(classData.subjects) &&
+            classData.subjects.length > 0
+        ) {
+            const lessons = (
+                classData.subjects as Array<{
+                    name: string;
+                    lessons?: Array<{
+                        id: string;
+                        label: string;
+                        start_at?: string | null;
+                        end_at?: string | null;
+                    }>;
+                }>
+            )
+                .flatMap((subject) => {
+                    const subjectLessons = subject.lessons || [];
+                    return subjectLessons.map((lesson) => ({
+                        ...lesson,
+                        subject_name: subject.name,
+                        // Convert null to undefined for type compatibility
+                        start_at: lesson.start_at ?? undefined,
+                        end_at: lesson.end_at ?? undefined,
+                    }));
+                })
+                // Filter to get upcoming lessons (optional - remove if you want all lessons)
+                // .filter((lesson) => {
+                //     if (!lesson.start_at) return false;
+                //     return new Date(lesson.start_at) >= now;
+                // })
+                .sort((a, b) => {
+                    const dateA = new Date(a.start_at || "").getTime();
+                    const dateB = new Date(b.start_at || "").getTime();
+                    return dateA - dateB;
+                })
+                .slice(0, 3); // Show only the next 3 lessons
+
+            return lessons as LessonWithSubject[];
+        }
+        return [];
+    }, [classData]);
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Subject Distribution */}
+            {/* Upcoming Lessons */}
             <section>
-                <p className="font-medium pb-3">Répartition par matière</p>
-                <div className="space-y-3">
-                    {classData.subjectDistribution.map((dist) => (
-                        <div key={dist.subject} className="space-y-1">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">
-                                    {dist.subject}
-                                </span>
-                                <span className="text-muted-foreground">
-                                    {dist.hoursPerWeek}h/sem
-                                </span>
-                            </div>
-                            <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary">
-                                <div
-                                    className={cn(
-                                        "h-full transition-all",
-                                        dist.color === "blue" && "bg-blue-600",
-                                        dist.color === "green" &&
-                                            "bg-green-600",
-                                        dist.color === "purple" &&
-                                            "bg-purple-600",
-                                        dist.color === "orange" &&
-                                            "bg-orange-600"
-                                    )}
-                                    style={{
-                                        transform: `translateX(-${
-                                            100 - dist.percentage
-                                        }%)`,
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Upcoming Courses */}
-            {classData.upcomingCourses.length > 0 && (
-                <section className="space-y-3">
-                    <p className="font-medium">Prochains cours</p>
+                <p className="font-medium pb-3">Prochaines leçons</p>
+                {isLoading ? (
                     <div className="space-y-2">
-                        {classData.upcomingCourses.map((course) => (
-                            <div
-                                key={course.id}
-                                className="flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm"
-                            >
-                                <span
-                                    className={cn(
-                                        "font-medium",
-                                        course.color === "blue" &&
-                                            "text-blue-600",
-                                        course.color === "green" &&
-                                            "text-green-600",
-                                        course.color === "purple" &&
-                                            "text-purple-600"
-                                    )}
+                        <div className="h-16 rounded-lg border border-border/60 bg-muted/20 animate-pulse" />
+                        <div className="h-16 rounded-lg border border-border/60 bg-muted/20 animate-pulse" />
+                    </div>
+                ) : upcomingLessons.length > 0 ? (
+                    <div className="space-y-2">
+                        {upcomingLessons.map((lesson) => {
+                            const { dateStr, timeStr } = formatLessonDateTime(
+                                lesson.start_at,
+                                lesson.end_at
+                            );
+
+                            return (
+                                <div
+                                    key={lesson.id}
+                                    className="flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm"
                                 >
-                                    {course.subject} - {course.title}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                    {course.date} {course.time}
-                                </span>
-                            </div>
-                        ))}
+                                    <span className="font-semibold text-foreground">
+                                        {lesson.subject_name} — {lesson.label}
+                                    </span>
+                                    {dateStr && (
+                                        <span className="text-xs text-muted-foreground">
+                                            {dateStr}
+                                            {timeStr && ` • ${timeStr}`}
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
-                </section>
-            )}
-
-            {/* Statistics */}
-            <section className="space-y-3">
-                <p className="font-medium">Statistiques</p>
-                <div className="flex flex-col gap-3">
-                    <SummaryStat
-                        label="Présence moyenne"
-                        value={`${classData.statistics.averageAttendance}%`}
-                    />
-                    <SummaryStat
-                        label="Devoirs rendus"
-                        value={`${classData.statistics.homeworkSubmitted}%`}
-                    />
-                    <SummaryStat
-                        label="Évaluations"
-                        value={numberFormatter.format(
-                            classData.statistics.evaluations
-                        )}
-                    />
-                </div>
-            </section>
-
-            {/* Class Analysis */}
-            {classData.analyses.length > 0 && (
-                <section className="space-y-3">
-                    <p className="font-medium">Analyses de classe</p>
-                    <div className="flex flex-col gap-2">
-                        {classData.analyses.map((analysis, index) => (
-                            <div
-                                key={index}
-                                className={cn(
-                                    "rounded-lg border px-4 py-3 text-sm",
-                                    analysis.type === "success" &&
-                                        "bg-emerald-50 border-emerald-200 text-emerald-700",
-                                    analysis.type === "warning" &&
-                                        "bg-amber-50 border-amber-200 text-amber-700"
-                                )}
-                            >
-                                {analysis.message}
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Quick Actions */}
-            <section className="space-y-3">
-                <p className="font-medium">Actions rapides</p>
-                <div className="flex flex-col gap-2">
-                    <button
-                        className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
-                        onClick={() => console.log("Add student")}
-                    >
-                        <UserPlus className="size-4" />
-                        Ajouter élève
-                    </button>
-                    <button
-                        className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
-                        onClick={() => console.log("Export list")}
-                    >
-                        <Download className="size-4" />
-                        Exporter liste
-                    </button>
-                    <Link
-                        to={ClassDetailRoute.to}
-                        params={{ classId: classData.id }}
-                        className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
-                    >
-                        <Eye className="size-4" />
-                        Voir la fiche détaillée
-                    </Link>
-                </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        Aucune leçon planifiée prochainement
+                    </p>
+                )}
             </section>
         </div>
     );
