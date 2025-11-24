@@ -1,78 +1,84 @@
-import { orpc } from "@/orpc/client";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import {
+  Dropzone,
+  DropzoneContent,
+  DropzoneEmptyState,
+} from "@/components/ui/shadcn-io/dropzone";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useState } from "react";
+import { client } from "@/orpc/client";
 
 export const Route = createFileRoute("/_protected/todos")({
   component: Todos,
 });
 
 function Todos() {
-  const { data, refetch } = useQuery(
-    orpc.todo.list.queryOptions({
-      input: {},
-    }),
-  );
+  const [files, setFiles] = useState<File[] | undefined>();
 
-  const [todo, setTodo] = useState("");
-  const { mutate: addTodo } = useMutation({
-    mutationFn: orpc.todo.add.call,
-    onSuccess: () => {
-      refetch();
-      setTodo("");
-    },
-  });
+  const handleDrop = (files: File[]) => {
+    console.log(files);
+    setFiles(files);
+  };
 
-  const submitTodo = useCallback(() => {
-    addTodo({ name: todo });
-  }, [addTodo, todo]);
+  const handleSubmit = async () => {
+    if (!files || files.length === 0) {
+      console.error("No file selected");
+      return;
+    }
+
+    try {
+      const file = files[0];
+      const result = await client.file.upload(file);
+      console.log("Upload successful:", result);
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const result = await client.file.getLastFile();
+      console.log("Retrieved file:", result.filename);
+
+      // Convert base64 to blob
+      const byteCharacters = atob(result.content);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "application/pdf" });
+
+      // Display PDF in browser
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+
+      // Clean up the URL after a delay to allow the browser to load it
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Failed to download file. Make sure you have uploaded a file first.");
+    }
+  };
 
   return (
-    <div
-      className="flex items-center justify-center min-h-screen bg-linear-to-br from-purple-100 to-blue-100 p-4 text-white"
-      style={{
-        backgroundImage:
-          "radial-gradient(50% 50% at 50% 50%, #D2149D 0%, #8E1066 50%, #2D0A1F 100%)",
-      }}
-    >
-      <div className="w-full max-w-2xl p-8 rounded-xl backdrop-blur-md bg-black/50 shadow-xl border-8 border-black/10">
-        <h1 className="text-2xl mb-4">oRPC Todos list</h1>
-        <p className="text-gray-400">
-          This example shows how to use oRPC with TanStack Query.
-        </p>
-        <ul className="mb-4 space-y-2">
-          {data?.map((t) => (
-            <li
-              key={t.id}
-              className="bg-white/10 border border-white/20 rounded-lg p-3 backdrop-blur-sm shadow-md"
-            >
-              <span className="text-lg text-white">{t.name}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex flex-col gap-2">
-          <input
-            type="text"
-            value={todo}
-            onChange={(e) => setTodo(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                submitTodo();
-              }
-            }}
-            placeholder="Enter a new todo..."
-            className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-          />
-          <button
-            type="submit"
-            disabled={todo.trim().length === 0}
-            onClick={submitTodo}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
-          >
-            Add todo
-          </button>
-        </div>
-      </div>
+    <div>
+      <p>testing zone for Vincent</p>
+      <Dropzone
+        maxSize={1024 * 1024 * 100}
+        onDrop={handleDrop}
+        onError={console.error}
+        src={files}
+      >
+        <DropzoneEmptyState />
+        <DropzoneContent />
+      </Dropzone>
+      <Button type="button" onClick={handleSubmit}>
+        Submit
+      </Button>
+      <Button type="button" onClick={handleDownload}>
+        View Last Uploaded File
+      </Button>
     </div>
   );
 }
