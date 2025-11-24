@@ -1,14 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { createFileRoute } from "@tanstack/react-router";
-import {
-    AlertCircle,
-    BookOpen,
-    Download,
-    Edit,
-    UserPlus,
-    BookPlus,
-} from "lucide-react";
+import { AlertCircle, BookOpen, Download, Edit } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -26,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { formatLessonDateTime } from "@/lib/date";
 
 import { useSchoolClassWithSubjects } from "@/features/classes/api/useSchoolClass";
+import { CreateClassModal } from "@/features/classes/components/CreateClassModal";
 import type {
     SubjectWithLessons,
     LessonWithSubject,
@@ -40,6 +34,7 @@ export const Route = createFileRoute("/_protected/classes/$classId")({
 function ClassDetailPage() {
     const { classId } = Route.useParams();
     const navigate = Route.useNavigate();
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const {
         data: classData,
@@ -142,22 +137,10 @@ function ClassDetailPage() {
                     {
                         label: "Modifier",
                         icon: Edit,
-                        disabled: true,
                         variant: "outline",
-                        onClick: () => console.log("Edit class"),
+                        onClick: () => setIsEditModalOpen(true),
                     },
-                    {
-                        label: "Ajouter élève",
-                        icon: UserPlus,
-                        disabled: true,
-                        onClick: () => console.log("Add student"),
-                    },
-                    {
-                        label: "Ajouter un commentaire",
-                        icon: BookPlus,
-                        disabled: true,
-                        onClick: () => console.log("Add course"),
-                    },
+
                     {
                         label: "Exporter",
                         icon: Download,
@@ -196,43 +179,52 @@ function ClassDetailPage() {
                                 <CardTitle>Cours donnés</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {(classData.subjects as Subject[]).map(
-                                    (subject) => {
-                                        const SubjectIcon = BookOpen;
-                                        const iconBg = "bg-muted";
-                                        const iconColor =
-                                            "text-muted-foreground";
+                                {!classData.subjects ||
+                                (classData.subjects as Subject[]).length ===
+                                    0 ? (
+                                    <EmptyState
+                                        title="Aucun cours assigné"
+                                        description="Ajoutez des matières à cette classe pour qu'elles s'affichent ici."
+                                    />
+                                ) : (
+                                    (classData.subjects as Subject[]).map(
+                                        (subject) => {
+                                            const SubjectIcon = BookOpen;
+                                            const iconBg = "bg-muted";
+                                            const iconColor =
+                                                "text-muted-foreground";
 
-                                        return (
-                                            <div
-                                                key={subject.id}
-                                                className="flex items-center justify-between rounded-lg  bg-background px-4 py-3"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div
-                                                        className={cn(
-                                                            "flex size-10 items-center justify-center rounded-lg",
-                                                            iconBg,
-                                                            iconColor
-                                                        )}
-                                                    >
-                                                        <SubjectIcon className="size-5" />
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">
-                                                            {subject.name}
-                                                        </span>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {
-                                                                subject.hours_per_week
-                                                            }
-                                                            h / semaine
-                                                        </span>
+                                            return (
+                                                <div
+                                                    key={subject.id}
+                                                    className="flex items-center justify-between rounded-lg  bg-background px-4 py-3"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div
+                                                            className={cn(
+                                                                "flex size-10 items-center justify-center rounded-lg",
+                                                                iconBg,
+                                                                iconColor
+                                                            )}
+                                                        >
+                                                            <SubjectIcon className="size-5" />
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">
+                                                                {subject.name}
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {
+                                                                    subject.hours_per_week
+                                                                }
+                                                                h / semaine
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    }
+                                            );
+                                        }
+                                    )
                                 )}
                             </CardContent>
                         </Card>
@@ -317,6 +309,25 @@ function ClassDetailPage() {
                     </Card>
                 </div>
             </div>
+
+            <CreateClassModal
+                open={isEditModalOpen}
+                onOpenChange={setIsEditModalOpen}
+                initialData={
+                    classData
+                        ? {
+                              id: classData.id,
+                              name: classData.name,
+                              level: classData.level,
+                              school: classData.school,
+                              students_count: classData.students_count,
+                              subjects: (classData.subjects as Subject[])?.map(
+                                  (s) => s.id
+                              ),
+                          }
+                        : undefined
+                }
+            />
         </div>
     );
 }

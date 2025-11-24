@@ -36,3 +36,10 @@ export const useSchoolClasses = (filters?: SchoolClassesFilters) => {
         staleTime: 1000 * 60, // 1 minute
     });
 };
+
+export function useSubjects() {
+    return useQuery({
+        ...orpc.subject.list.queryOptions({}),
+        staleTime: 60_000,
+    });
+}
