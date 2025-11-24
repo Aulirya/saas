@@ -12,9 +12,10 @@ import {
 import { SubjectModel, SubjectModelMapper } from "../repository/model/subjects";
 import { LessonMapper } from "../repository/mapper/lesson";
 import type { LessonModel } from "../repository/model/lessons";
+import type { CourseProgressModel } from "../repository/model/course_progress";
 
-// Helper function to parse a class ID that might be full (classes:class_01) or partial (class_01)
-function parseClassId(id: string): RecordId {
+// Helper function to parse a subject ID that might be full (subjects:subject_01) or partial (subject_01)
+function parseId(id: string): RecordId {
     // If the ID already contains a colon, it's a full record ID
     if (id.includes(":")) {
         // Parse it: split by colon and create RecordId
@@ -22,7 +23,7 @@ function parseClassId(id: string): RecordId {
         return new RecordId(table, recordId);
     }
     // Otherwise, it's just the ID part
-    return new RecordId("classes", id);
+    return new RecordId("subjects", id);
 }
 
 // get all classes
@@ -103,7 +104,7 @@ export const getSchoolClass = base
     .input(z.object({ id: z.string() }))
     .handler(async ({ input, context }): Promise<SchoolClass> => {
         const userId = new RecordId("users", context.user_id);
-        const classId = parseClassId(input.id);
+        const classId = parseId(input.id);
         const query = surql`SELECT * FROM classes WHERE user_id = ${userId} AND id = ${classId}`;
 
         const classesModel = await context.db
@@ -128,7 +129,7 @@ export const getSchoolClassWithSubjects = base
             context,
         }): Promise<SchoolClassWithSubjectsAndLessons> => {
             const userId = new RecordId("users", context.user_id);
-            const classId = parseClassId(input.id);
+            const classId = parseId(input.id);
 
             const query = surql`
               SELECT
@@ -211,9 +212,8 @@ export const getSchoolClassWithSubjects = base
 export const createSchoolClass = base
     .input(school_class_create_input)
     .handler(async ({ input, context }): Promise<SchoolClass> => {
-        console.log("start create");
         const userId = new RecordId("users", context.user_id);
-        console.log("userId: ", userId);
+
         try {
             const classesTable = new Table("classes");
             const result = await context.db
@@ -226,10 +226,24 @@ export const createSchoolClass = base
                     user_id: userId,
                 });
 
-            console.log("result: ", result);
             const schoolClass = SchoolClassMapper.fromModel(result[0]);
-            console.log("schoolClass: ", schoolClass);
-            console.log("end create");
+
+            // Create course_progress entries for selected subjects
+            if (input.subjects && input.subjects.length > 0) {
+                const classId = parseId(schoolClass.id);
+                const courseProgressTable = new Table("course_progress");
+
+                for (const subjectId of input.subjects) {
+                    const subjectRecordId = parseId(subjectId);
+                    await context.db
+                        .create<CourseProgressModel>(courseProgressTable)
+                        .content({
+                            class_id: classId,
+                            subject_id: subjectRecordId,
+                        });
+                }
+            }
+
             return schoolClass;
         } catch (e) {
             console.log("error: ", e);
@@ -241,13 +255,13 @@ export const patchSchoolClass = base
     .input(school_class_patch_input)
     .handler(async ({ input, context }): Promise<SchoolClass> => {
         console.log("start patch");
-        const classId = new RecordId("classes", input.id);
+        const classId = parseId(input.id);
 
         const updateData: Partial<{
             name: string;
             level: string;
             school: string;
-            student_count: number;
+            students_count: number;
         }> = {};
 
         if (input.name !== undefined) {
@@ -260,18 +274,85 @@ export const patchSchoolClass = base
             updateData.school = input.school;
         }
         if (input.students_count !== undefined) {
-            updateData.student_count = input.students_count;
-        }
-
-        if (Object.keys(updateData).length === 0) {
-            throw new Error("No fields to update");
+            updateData.students_count = input.students_count;
         }
 
         try {
+            // Update class fields if any
+            if (Object.keys(updateData).length > 0) {
+                await context.db
+                    .update<SchoolClassModel>(classId)
+                    .merge(updateData);
+            }
+
+            // Handle subjects update if provided
+            if (input.subjects !== undefined) {
+                const courseProgressTable = new Table("course_progress");
+
+                // Get current course_progress entries for this class
+                const currentProgressQuery = surql`
+                    SELECT subject_id FROM course_progress WHERE class_id = ${classId}
+                `;
+                const currentProgress = await context.db
+                    .query<[{ subject_id: RecordId }[]]>(currentProgressQuery)
+                    .collect();
+
+                // Extract current subject IDs as strings for comparison
+                const currentSubjectIds = new Set(
+                    currentProgress[0].map((cp) => cp.subject_id.toString())
+                );
+
+                // Normalize input subject IDs (handle both full and partial IDs)
+                const newSubjectIds = new Set(
+                    input.subjects.map((id) => {
+                        const parsed = parseId(id);
+                        return parsed.toString();
+                    })
+                );
+
+                // Find subjects to delete (in current but not in new)
+                const subjectsToDelete = currentProgress[0].filter((cp) => {
+                    const subjectIdStr = cp.subject_id.toString();
+                    return !newSubjectIds.has(subjectIdStr);
+                });
+
+                // Find subjects to add (in new but not in current)
+                const subjectsToAdd = input.subjects.filter((id) => {
+                    const parsed = parseId(id);
+                    const subjectIdStr = parsed.toString();
+                    return !currentSubjectIds.has(subjectIdStr);
+                });
+
+                // Delete only removed subjects
+                for (const progress of subjectsToDelete) {
+                    await context.db.query(
+                        surql`DELETE FROM course_progress WHERE class_id = ${classId} AND subject_id = ${progress.subject_id}`
+                    );
+                }
+
+                // Add only new subjects
+                for (const subjectId of subjectsToAdd) {
+                    const subjectRecordId = parseId(subjectId);
+                    await context.db
+                        .create<CourseProgressModel>(courseProgressTable)
+                        .content({
+                            class_id: classId,
+                            subject_id: subjectRecordId,
+                        });
+                }
+            }
+
+            // Fetch updated class
+            const query = surql`SELECT * FROM classes WHERE id = ${classId}`;
             const result = await context.db
-                .update<SchoolClassModel>(classId)
-                .merge(updateData);
-            const school_class = SchoolClassMapper.fromModel(result);
+                .query<[SchoolClassModel[]]>(query)
+                .collect();
+
+            if (!result[0] || result[0].length === 0) {
+                throw new Error("Class not found after update");
+            }
+
+            const school_class = SchoolClassMapper.fromModel(result[0][0]);
             console.log("end patch");
             return school_class;
         } catch (e) {
