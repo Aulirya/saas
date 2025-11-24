@@ -1,4 +1,4 @@
-import { RecordId, surql, Table } from "surrealdb";
+import { DateTime, RecordId, surql, Table } from "surrealdb";
 import { base } from "./base";
 import type { LessonModel } from "../repository/model/lessons";
 import { LessonMapper } from "../repository/mapper/lesson";
@@ -36,35 +36,31 @@ export const getLesson = base
 export const createLesson = base
   .input(lesson_create_input)
   .handler(async ({ input, context }): Promise<Lesson> => {
-    console.log("start create");
     const userId = new RecordId("users", context.user_id);
     const classId = new RecordId("classes", input.class_id);
     const subjectId = new RecordId("subjects", input.subject_id);
-    console.log("userId: ", userId);
-    try {
-      const classesTable = new Table("classes");
-      const result = await context.db
-        .create<LessonModel>(classesTable)
-        .content({
-          title: input.title,
-          date: null,
-          duration_minutes: input.duration_minutes,
-          average_duration: input.average_duration,
-          status: input.status,
-          class_id: classId,
-          subject_id: subjectId,
-          user_id: userId,
-        });
+    const classesTable = new Table("classes");
+    const result = await context.db.create<LessonModel>(classesTable).content({
+      label: input.label,
+      class_id: classId,
+      subject_id: subjectId,
+      user_id: userId,
+      start_at: input.start_at ? new DateTime(input.start_at) : null,
+      end_at: input.end_at ? new DateTime(input.end_at) : null,
+      comments:
+        input.comments === undefined
+          ? undefined
+          : input.comments.map((comment) => ({
+              title: comment.title,
+              description: input.description,
+              created_at: new DateTime(),
+              updated_at: new DateTime(),
+            })),
+      description: input.description,
+    });
 
-      console.log("result: ", result);
-      const school_class = LessonMapper.fromModel(result[0]);
-      console.log("school_class: ", school_class);
-      console.log("end create");
-      return school_class;
-    } catch (e) {
-      console.log("error: ", e);
-      throw e;
-    }
+    const school_class = LessonMapper.fromModel(result[0]);
+    return school_class;
   });
 
 export const patchLesson = base
@@ -73,26 +69,18 @@ export const patchLesson = base
     console.log("start patch");
     const classId = new RecordId("classes", input.id);
 
-    const updateData: Partial<{
-      title: string;
-      duration_minutes: number;
-      average_duration: number;
-      status: "backlog" | "planned" | "in progress" | "done" | "late";
-      class_id: RecordId;
-      subject_id: RecordId;
-    }> = {};
+    const updateData: Partial<LessonModel> = {};
 
-    if (input.title !== undefined) {
-      updateData.title = input.title;
+    if (input.label !== undefined) {
+      updateData.label = input.label;
     }
-    if (input.duration_minutes !== undefined) {
-      updateData.duration_minutes = input.duration_minutes;
+    if (input.start_at !== undefined) {
+      updateData.start_at = input.start_at
+        ? new DateTime(input.start_at)
+        : null;
     }
-    if (input.average_duration !== undefined) {
-      updateData.average_duration = input.average_duration;
-    }
-    if (input.status !== undefined) {
-      updateData.status = input.status;
+    if (input.end_at !== undefined) {
+      updateData.end_at = input.end_at ? new DateTime(input.end_at) : null;
     }
     if (input.class_id !== undefined) {
       const classId = new RecordId("classes", input.class_id);
@@ -102,10 +90,19 @@ export const patchLesson = base
       const subjectId = new RecordId("subjects", input.subject_id);
       updateData.subject_id = subjectId;
     }
+    if (input.comments !== undefined) {
+      updateData.comments = input.comments.map((comment) => ({
+        title: comment.title,
+        description: comment.description,
+        created_at: new DateTime(),
+        updated_at: new DateTime(),
+      }));
+    }
 
     if (Object.keys(updateData).length === 0) {
       throw new Error("No fields to update");
     }
+    updateData.updated_at = new DateTime();
 
     try {
       const result = await context.db

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { orpc } from "@/orpc/client";
 
 import { FormSheet } from "@/components/ui/form-sheet";
@@ -142,7 +143,10 @@ export function CreateClassModal({
     }, [open, initialData, form]);
 
     // Shared mutation handlers
-    const getMutationHandlers = (errorMessage: string) => ({
+    const getMutationHandlers = (
+        errorMessage: string,
+        successMessage: string
+    ) => ({
         onSuccess: () => {
             // Invalidate all related queries to refresh the lists
             queryClient.invalidateQueries({ queryKey: ["schoolClasses"] });
@@ -158,13 +162,18 @@ export function CreateClassModal({
                     input: { id: initialData?.id ?? "" },
                 }),
             });
+            toast.success(successMessage);
             form.reset();
             onOpenChange(false);
         },
         onError: (error: unknown) => {
             console.error(errorMessage, error);
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue";
+            toast.error(errorMsg);
             setIsSubmitting(false);
-            // You could add a toast notification here
         },
         onSettled: () => {
             setIsSubmitting(false);
@@ -183,7 +192,10 @@ export function CreateClassModal({
 
             return await orpc.schoolClass.create.call(data);
         },
-        ...getMutationHandlers("Error creating class:"),
+        ...getMutationHandlers(
+            "Error creating class:",
+            "Classe créée avec succès"
+        ),
     });
 
     const { mutate: updateClass } = useMutation({
@@ -199,7 +211,10 @@ export function CreateClassModal({
 
             return await orpc.schoolClass.patch.call(data);
         },
-        ...getMutationHandlers("Error updating class:"),
+        ...getMutationHandlers(
+            "Error updating class:",
+            "Classe modifiée avec succès"
+        ),
     });
 
     const handleClose = (shouldClose: boolean) => {
@@ -219,6 +234,7 @@ export function CreateClassModal({
             children={
                 <form
                     id="create-class-form"
+                    className="overflow-y-auto"
                     onSubmit={(e) => {
                         e.preventDefault();
                         e.stopPropagation();

@@ -4,7 +4,7 @@ import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as ClassDetailRoute } from "./$classId";
-import { Plus, Eye, GraduationCap } from "lucide-react";
+import { Plus, Eye, GraduationCap, ArrowUp, ArrowDown } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -75,6 +75,8 @@ function ClassesPage() {
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(5); // Items per page
+    const [sortBy, setSortBy] = useState<"name" | "updated_at">("name");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
     // Fetch data from database
     const { data: classes = [], isLoading } = useSchoolClasses({
@@ -131,18 +133,36 @@ function ClassesPage() {
         return classes.find((cls) => cls.id === selectedId);
     }, [classes, selectedId]);
 
+    // Sort classes
+    const sortedClasses = useMemo(() => {
+        const sorted = [...classes].sort((a, b) => {
+            if (sortBy === "name") {
+                const nameA = a.name.toLowerCase();
+                const nameB = b.name.toLowerCase();
+                return sortOrder === "asc"
+                    ? nameA.localeCompare(nameB)
+                    : nameB.localeCompare(nameA);
+            }
+            // Sort by updated_at
+            const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+            const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+            return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+        });
+        return sorted;
+    }, [classes, sortBy, sortOrder]);
+
     // Calculate pagination
-    const totalPages = Math.ceil(classes.length / pageSize);
+    const totalPages = Math.ceil(sortedClasses.length / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedClasses = useMemo(() => {
-        return classes.slice(startIndex, endIndex);
-    }, [classes, startIndex, endIndex]);
+        return sortedClasses.slice(startIndex, endIndex);
+    }, [sortedClasses, startIndex, endIndex]);
 
-    // Reset to page 1 when filters change
+    // Reset to page 1 when filters or sorting change
     useEffect(() => {
         setCurrentPage(1);
-    }, [schoolFilter, levelFilter]);
+    }, [schoolFilter, levelFilter, sortBy, sortOrder]);
 
     // Fetch full class data (with subjects and lessons) only when a class is selected
     // This avoids loading lessons for all classes, only fetching when needed
@@ -250,6 +270,55 @@ function ClassesPage() {
                                         )}
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="class-sort-by">Trier par</Label>
+                                <div className="flex gap-2">
+                                    <Select
+                                        value={sortBy}
+                                        onValueChange={(
+                                            value: "name" | "updated_at"
+                                        ) => setSortBy(value)}
+                                    >
+                                        <SelectTrigger
+                                            id="class-sort-by"
+                                            className="w-[140px]"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="name">
+                                                Nom
+                                            </SelectItem>
+                                            <SelectItem value="updated_at">
+                                                Date de modification
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() =>
+                                            setSortOrder(
+                                                sortOrder === "asc"
+                                                    ? "desc"
+                                                    : "asc"
+                                            )
+                                        }
+                                        title={
+                                            sortOrder === "asc"
+                                                ? "Trier par ordre décroissant"
+                                                : "Trier par ordre croissant"
+                                        }
+                                    >
+                                        {sortOrder === "asc" ? (
+                                            <ArrowUp className="h-4 w-4" />
+                                        ) : (
+                                            <ArrowDown className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </section>

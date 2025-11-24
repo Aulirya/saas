@@ -9,6 +9,8 @@ export namespace SchoolClassMapper {
             level: model.level,
             school: model.school,
             students_count: model.students_count,
+            updated_at: model.updated_at?.toString(),
+            created_at: model.created_at?.toString(),
         };
     }
 }

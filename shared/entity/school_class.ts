@@ -8,6 +8,8 @@ export const school_class = z.object({
     level: z.string(),
     school: z.string(),
     students_count: z.number(),
+    updated_at: z.string().optional(),
+    created_at: z.string().optional(),
 });
 
 export type SchoolClass = z.infer<typeof school_class>;

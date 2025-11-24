@@ -10,6 +10,7 @@ import { createContext, useContext, useState } from "react";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
 import ClerkProvider from "../integrations/clerk/provider";
+import { Toaster } from "../components/ui/sonner";
 
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 
@@ -87,6 +88,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                             </main>
                         </div>
                     </SidebarContext.Provider>
+                    <Toaster />
                     {/* <TanStackDevtools
                         config={{
                             position: "bottom-right",

@@ -6,18 +6,22 @@ services:
         ports:
             - "8000:8000"
         environment:
-            - SURREAL_CAPS_ALLOW_EXPERIMENTAL=files
+          - SURREAL_CAPS_ALLOW_EXPERIMENTAL=files
+          - SURREAL_BUCKET_FOLDER_ALLOWLIST=/pdf_upload
         command:
             - start
             - --user
             - root
             - --pass
             - root
+            - --allow-experimental
+            - files
             - --bind
             - 0.0.0.0:8000
             - rocksdb:/data/database.db
         volumes:
             - surrealdb-data:/data
+            - pdf-upload:/pdf_upload
         networks:
             - saas-network
         restart: unless-stopped
@@ -156,4 +160,6 @@ networks:
 
 volumes:
     surrealdb-data:
+        driver: local
+    pdf-upload:
         driver: local
