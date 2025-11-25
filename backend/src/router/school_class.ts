@@ -176,16 +176,6 @@ export const getSchoolClassWithSubjects = base
 
             const schoolClass = SchoolClassMapper.fromModel(classData);
 
-            // Helper to extract hours_per_week from subject
-            const getSubjectHoursPerWeek = (
-                subject: SubjectModel & { subject_id?: SubjectModel }
-            ): number => {
-                const hours =
-                    (subject as SubjectModel & { subject_id?: SubjectModel })
-                        .subject_id?.hours_per_week ?? subject.hours_per_week;
-                return Number(hours) || 0;
-            };
-
             // Map subjects with their lessons
             const subjects =
                 classData.subjects?.map((subject) => ({
@@ -193,18 +183,11 @@ export const getSchoolClassWithSubjects = base
                     lessons: subject.lessons?.map(LessonMapper.fromModel) ?? [],
                 })) ?? [];
 
-            // Calculate total weekly hours
-            const weeklyHours =
-                classData.subjects?.reduce(
-                    (acc, subject) => acc + getSubjectHoursPerWeek(subject),
-                    0
-                ) ?? 0;
-
             return {
                 ...schoolClass,
                 subjects,
                 subjects_count: classData.subjects?.length ?? 0,
-                weekly_hours: weeklyHours,
+                weekly_hours: 0, // No longer calculated from hours_per_week
             };
         }
     );

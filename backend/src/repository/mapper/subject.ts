@@ -6,6 +6,9 @@ type SubjectModelWithNestedId = SubjectModel & {
     subject_id?: SubjectModel;
 };
 
+type SubjectType = "core" | "option" | "support";
+type SubjectCategory = Subject["category"];
+
 export namespace SubjectMapper {
     /**
      * Helper to extract a value from either subject_id.* (nested) or direct property
@@ -32,12 +35,12 @@ export namespace SubjectMapper {
                 getValue(modelWithNested, "description") ??
                 model.description ??
                 "",
-            type: getValue(modelWithNested, "type") ?? model.type,
-            total_hours:
-                getValue(modelWithNested, "total_hours") ?? model.total_hours,
-            hours_per_week:
-                getValue(modelWithNested, "hours_per_week") ??
-                model.hours_per_week,
+            type:
+                (getValue(modelWithNested, "type") as SubjectType) ??
+                model.type,
+            category:
+                (getValue(modelWithNested, "category") as SubjectCategory) ??
+                model.category,
         };
     }
 }

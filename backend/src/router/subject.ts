@@ -99,7 +99,7 @@ export const getSubjectWithLessons = base
     });
 
 export const createSubject = base
-    .input(subject_create_input.omit({ user_id: true }))
+    .input(subject_create_input)
     .handler(async ({ input, context }): Promise<Subject> => {
         console.log("start create");
         const userId = new RecordId("users", context.user_id);
@@ -112,8 +112,7 @@ export const createSubject = base
                     name: input.name,
                     description: input.description,
                     type: input.type,
-                    total_hours: input.total_hours,
-                    hours_per_week: input.hours_per_week,
+                    category: input.category,
                     user_id: userId,
                 });
 
@@ -138,8 +137,7 @@ export const patchSubject = base
             name: string;
             description?: string | null;
             type: string;
-            total_hours: number;
-            hours_per_week: number;
+            category: string;
         }> = {};
 
         if (input.name !== undefined) {
@@ -151,11 +149,8 @@ export const patchSubject = base
         if (input.type !== undefined) {
             updateData.type = input.type;
         }
-        if (input.total_hours !== undefined) {
-            updateData.total_hours = input.total_hours;
-        }
-        if (input.hours_per_week !== undefined) {
-            updateData.hours_per_week = input.hours_per_week;
+        if (input.category !== undefined) {
+            updateData.category = input.category;
         }
 
         if (Object.keys(updateData).length === 0) {

@@ -215,9 +215,8 @@ function ClassDetailPage() {
                                                             </span>
                                                             <span className="text-xs text-muted-foreground">
                                                                 {
-                                                                    subject.hours_per_week
+                                                                    subject.category
                                                                 }
-                                                                h / semaine
                                                             </span>
                                                         </div>
                                                     </div>

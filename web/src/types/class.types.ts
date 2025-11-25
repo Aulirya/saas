@@ -10,7 +10,7 @@ export type Lesson = {
 export type SubjectWithLessons = {
     id: string;
     name: string;
-    hours_per_week: number;
+    category: string;
     lessons?: Lesson[];
 };
 
@@ -25,7 +25,7 @@ export type LessonWithSubject = {
 export type Subject = {
     id: string;
     name: string;
-    hours_per_week: number;
+    category: string;
 };
 
 export type MetricConfig = {
