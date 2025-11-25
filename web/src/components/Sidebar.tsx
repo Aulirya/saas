@@ -100,6 +100,24 @@ export default function Sidebar() {
                     </Link>
 
                     <Link
+                        to="/subjects"
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors mb-2 text-slate-700 ${
+                            !isOpen ? "justify-center" : ""
+                        }`}
+                        activeProps={{
+                            className: `flex items-center gap-3 p-3 rounded-lg bg-indigo-50 text-indigo-700 transition-colors mb-2 ${
+                                !isOpen ? "justify-center" : ""
+                            }`,
+                        }}
+                    >
+                        <BookOpen size={20} />
+                        {isOpen && (
+                            <span className="font-medium">Mes matières</span>
+                        )}
+                    </Link>
+
+                    <Link
                         to="/analytics"
                         disabled={true}
                         onClick={() => setIsOpen(false)}

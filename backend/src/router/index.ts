@@ -13,6 +13,7 @@ import { createLesson, getLesson, listLessons, patchLesson } from "./lesson";
 import {
     createSubject,
     getSubject,
+    getSubjectWithLessons,
     listSubjects,
     patchSubject,
 } from "./subject";
@@ -34,6 +35,7 @@ export const router = base.router({
     subject: {
         list: listSubjects,
         get: getSubject,
+        getWithLessons: getSubjectWithLessons,
         create: createSubject,
         patch: patchSubject,
     },
