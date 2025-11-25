@@ -3,6 +3,8 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orpc } from "@/orpc/client";
+import { SUBJECT_CATEGORIES, SubjectCategory } from "@saas/shared";
+import { getCategoryLabel } from "@/lib/subject-category";
 
 import { FormSheet } from "@/components/ui/form-sheet";
 import { SheetClose } from "@/components/ui/sheet";
@@ -23,25 +25,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { subject_create_input } from "@saas/shared";
+import { subject_create_input, type SubjectCreateInput } from "@saas/shared";
 
 // Default subject types (can be supplemented by database values)
-const defaultSubjectTypes = [
-    "Mathématiques",
-    "Français",
-    "Anglais",
-    "Histoire",
-    "Géographie",
-    "Sciences",
-    "Physique",
-    "Chimie",
-    "Biologie",
-    "Philosophie",
-    "Économie",
-    "Arts",
-    "Sport",
-    "Autre",
-] as const;
+const defaultSubjectTypes = ["core", "option", "support"] as const;
+
+// Subject categories matching the database enum
+const subjectCategories = SUBJECT_CATEGORIES as unknown as SubjectCategory[];
 
 interface CreateSubjectModalProps {
     open: boolean;
@@ -51,8 +41,7 @@ interface CreateSubjectModalProps {
         name: string;
         description?: string | null;
         type: string;
-        total_hours: number;
-        hours_per_week: number;
+        category: string;
     };
 }
 
@@ -70,8 +59,7 @@ export function CreateSubjectModal({
             name: initialData?.name ?? "",
             description: initialData?.description ?? "",
             type: initialData?.type ?? "",
-            total_hours: initialData?.total_hours ?? 0,
-            hours_per_week: initialData?.hours_per_week ?? 0,
+            category: initialData?.category ?? "",
         },
         validators: {
             onSubmit: ({ value }) => {
@@ -85,29 +73,29 @@ export function CreateSubjectModal({
                 const result = subject_create_input.safeParse(transformedValue);
 
                 if (!result.success) {
-                    return result.error.format();
+                    return "Veuillez corriger les erreurs dans le formulaire";
                 }
+
                 return undefined;
             },
         },
         onSubmit: async ({ value }) => {
             setIsSubmitting(true);
+
             if (isEditMode && initialData) {
                 updateSubject({
                     id: initialData.id,
                     name: value.name,
                     description: value.description || null,
-                    type: value.type,
-                    total_hours: value.total_hours,
-                    hours_per_week: value.hours_per_week,
+                    type: value.type as "core" | "option" | "support",
+                    category: value.category as SubjectCategory,
                 });
             } else {
                 createSubject({
                     name: value.name,
                     description: value.description || null,
-                    type: value.type,
-                    total_hours: value.total_hours,
-                    hours_per_week: value.hours_per_week,
+                    type: value.type as "core" | "option" | "support",
+                    category: value.category as SubjectCategory,
                 });
             }
         },
@@ -119,8 +107,7 @@ export function CreateSubjectModal({
             form.setFieldValue("name", initialData.name);
             form.setFieldValue("description", initialData.description ?? "");
             form.setFieldValue("type", initialData.type);
-            form.setFieldValue("total_hours", initialData.total_hours);
-            form.setFieldValue("hours_per_week", initialData.hours_per_week);
+            form.setFieldValue("category", initialData.category);
         } else if (open && !initialData) {
             // Reset to empty values when opening for create
             form.reset();
@@ -164,14 +151,12 @@ export function CreateSubjectModal({
     });
 
     const { mutate: createSubject } = useMutation({
-        mutationFn: async (data: {
-            name: string;
-            description?: string | null;
-            type: string;
-            total_hours: number;
-            hours_per_week: number;
-        }) => {
-            return await orpc.subject.create.call(data);
+        mutationFn: async (data: Omit<SubjectCreateInput, "user_id">) => {
+            return await orpc.subject.create.call(
+                data as unknown as Parameters<
+                    typeof orpc.subject.create.call
+                >[0]
+            );
         },
         ...getMutationHandlers(
             "Error creating subject:",
@@ -185,8 +170,7 @@ export function CreateSubjectModal({
             name: string;
             description?: string | null;
             type: string;
-            total_hours: number;
-            hours_per_week: number;
+            category: SubjectCategory;
         }) => {
             return await orpc.subject.patch.call(data);
         },
@@ -226,10 +210,18 @@ export function CreateSubjectModal({
                         {/* Subject Name */}
                         <form.Field
                             name="name"
+                            validators={{
+                                onChange: ({ value }) => {
+                                    if (!value || value.trim().length === 0) {
+                                        return "Le nom est requis";
+                                    }
+                                    return undefined;
+                                },
+                            }}
                             children={(field) => {
                                 const isInvalid =
                                     field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
+                                    field.state.meta.errors.length > 0;
 
                                 return (
                                     <Field data-invalid={isInvalid}>
@@ -247,7 +239,7 @@ export function CreateSubjectModal({
                                                 )
                                             }
                                             onBlur={field.handleBlur}
-                                            placeholder="Ex: Mathématiques"
+                                            placeholder="Nom de la matière"
                                             aria-invalid={isInvalid}
                                         />
                                         <FieldError>
@@ -406,108 +398,63 @@ export function CreateSubjectModal({
                             }}
                         />
 
-                        {/* Hours Per Week */}
+                        {/* Category */}
                         <form.Field
-                            name="hours_per_week"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Heures par semaine
-                                        </FieldLabel>
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            type="number"
-                                            min="0"
-                                            step="0.5"
-                                            value={
-                                                field.state.value === 0
-                                                    ? ""
-                                                    : field.state.value
-                                            }
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                field.handleChange(
-                                                    value === ""
-                                                        ? 0
-                                                        : parseFloat(value)
-                                                );
-                                            }}
-                                            onBlur={field.handleBlur}
-                                            placeholder="Ex: 4"
-                                            aria-invalid={isInvalid}
-                                        />
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
+                            name="category"
+                            validators={{
+                                onChange: ({ value }) => {
+                                    if (!value) {
+                                        return "La catégorie est requise";
+                                    }
+                                    if (
+                                        !subjectCategories.includes(
+                                            value as SubjectCategory
+                                        )
+                                    ) {
+                                        return "Catégorie invalide";
+                                    }
+                                    return undefined;
+                                },
                             }}
-                        />
-
-                        {/* Total Hours */}
-                        <form.Field
-                            name="total_hours"
                             children={(field) => {
                                 const isInvalid =
                                     field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
+                                    field.state.meta.errors.length > 0;
 
                                 return (
                                     <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
-                                            Heures totales
+                                            Catégorie
                                         </FieldLabel>
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            type="number"
-                                            min="0"
-                                            step="0.5"
-                                            value={
-                                                field.state.value === 0
-                                                    ? ""
-                                                    : field.state.value
-                                            }
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                field.handleChange(
-                                                    value === ""
-                                                        ? 0
-                                                        : parseFloat(value)
-                                                );
+                                        <Select
+                                            value={field.state.value}
+                                            onValueChange={(value) => {
+                                                field.handleChange(value);
+                                                field.handleBlur();
                                             }}
-                                            onBlur={field.handleBlur}
-                                            placeholder="Ex: 120"
-                                            aria-invalid={isInvalid}
-                                        />
+                                        >
+                                            <SelectTrigger
+                                                id={field.name}
+                                                aria-invalid={isInvalid}
+                                            >
+                                                <SelectValue placeholder="Sélectionnez une catégorie" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {subjectCategories.map(
+                                                    (category) => (
+                                                        <SelectItem
+                                                            key={category}
+                                                            value={category}
+                                                        >
+                                                            {getCategoryLabel(
+                                                                category
+                                                            )}
+                                                        </SelectItem>
+                                                    )
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+
                                         <FieldError>
                                             {field.state.meta.errors?.map(
                                                 (error, index) => (

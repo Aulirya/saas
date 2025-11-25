@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useMediaQuery } from "usehooks-ts";
-import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as SubjectDetailRoute } from "./$subjectId";
-import { Plus, Eye, BookOpen, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Eye, ArrowUp, ArrowDown, Search } from "lucide-react";
+import { getCategoryConfig, getCategoryLabel } from "@/lib/subject-category";
+
+import type { SubjectCategory } from "@saas/shared";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -24,6 +25,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
     Pagination,
     PaginationContent,
@@ -34,33 +36,25 @@ import {
     PaginationPrevious,
 } from "@/components/ui/pagination";
 
-import {
-    useSubjects,
-    useSubjectWithLessons,
-} from "@/features/subjects/api/useSubjects";
+import { useSubjects } from "@/features/subjects/api/useSubjects";
 import { SkeletonCard } from "@/components/ui/skeleton";
 import { CreateSubjectModal } from "@/features/subjects/components/CreateSubjectModal";
-import type { Subject, SubjectWithLessons } from "@saas/shared";
+import type { Subject } from "@saas/shared";
 import { cn } from "@/lib/utils";
-import { CardInfoLayout } from "@/components/ui/card-info-layout";
-import { ViewDetailButton } from "@/components/ui/view-detail-button";
-import { FormSheet } from "@/components/ui/form-sheet";
-import { formatLessonDateTime } from "@/lib/date";
-import type { LessonWithSubject } from "@/types/class.types";
 
 type TypeFilterValue = string;
+type CategoryFilterValue = SubjectCategory | "all";
 
 export const Route = createFileRoute("/_protected/subjects/")({
     component: SubjectsPage,
 });
 
 function SubjectsPage() {
-    const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
-
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [typeFilter, setTypeFilter] = useState<TypeFilterValue>("all");
+    const [categoryFilter, setCategoryFilter] =
+        useState<CategoryFilterValue>("all");
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(5);
     const [sortBy, setSortBy] = useState<"name" | "updated_at">("name");
@@ -69,13 +63,34 @@ function SubjectsPage() {
     // Fetch data from database
     const { data: subjects = [], isLoading } = useSubjects();
 
-    // Filter subjects by type
+    // Filter subjects by type, category, and search
     const filteredSubjects = useMemo(() => {
-        if (typeFilter === "all") {
-            return subjects;
+        let filtered = subjects;
+
+        // Filter by search query
+        if (searchQuery.trim() !== "") {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter((subject) =>
+                subject.name.toLowerCase().includes(query)
+            );
         }
-        return subjects.filter((subject) => subject.type === typeFilter);
-    }, [subjects, typeFilter]);
+
+        // Filter by type
+        if (typeFilter !== "all") {
+            filtered = filtered.filter(
+                (subject) => subject.type === typeFilter
+            );
+        }
+
+        // Filter by category
+        if (categoryFilter !== "all") {
+            filtered = filtered.filter(
+                (subject) => subject.category === categoryFilter
+            );
+        }
+
+        return filtered;
+    }, [subjects, searchQuery, typeFilter, categoryFilter]);
 
     // Get unique types for filter
     const subjectTypes = useMemo(() => {
@@ -93,26 +108,27 @@ function SubjectsPage() {
         ];
     }, [subjectTypes]);
 
-    // If desktop and no selection, select the first subject
-    if (!isMobile && !selectedId && filteredSubjects.length > 0) {
-        setSelectedId(filteredSubjects[0].id);
-    }
+    // Get unique categories for filter
+    const subjectCategories = useMemo(() => {
+        const categories = new Set<SubjectCategory>(
+            subjects.map((s) => s.category)
+        );
+        return Array.from(categories).sort((a, b) => {
+            const labelA = getCategoryLabel(a);
+            const labelB = getCategoryLabel(b);
+            return labelA.localeCompare(labelB);
+        });
+    }, [subjects]);
 
-    // If mobile and modal is closed, reset the selection
-    if (isMobile && !isModalOpen && selectedId) {
-        setSelectedId(null);
-    }
-
-    // If desktop and modal is open, close it
-    useEffect(() => {
-        if (!isMobile) {
-            setIsModalOpen(false);
-        }
-    }, [isMobile]);
-
-    const selectedSubject = useMemo(() => {
-        return filteredSubjects.find((s) => s.id === selectedId);
-    }, [filteredSubjects, selectedId]);
+    const categoryFilterOptions = useMemo(() => {
+        return [
+            { value: "all" as const, label: "Toutes les catégories" },
+            ...subjectCategories.map((category) => ({
+                value: category,
+                label: getCategoryLabel(category),
+            })),
+        ];
+    }, [subjectCategories]);
 
     // Sort subjects
     const sortedSubjects = useMemo(() => {
@@ -138,26 +154,10 @@ function SubjectsPage() {
         return sortedSubjects.slice(startIndex, endIndex);
     }, [sortedSubjects, startIndex, endIndex]);
 
-    // Reset to page 1 when filters or sorting change
+    // Reset to page 1 when filters, search, or sorting change
     useEffect(() => {
         setCurrentPage(1);
-    }, [typeFilter, sortBy, sortOrder]);
-
-    // Fetch full subject data (with lessons) only when a subject is selected
-    const {
-        data: selectedSubjectWithDetails,
-        isLoading: isLoadingSubjectDetails,
-    } = useSubjectWithLessons(selectedId ?? "", {
-        enabled: !!selectedId,
-    });
-
-    const handleSubjectSelect = (id: string) => {
-        setSelectedId(id);
-        // On mobile/tablet (< lg), open the modal when a subject is selected
-        if (isMobile) {
-            setIsModalOpen(true);
-        }
-    };
+    }, [typeFilter, categoryFilter, searchQuery, sortBy, sortOrder]);
 
     return (
         <>
@@ -175,7 +175,26 @@ function SubjectsPage() {
                     />
 
                     <section className="mb-6 ">
-                        <div className="flex flex-row gap-6">
+                        <div className="flex flex-row gap-6 flex-wrap">
+                            <div className="space-y-2 flex-1 min-w-[200px]">
+                                <Label htmlFor="subject-search">
+                                    Rechercher
+                                </Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+                                    <Input
+                                        id="subject-search"
+                                        type="text"
+                                        placeholder="Rechercher une matière..."
+                                        value={searchQuery}
+                                        onChange={(e) =>
+                                            setSearchQuery(e.target.value)
+                                        }
+                                        className="pl-9"
+                                    />
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="subject-type-filter">
                                     Type
@@ -191,6 +210,34 @@ function SubjectsPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {typeFilterOptions.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="subject-category-filter">
+                                    Catégorie
+                                </Label>
+                                <Select
+                                    value={categoryFilter}
+                                    onValueChange={(value: string) =>
+                                        setCategoryFilter(
+                                            value as CategoryFilterValue
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="subject-category-filter">
+                                        <SelectValue placeholder="Toutes les catégories" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categoryFilterOptions.map((option) => (
                                             <SelectItem
                                                 key={option.value}
                                                 value={option.value}
@@ -254,179 +301,149 @@ function SubjectsPage() {
                 </div>
 
                 <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                    <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5 overflow-y-auto pr-3 flex flex-col">
-                        <div className="flex-1 space-y-5">
-                            {isLoading ? (
-                                <SkeletonCard />
-                            ) : paginatedSubjects.length ? (
-                                paginatedSubjects.map((subject) => (
-                                    <SubjectCard
-                                        key={subject.id}
-                                        subjectData={subject}
-                                        isSelected={subject.id === selectedId}
-                                        onSelect={handleSubjectSelect}
-                                    />
-                                ))
-                            ) : (
-                                <Card className="border-dashed">
-                                    <CardHeader>
-                                        <CardTitle>
-                                            Aucune matière trouvée
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Créez votre première matière pour
-                                            commencer à organiser vos cours.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardFooter>
-                                        <Button
-                                            onClick={() =>
-                                                setIsCreateModalOpen(true)
-                                            }
-                                        >
-                                            <Plus className="size-4" />
-                                            Nouvelle matière
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            )}
+                    <div className="col-span-7 flex flex-col overflow-hidden">
+                        {/* Scrollable subjects list */}
+                        <div className="flex-1 overflow-y-auto pr-3">
+                            <div className="space-y-5">
+                                {isLoading ? (
+                                    <SkeletonCard />
+                                ) : paginatedSubjects.length ? (
+                                    paginatedSubjects.map((subject) => (
+                                        <SubjectCard
+                                            key={subject.id}
+                                            subjectData={subject}
+                                        />
+                                    ))
+                                ) : (
+                                    <Card className="border-dashed">
+                                        <CardHeader>
+                                            <CardTitle>
+                                                Aucune matière trouvée
+                                            </CardTitle>
+                                            <CardDescription>
+                                                Créez votre première matière
+                                                pour commencer à organiser vos
+                                                cours.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardFooter>
+                                            <Button
+                                                onClick={() =>
+                                                    setIsCreateModalOpen(true)
+                                                }
+                                            >
+                                                <Plus className="size-4" />
+                                                Nouvelle matière
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                )}
+                            </div>
                         </div>
-                        {/* Pagination */}
-                        {!isLoading &&
-                            filteredSubjects.length > 0 &&
-                            totalPages > 1 && (
-                                <div className="mt-6 flex justify-center">
-                                    <Pagination>
-                                        <PaginationContent>
-                                            <PaginationItem>
-                                                <PaginationPrevious
-                                                    href="#"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        if (currentPage > 1) {
-                                                            setCurrentPage(
-                                                                currentPage - 1
-                                                            );
-                                                        }
-                                                    }}
-                                                    className={
-                                                        currentPage === 1
-                                                            ? "pointer-events-none opacity-50"
-                                                            : "cursor-pointer"
+                        {/* Fixed Pagination */}
+                        {!isLoading && filteredSubjects.length > 0 && (
+                            <div className="flex justify-center shrink-0 pt-4 border-t">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                href="#"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (currentPage > 1) {
+                                                        setCurrentPage(
+                                                            currentPage - 1
+                                                        );
                                                     }
-                                                />
-                                            </PaginationItem>
+                                                }}
+                                                className={
+                                                    currentPage === 1
+                                                        ? "pointer-events-none opacity-50"
+                                                        : "cursor-pointer"
+                                                }
+                                            />
+                                        </PaginationItem>
 
-                                            {/* Page numbers */}
-                                            {Array.from(
-                                                { length: totalPages },
-                                                (_, i) => i + 1
-                                            )
-                                                .filter((page) => {
-                                                    if (
-                                                        page === 1 ||
-                                                        page === totalPages ||
-                                                        (page >=
-                                                            currentPage - 1 &&
-                                                            page <=
-                                                                currentPage + 1)
-                                                    ) {
-                                                        return true;
-                                                    }
-                                                    return false;
-                                                })
-                                                .map((page, index, array) => {
-                                                    const showEllipsisBefore =
-                                                        index > 0 &&
-                                                        array[index - 1] !==
-                                                            page - 1;
+                                        {/* Page numbers */}
+                                        {Array.from(
+                                            { length: totalPages },
+                                            (_, i) => i + 1
+                                        )
+                                            .filter((page) => {
+                                                if (
+                                                    page === 1 ||
+                                                    page === totalPages ||
+                                                    (page >= currentPage - 1 &&
+                                                        page <= currentPage + 1)
+                                                ) {
+                                                    return true;
+                                                }
+                                                return false;
+                                            })
+                                            .map((page, index, array) => {
+                                                const showEllipsisBefore =
+                                                    index > 0 &&
+                                                    array[index - 1] !==
+                                                        page - 1;
 
-                                                    return (
-                                                        <React.Fragment
-                                                            key={page}
-                                                        >
-                                                            {showEllipsisBefore && (
-                                                                <PaginationItem>
-                                                                    <PaginationEllipsis />
-                                                                </PaginationItem>
-                                                            )}
+                                                return (
+                                                    <React.Fragment key={page}>
+                                                        {showEllipsisBefore && (
                                                             <PaginationItem>
-                                                                <PaginationLink
-                                                                    href="#"
-                                                                    isActive={
-                                                                        currentPage ===
-                                                                        page
-                                                                    }
-                                                                    onClick={(
-                                                                        e
-                                                                    ) => {
-                                                                        e.preventDefault();
-                                                                        setCurrentPage(
-                                                                            page
-                                                                        );
-                                                                    }}
-                                                                    className="cursor-pointer"
-                                                                >
-                                                                    {page}
-                                                                </PaginationLink>
+                                                                <PaginationEllipsis />
                                                             </PaginationItem>
-                                                        </React.Fragment>
-                                                    );
-                                                })}
+                                                        )}
+                                                        <PaginationItem>
+                                                            <PaginationLink
+                                                                href="#"
+                                                                isActive={
+                                                                    currentPage ===
+                                                                    page
+                                                                }
+                                                                onClick={(
+                                                                    e
+                                                                ) => {
+                                                                    e.preventDefault();
+                                                                    setCurrentPage(
+                                                                        page
+                                                                    );
+                                                                }}
+                                                                className="cursor-pointer"
+                                                            >
+                                                                {page}
+                                                            </PaginationLink>
+                                                        </PaginationItem>
+                                                    </React.Fragment>
+                                                );
+                                            })}
 
-                                            <PaginationItem>
-                                                <PaginationNext
-                                                    href="#"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        if (
-                                                            currentPage <
-                                                            totalPages
-                                                        ) {
-                                                            setCurrentPage(
-                                                                currentPage + 1
-                                                            );
-                                                        }
-                                                    }}
-                                                    className={
-                                                        currentPage ===
-                                                        totalPages
-                                                            ? "pointer-events-none opacity-50"
-                                                            : "cursor-pointer"
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                href="#"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    if (
+                                                        currentPage < totalPages
+                                                    ) {
+                                                        setCurrentPage(
+                                                            currentPage + 1
+                                                        );
                                                     }
-                                                />
-                                            </PaginationItem>
-                                        </PaginationContent>
-                                    </Pagination>
-                                </div>
-                            )}
+                                                }}
+                                                className={
+                                                    currentPage === totalPages
+                                                        ? "pointer-events-none opacity-50"
+                                                        : "cursor-pointer"
+                                                }
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
+                        )}
                     </div>
                     {/* Desktop sidebar - hidden on mobile */}
-                    <div
-                        className="space-y-4 hidden lg:block lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
-                        style={{ top: "auto" }}
-                    >
-                        <SubjectSummarySidebar
-                            subjectData={
-                                selectedSubjectWithDetails ?? selectedSubject
-                            }
-                            isLoading={isLoadingSubjectDetails}
-                        />
-                    </div>
                 </div>
-
-                {/* Mobile modal - only visible on screens < lg */}
-                <SubjectSummaryModal
-                    open={isModalOpen}
-                    onOpenChange={(isOpen) => {
-                        setIsModalOpen(isOpen);
-                        if (!isOpen && isMobile) {
-                            setSelectedId(null);
-                        }
-                    }}
-                    subjectData={selectedSubjectWithDetails ?? selectedSubject}
-                    isLoading={isLoadingSubjectDetails}
-                />
 
                 {/* Create Subject Modal */}
                 <CreateSubjectModal
@@ -438,50 +455,32 @@ function SubjectsPage() {
     );
 }
 
-function SubjectCard({
-    subjectData,
-    isSelected,
-    onSelect,
-}: {
-    subjectData: Subject;
-    isSelected: boolean;
-    onSelect: (id: string) => void;
-}) {
+function SubjectCard({ subjectData }: { subjectData: Subject }) {
+    const categoryConfig = getCategoryConfig(subjectData.category);
+    const CategoryIcon = categoryConfig.icon;
+    const categoryLabel = getCategoryLabel(subjectData.category);
+
     return (
-        <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(subjectData.id)}
-            onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(subjectData.id);
-                }
-            }}
-            className={cn(
-                "group cursor-pointer border-border/70 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                isSelected
-                    ? "border-primary shadow-sm"
-                    : "hover:border-primary/50 hover:shadow-sm"
-            )}
-        >
+        <Card className="border-border/70">
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-4">
                     <div
                         className={cn(
-                            "flex size-12 items-center justify-center rounded-xl bg-muted"
+                            "flex size-12 items-center justify-center rounded-xl",
+                            categoryConfig.color
                         )}
                     >
-                        <BookOpen className="size-6" aria-hidden />
+                        <CategoryIcon
+                            className={cn("size-6", categoryConfig.iconColor)}
+                            aria-hidden
+                        />
                     </div>
                     <div className="space-y-1">
                         <CardTitle className="">{subjectData.name}</CardTitle>
                         <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
                             <span>{subjectData.type}</span>
                             <span className="text-muted-foreground">•</span>
-                            <span>{subjectData.hours_per_week}h / semaine</span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{subjectData.total_hours}h total</span>
+                            <span>{categoryLabel}</span>
                         </CardDescription>
                     </div>
                 </div>
@@ -489,7 +488,11 @@ function SubjectCard({
                 <CardAction>
                     <Button
                         asChild
-                        className="shrink-0 bg-primary hover:bg-primary/90"
+                        className={cn(
+                            "shrink-0 text-white",
+                            categoryConfig.buttonColor,
+                            categoryConfig.buttonHoverColor
+                        )}
                         aria-label="Voir la matière"
                     >
                         <Link
@@ -502,175 +505,5 @@ function SubjectCard({
                 </CardAction>
             </CardHeader>
         </Card>
-    );
-}
-
-function SubjectSummarySidebar({
-    subjectData,
-    isLoading = false,
-}: {
-    subjectData: SubjectWithLessons | Subject | undefined;
-    isLoading?: boolean;
-}) {
-    if (!subjectData) {
-        return (
-            <Card className="border-dashed">
-                <CardHeader>
-                    <CardTitle>Sélectionnez une matière</CardTitle>
-                    <CardDescription>
-                        Sélectionnez une matière pour afficher son résumé et ses
-                        statistiques.
-                    </CardDescription>
-                </CardHeader>
-            </Card>
-        );
-    }
-
-    return (
-        <CardInfoLayout
-            title={`${subjectData.name}`}
-            description={`${subjectData.type} • ${subjectData.hours_per_week}h / semaine`}
-            footer={
-                <ViewDetailButton
-                    to={SubjectDetailRoute.to}
-                    params={{ subjectId: subjectData.id }}
-                />
-            }
-        >
-            <SubjectSummaryContent
-                subjectData={subjectData}
-                isLoading={isLoading}
-            />
-        </CardInfoLayout>
-    );
-}
-
-function SubjectSummaryModal({
-    open,
-    onOpenChange,
-    subjectData,
-    isLoading = false,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    subjectData: SubjectWithLessons | Subject | undefined;
-    isLoading?: boolean;
-}) {
-    return (
-        <FormSheet
-            open={open}
-            onOpenChange={onOpenChange}
-            title={
-                subjectData
-                    ? `${subjectData.name} - ${subjectData.type}`
-                    : "Résumé de la matière"
-            }
-            children={
-                <>
-                    <SubjectSummaryContent
-                        subjectData={subjectData}
-                        isLoading={isLoading}
-                    />
-                </>
-            }
-            footer={
-                subjectData && (
-                    <ViewDetailButton
-                        to={SubjectDetailRoute.to}
-                        params={{ subjectId: subjectData.id }}
-                    />
-                )
-            }
-        ></FormSheet>
-    );
-}
-
-function SubjectSummaryContent({
-    subjectData,
-    isLoading = false,
-}: {
-    subjectData: SubjectWithLessons | Subject | undefined;
-    isLoading?: boolean;
-}) {
-    if (!subjectData) {
-        return (
-            <div className="space-y-4 py-4">
-                <p className="text-sm text-muted-foreground">
-                    Sélectionnez une matière pour afficher son résumé et ses
-                    statistiques.
-                </p>
-            </div>
-        );
-    }
-
-    // Extract upcoming lessons if the subject has lessons
-    const upcomingLessons = useMemo(() => {
-        if (
-            "lessons" in subjectData &&
-            Array.isArray(subjectData.lessons) &&
-            subjectData.lessons.length > 0
-        ) {
-            const lessons = subjectData.lessons
-                .map((lesson) => ({
-                    ...lesson,
-                    subject_name: subjectData.name,
-                    start_at: lesson.start_at ?? undefined,
-                    end_at: lesson.end_at ?? undefined,
-                }))
-                .sort((a, b) => {
-                    const dateA = new Date(a.start_at || "").getTime();
-                    const dateB = new Date(b.start_at || "").getTime();
-                    return dateA - dateB;
-                })
-                .slice(0, 3);
-
-            return lessons as LessonWithSubject[];
-        }
-        return [];
-    }, [subjectData]);
-
-    return (
-        <div className="flex flex-col gap-6">
-            {/* Upcoming Lessons */}
-            <section>
-                <p className="font-medium pb-3">Prochaines leçons</p>
-                {isLoading ? (
-                    <div className="space-y-2">
-                        <div className="h-16 rounded-lg border border-border/60 bg-muted/20 animate-pulse" />
-                        <div className="h-16 rounded-lg border border-border/60 bg-muted/20 animate-pulse" />
-                    </div>
-                ) : upcomingLessons.length > 0 ? (
-                    <div className="space-y-2">
-                        {upcomingLessons.map((lesson) => {
-                            const { dateStr, timeStr } = formatLessonDateTime(
-                                lesson.start_at,
-                                lesson.end_at
-                            );
-
-                            return (
-                                <div
-                                    key={lesson.id}
-                                    className="flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/20 px-4 py-3 text-sm"
-                                >
-                                    <span className="font-semibold text-foreground">
-                                        {lesson.label}
-                                    </span>
-                                    {dateStr && (
-                                        <span className="text-xs text-muted-foreground">
-                                            {dateStr}
-                                            {timeStr && ` • ${timeStr}`}
-                                        </span>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">
-                        Aucune leçon planifiée prochainement
-                    </p>
-                )}
-            </section>
-        </div>
     );
 }
