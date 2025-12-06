@@ -9,7 +9,13 @@ import {
     listSchools,
     patchSchoolClass,
 } from "./school_class";
-import { createLesson, getLesson, listLessons, patchLesson } from "./lesson";
+import {
+    createLesson,
+    deleteLesson,
+    getLesson,
+    listLessons,
+    patchLesson,
+} from "./lesson";
 import {
     createSubject,
     getSubject,
@@ -44,6 +50,7 @@ export const router = base.router({
         get: getLesson,
         create: createLesson,
         patch: patchLesson,
+        delete: deleteLesson,
     },
 });
 

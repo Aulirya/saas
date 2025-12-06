@@ -3,8 +3,7 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orpc } from "@/orpc/client";
-import { SUBJECT_CATEGORIES, SubjectCategory } from "@saas/shared";
-import { getCategoryLabel } from "@/lib/subject-category";
+import { lesson_create_input } from "@saas/shared";
 
 import { FormSheet } from "@/components/ui/form-sheet";
 import { SheetClose } from "@/components/ui/sheet";
@@ -25,52 +24,50 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { subject_create_input, type SubjectCreateInput } from "@saas/shared";
 
-// Default subject types (can be supplemented by database values)
-const defaultSubjectTypes = ["core", "option", "support"] as const;
-
-// Subject categories matching the database enum
-const subjectCategories = SUBJECT_CATEGORIES as unknown as SubjectCategory[];
-
-interface CreateSubjectModalProps {
+interface CreateLessonModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    subjectId: string;
     initialData?: {
         id: string;
-        name: string;
-        description?: string | null;
-        type: "core" | "option" | "support" | null;
-        category: string;
+        label: string;
+        description: string;
+        duration: number;
+        status: "done" | "to_review" | "in_progress" | "to_do";
+        scope: "core" | "bonus" | "optional";
     };
 }
 
-export function CreateSubjectModal({
+export function CreateLessonModal({
     open,
     onOpenChange,
+    subjectId,
     initialData,
-}: CreateSubjectModalProps) {
+}: CreateLessonModalProps) {
     const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isEditMode = !!initialData;
 
     const form = useForm({
         defaultValues: {
-            name: initialData?.name ?? "",
             description: initialData?.description ?? "",
-            type: initialData?.type ?? "",
-            category: initialData?.category ?? "",
+            label: initialData?.label ?? "",
+            duration: initialData?.duration ?? 60,
+            status: initialData?.status ?? "to_do",
+            scope: initialData?.scope ?? "core",
         },
         validators: {
             onSubmit: ({ value }) => {
                 const transformedValue = {
-                    ...value,
-                    description:
-                        value.description && value.description.trim().length > 0
-                            ? value.description
-                            : null,
+                    subject_id: subjectId,
+                    description: value.description,
+                    label: value.label,
+                    duration: value.duration,
+                    status: value.status,
+                    scope: value.scope,
                 };
-                const result = subject_create_input.safeParse(transformedValue);
+                const result = lesson_create_input.safeParse(transformedValue);
 
                 if (!result.success) {
                     return "Veuillez corriger les erreurs dans le formulaire";
@@ -82,101 +79,38 @@ export function CreateSubjectModal({
         onSubmit: async ({ value }) => {
             setIsSubmitting(true);
 
+            const lessonData = {
+                subject_id: subjectId,
+                description: value.description,
+                label: value.label,
+                duration: value.duration,
+                status: value.status,
+                scope: value.scope,
+            };
+
             if (isEditMode && initialData) {
-                updateSubject({
+                updateLesson({
                     id: initialData.id,
-                    name: value.name,
-                    description: value.description || null,
-                    type: value.type as "core" | "option" | "support",
-                    category: value.category as SubjectCategory,
+                    ...lessonData,
                 });
             } else {
-                createSubject({
-                    name: value.name,
-                    description: value.description || null,
-                    type: value.type as
-                        | "core"
-                        | "option"
-                        | "support"
-                        | undefined,
-                    category: value.category as SubjectCategory,
-                });
+                createLesson(lessonData);
             }
         },
     });
 
-    // Reset form when initialData changes (when modal opens with edit data)
+    // Reset form when initialData changes
     useEffect(() => {
         if (open && initialData) {
-            form.setFieldValue("name", initialData.name);
-            form.setFieldValue("description", initialData.description ?? "");
-            form.setFieldValue("type", initialData.type);
-            form.setFieldValue("category", initialData.category);
+            form.setFieldValue("description", initialData.description);
+            form.setFieldValue("label", initialData.label);
+            form.setFieldValue("duration", initialData.duration);
+            form.setFieldValue("status", initialData.status);
+            form.setFieldValue("scope", initialData.scope);
         } else if (open && !initialData) {
-            // Reset to empty values when opening for create
             form.reset();
         }
     }, [open, initialData, form]);
-
-    // Helper function to extract error message from orpc errors
-    const extractErrorMessage = (error: unknown): string => {
-        console.log("Full error object:", error);
-        console.log("Error type:", typeof error);
-        console.log("Error constructor:", error?.constructor?.name);
-
-        // Handle ORPCError structure (has code and data properties)
-        if (
-            error &&
-            typeof error === "object" &&
-            "code" in error &&
-            "data" in error &&
-            error.data &&
-            typeof error.data === "object" &&
-            "message" in error.data &&
-            typeof error.data.message === "string"
-        ) {
-            console.log(
-                "Found ORPCError with data.message:",
-                error.data.message
-            );
-            return error.data.message;
-        }
-
-        // Handle Error objects
-        if (error instanceof Error) {
-            console.log("Found Error object with message:", error.message);
-            return error.message;
-        }
-
-        // Handle orpc error structure (may have data.message without code)
-        if (
-            error &&
-            typeof error === "object" &&
-            "data" in error &&
-            error.data &&
-            typeof error.data === "object" &&
-            "message" in error.data &&
-            typeof error.data.message === "string"
-        ) {
-            console.log("Found error with data.message:", error.data.message);
-            return error.data.message;
-        }
-
-        // Handle objects with direct message property
-        if (
-            error &&
-            typeof error === "object" &&
-            "message" in error &&
-            typeof error.message === "string"
-        ) {
-            console.log("Found error with direct message:", error.message);
-            return error.message;
-        }
-
-        // Fallback
-        console.log("Using fallback error message");
-        return "Une erreur est survenue";
-    };
 
     // Shared mutation handlers
     const getMutationHandlers = (
@@ -184,32 +118,27 @@ export function CreateSubjectModal({
         successMessage: string
     ) => ({
         onSuccess: () => {
-            // Invalidate all related queries to refresh the lists
-            queryClient.invalidateQueries({ queryKey: ["subjects"] });
+            // Invalidate all related queries
+            queryClient.invalidateQueries({ queryKey: ["lessons"] });
             queryClient.invalidateQueries({
-                queryKey: orpc.subject.list.queryKey({}),
+                queryKey: orpc.lesson.list.queryKey({}),
             });
-            if (initialData?.id) {
-                queryClient.invalidateQueries({
-                    queryKey: orpc.subject.getWithLessons.queryKey({
-                        input: { id: initialData.id },
-                    }),
-                });
-            }
+            queryClient.invalidateQueries({
+                queryKey: orpc.subject.getWithLessons.queryKey({
+                    input: { id: subjectId },
+                }),
+            });
             toast.success(successMessage);
             form.reset();
             onOpenChange(false);
         },
         onError: (error: unknown) => {
-            const errorMsg = extractErrorMessage(error);
+            console.error(errorMessage, error);
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue";
             toast.error(errorMsg);
-            toast(errorMsg, {
-                description: errorMsg,
-                action: {
-                    label: "Fermer",
-                    onClick: () => handleClose(false),
-                },
-            });
             setIsSubmitting(false);
         },
         onSettled: () => {
@@ -223,27 +152,34 @@ export function CreateSubjectModal({
         successMessage: string
     ) => ({
         onSuccess: () => {
-            // Invalidate all related queries to refresh the lists
-            queryClient.invalidateQueries({ queryKey: ["subjects"] });
+            // Invalidate all related queries
+            queryClient.invalidateQueries({ queryKey: ["lessons"] });
             queryClient.invalidateQueries({
-                queryKey: orpc.subject.list.queryKey({}),
+                queryKey: orpc.lesson.list.queryKey({}),
+            });
+            queryClient.invalidateQueries({
+                queryKey: orpc.subject.getWithLessons.queryKey({
+                    input: { id: subjectId },
+                }),
             });
             toast.success(successMessage);
             form.reset();
             onOpenChange(false);
         },
         onError: (error: unknown) => {
-            console.error("Error in create subject:", errorMessage, error);
-            const errorMsg = extractErrorMessage(error);
-            console.log("Extracted error message:", errorMsg);
-            toast.error(errorMsg);
+            console.error(errorMessage, error);
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue";
+
             // Check if it's a duplicate name error
             if (
                 errorMsg.includes("existe déjà") ||
                 errorMsg.includes("already exists")
             ) {
-                // Set the error on the name field
-                form.setFieldMeta("name", (meta) => ({
+                // Set the error on the label field
+                form.setFieldMeta("label", (meta) => ({
                     ...meta,
                     errors: [errorMsg],
                     isTouched: true,
@@ -260,35 +196,46 @@ export function CreateSubjectModal({
         },
     });
 
-    const { mutate: createSubject } = useMutation({
-        mutationFn: async (data: Omit<SubjectCreateInput, "user_id">) => {
-            const result = await orpc.subject.create.call(
-                data as unknown as Parameters<
-                    typeof orpc.subject.create.call
-                >[0]
-            );
-            console.log("Result of subject.create:", result);
-            return result;
+    const { mutate: createLesson } = useMutation({
+        mutationFn: async (data: {
+            subject_id: string;
+            description: string;
+            label: string;
+            duration: number;
+            status: "done" | "to_review" | "in_progress" | "to_do";
+            scope: "core" | "bonus" | "optional";
+        }) => {
+            return await orpc.lesson.create.call(data);
         },
         ...getCreateMutationHandlers(
-            "Error creating subject:",
-            "Matière créée avec succès"
+            "Error creating lesson:",
+            "Leçon créée avec succès"
         ),
     });
 
-    const { mutate: updateSubject } = useMutation({
+    const { mutate: updateLesson } = useMutation({
         mutationFn: async (data: {
             id: string;
-            name: string;
-            description?: string | null;
-            type: string;
-            category: SubjectCategory;
+            subject_id: string;
+            description: string;
+            label: string;
+            duration: number;
+            status: "done" | "to_review" | "in_progress" | "to_do";
+            scope: "core" | "bonus" | "optional";
         }) => {
-            return await orpc.subject.patch.call(data);
+            return await orpc.lesson.patch.call({
+                id: data.id,
+                subject_id: data.subject_id,
+                description: data.description,
+                label: data.label,
+                duration: data.duration,
+                status: data.status,
+                scope: data.scope,
+            });
         },
         ...getMutationHandlers(
-            "Error updating subject:",
-            "Matière modifiée avec succès"
+            "Error updating lesson:",
+            "Leçon modifiée avec succès"
         ),
     });
 
@@ -304,13 +251,11 @@ export function CreateSubjectModal({
             open={open}
             onOpenChange={onOpenChange}
             title={
-                isEditMode
-                    ? "Modifier la matière"
-                    : "Créer une nouvelle matière"
+                isEditMode ? "Modifier la leçon" : "Créer une nouvelle leçon"
             }
             children={
                 <form
-                    id="create-subject-form"
+                    id="create-lesson-form"
                     className="overflow-y-auto"
                     onSubmit={(e) => {
                         e.preventDefault();
@@ -319,13 +264,13 @@ export function CreateSubjectModal({
                     }}
                 >
                     <FieldGroup>
-                        {/* Subject Name */}
+                        {/* Lesson Label - Mandatory */}
                         <form.Field
-                            name="name"
+                            name="label"
                             validators={{
                                 onChange: ({ value }) => {
                                     if (!value || value.trim().length === 0) {
-                                        return "Le nom est requis";
+                                        return "Le titre est requis";
                                     }
                                     return undefined;
                                 },
@@ -338,9 +283,8 @@ export function CreateSubjectModal({
                                 return (
                                     <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
-                                            Nom de la matière
+                                            Titre
                                         </FieldLabel>
-
                                         <Input
                                             id={field.name}
                                             name={field.name}
@@ -368,7 +312,7 @@ export function CreateSubjectModal({
                                                 if (hasServerError) {
                                                     // Clear only server errors using form instance
                                                     form.setFieldMeta(
-                                                        "name",
+                                                        "label",
                                                         (meta: any) => {
                                                             const currentErrors =
                                                                 (meta.errors as unknown[]) ??
@@ -394,7 +338,7 @@ export function CreateSubjectModal({
                                                 }
                                             }}
                                             onBlur={field.handleBlur}
-                                            placeholder="Nom de la matière"
+                                            placeholder="Titre de la leçon"
                                             aria-invalid={isInvalid}
                                         />
                                         <FieldError>
@@ -404,20 +348,7 @@ export function CreateSubjectModal({
                                                         {typeof error ===
                                                         "string"
                                                             ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
+                                                            : "Erreur de validation"}
                                                     </span>
                                                 )
                                             )}
@@ -427,87 +358,18 @@ export function CreateSubjectModal({
                             }}
                         />
 
-                        {/* Subject Type */}
-                        <form.Field
-                            name="type"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Type
-                                        </FieldLabel>
-                                        <Select
-                                            value={field.state.value}
-                                            onValueChange={(value) => {
-                                                field.handleChange(value);
-                                                field.handleBlur();
-                                            }}
-                                        >
-                                            <SelectTrigger
-                                                id={field.name}
-                                                aria-invalid={isInvalid}
-                                            >
-                                                <SelectValue placeholder="Sélectionnez un type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {defaultSubjectTypes.map(
-                                                    (type) => (
-                                                        <SelectItem
-                                                            key={type}
-                                                            value={type}
-                                                        >
-                                                            {type}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
-                        />
-
-                        {/* Description */}
+                        {/* Description (optionnelle) */}
                         <form.Field
                             name="description"
                             children={(field) => {
                                 const isInvalid =
                                     field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
+                                    field.state.meta.errors.length > 0;
 
                                 return (
                                     <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
-                                            Description (optionnel)
+                                            Description
                                         </FieldLabel>
                                         <Textarea
                                             id={field.name}
@@ -519,9 +381,9 @@ export function CreateSubjectModal({
                                                 )
                                             }
                                             onBlur={field.handleBlur}
-                                            placeholder="Description de la matière..."
+                                            placeholder="Description de la leçon..."
                                             aria-invalid={isInvalid}
-                                            rows={3}
+                                            rows={4}
                                         />
                                         <FieldError>
                                             {field.state.meta.errors?.map(
@@ -530,20 +392,7 @@ export function CreateSubjectModal({
                                                         {typeof error ===
                                                         "string"
                                                             ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
+                                                            : "Erreur de validation"}
                                                     </span>
                                                 )
                                             )}
@@ -553,20 +402,130 @@ export function CreateSubjectModal({
                             }}
                         />
 
-                        {/* Category */}
+                        {/* Status */}
                         <form.Field
-                            name="category"
+                            name="status"
+                            children={(field) => {
+                                const isInvalid =
+                                    field.state.meta.isTouched &&
+                                    field.state.meta.errors.length > 0;
+
+                                return (
+                                    <Field data-invalid={isInvalid}>
+                                        <FieldLabel htmlFor={field.name}>
+                                            Statut
+                                        </FieldLabel>
+                                        <Select
+                                            value={field.state.value}
+                                            onValueChange={(value) => {
+                                                field.handleChange(
+                                                    value as typeof field.state.value
+                                                );
+                                                field.handleBlur();
+                                            }}
+                                        >
+                                            <SelectTrigger
+                                                id={field.name}
+                                                aria-invalid={isInvalid}
+                                            >
+                                                <SelectValue placeholder="Sélectionnez un statut" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="to_do">
+                                                    À faire
+                                                </SelectItem>
+                                                <SelectItem value="in_progress">
+                                                    En cours
+                                                </SelectItem>
+                                                <SelectItem value="to_review">
+                                                    À revoir
+                                                </SelectItem>
+                                                <SelectItem value="done">
+                                                    Terminée
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FieldError>
+                                            {field.state.meta.errors?.map(
+                                                (error, index) => (
+                                                    <span key={index}>
+                                                        {typeof error ===
+                                                        "string"
+                                                            ? error
+                                                            : "Erreur de validation"}
+                                                    </span>
+                                                )
+                                            )}
+                                        </FieldError>
+                                    </Field>
+                                );
+                            }}
+                        />
+
+                        {/* Scope */}
+                        <form.Field
+                            name="scope"
+                            children={(field) => {
+                                const isInvalid =
+                                    field.state.meta.isTouched &&
+                                    field.state.meta.errors.length > 0;
+
+                                return (
+                                    <Field data-invalid={isInvalid}>
+                                        <FieldLabel htmlFor={field.name}>
+                                            Portée
+                                        </FieldLabel>
+                                        <Select
+                                            value={field.state.value}
+                                            onValueChange={(value) => {
+                                                field.handleChange(
+                                                    value as typeof field.state.value
+                                                );
+                                                field.handleBlur();
+                                            }}
+                                        >
+                                            <SelectTrigger
+                                                id={field.name}
+                                                aria-invalid={isInvalid}
+                                            >
+                                                <SelectValue placeholder="Sélectionnez une portée" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="core">
+                                                    Tronc commun
+                                                </SelectItem>
+                                                <SelectItem value="bonus">
+                                                    Bonus
+                                                </SelectItem>
+                                                <SelectItem value="optional">
+                                                    Optionnel
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FieldError>
+                                            {field.state.meta.errors?.map(
+                                                (error, index) => (
+                                                    <span key={index}>
+                                                        {typeof error ===
+                                                        "string"
+                                                            ? error
+                                                            : "Erreur de validation"}
+                                                    </span>
+                                                )
+                                            )}
+                                        </FieldError>
+                                    </Field>
+                                );
+                            }}
+                        />
+
+                        {/* Duration */}
+                        <form.Field
+                            name="duration"
                             validators={{
                                 onChange: ({ value }) => {
-                                    if (!value) {
-                                        return "La catégorie est requise";
-                                    }
-                                    if (
-                                        !subjectCategories.includes(
-                                            value as SubjectCategory
-                                        )
-                                    ) {
-                                        return "Catégorie invalide";
+                                    if (!value || value <= 0) {
+                                        return "La durée doit être supérieure à 0";
                                     }
                                     return undefined;
                                 },
@@ -579,37 +538,26 @@ export function CreateSubjectModal({
                                 return (
                                     <Field data-invalid={isInvalid}>
                                         <FieldLabel htmlFor={field.name}>
-                                            Catégorie
+                                            Durée (en minutes)
                                         </FieldLabel>
-                                        <Select
+                                        <Input
+                                            id={field.name}
+                                            name={field.name}
+                                            type="number"
+                                            min="1"
                                             value={field.state.value}
-                                            onValueChange={(value) => {
-                                                field.handleChange(value);
-                                                field.handleBlur();
-                                            }}
-                                        >
-                                            <SelectTrigger
-                                                id={field.name}
-                                                aria-invalid={isInvalid}
-                                            >
-                                                <SelectValue placeholder="Sélectionnez une catégorie" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {subjectCategories.map(
-                                                    (category) => (
-                                                        <SelectItem
-                                                            key={category}
-                                                            value={category}
-                                                        >
-                                                            {getCategoryLabel(
-                                                                category
-                                                            )}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-
+                                            onChange={(e) =>
+                                                field.handleChange(
+                                                    parseInt(
+                                                        e.target.value,
+                                                        10
+                                                    ) || 60
+                                                )
+                                            }
+                                            onBlur={field.handleBlur}
+                                            placeholder="60"
+                                            aria-invalid={isInvalid}
+                                        />
                                         <FieldError>
                                             {field.state.meta.errors?.map(
                                                 (error, index) => (
@@ -617,20 +565,7 @@ export function CreateSubjectModal({
                                                         {typeof error ===
                                                         "string"
                                                             ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
+                                                            : "Erreur de validation"}
                                                     </span>
                                                 )
                                             )}
@@ -664,11 +599,10 @@ export function CreateSubjectModal({
                                     >
                                         Annuler
                                     </Button>
-                                    {canSubmit ? "true" : "false"}{" "}
-                                    {form.state.isValid ? "true" : "false"}
+
                                     <Button
                                         type="submit"
-                                        form="create-subject-form"
+                                        form="create-lesson-form"
                                         disabled={
                                             !canSubmit || !form.state.isValid
                                         }
@@ -678,8 +612,8 @@ export function CreateSubjectModal({
                                                 ? "Modification..."
                                                 : "Création..."
                                             : isEditMode
-                                            ? "Modifier la matière"
-                                            : "Créer la matière"}
+                                            ? "Modifier la leçon"
+                                            : "Créer la leçon"}
                                     </Button>
                                 </>
                             )}

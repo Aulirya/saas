@@ -7,7 +7,7 @@ type SubjectModelWithNestedId = SubjectModel & {
 };
 
 type SubjectType = "core" | "option" | "support";
-type SubjectCategory = Subject["category"];
+type SubjectCategory = SubjectCategory;
 
 export namespace SubjectMapper {
     /**

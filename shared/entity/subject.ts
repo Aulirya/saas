@@ -4,8 +4,8 @@ import { lesson } from "./lesson";
 export const subject = z.object({
     id: z.string(),
     name: z.string(),
-    description: z.string().optional(),
-    type: z.enum(["core", "option", "support"]),
+    description: z.string().nullable().optional(),
+    type: z.enum(["core", "option", "support"]).nullable().optional(),
     category: z.enum([
         "Mathematics",
         "Language",

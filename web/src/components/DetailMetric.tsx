@@ -48,12 +48,21 @@ const metricConfigs: Record<string, MetricConfig> = {
     },
 };
 
-export function DetailMetric({ label, value }: DetailMetricProps) {
-    const config = metricConfigs[label] || {
-        icon: GraduationCap,
-        iconBg: "bg-muted",
-        iconColor: "text-muted-foreground",
-    };
+export function DetailMetric({
+    label,
+    value,
+    icon,
+    iconBg,
+    iconColor,
+}: DetailMetricProps) {
+    const config =
+        icon && iconBg && iconColor
+            ? { icon, iconBg, iconColor }
+            : metricConfigs[label] || {
+                  icon: GraduationCap,
+                  iconBg: "bg-muted",
+                  iconColor: "text-muted-foreground",
+              };
     const Icon = config.icon;
 
     return (

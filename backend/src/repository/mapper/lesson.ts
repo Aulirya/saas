@@ -8,8 +8,10 @@ export namespace LessonMapper {
             subject_id: model.subject_id.toString(),
             description: model.description,
             label: model.label,
-            start_at: model.start_at ? model.start_at.toString() : null,
-            end_at: model.end_at ? model.end_at.toString() : null,
+            order: model.order,
+            duration: model.duration ?? 60,
+            status: (model.status as Lesson["status"]) ?? "to_do",
+            scope: (model.scope as Lesson["scope"]) ?? "core",
             comments:
                 model.comments?.map((comment) => ({
                     title: comment.title ?? "",

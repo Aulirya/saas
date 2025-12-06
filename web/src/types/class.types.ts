@@ -37,6 +37,9 @@ export type MetricConfig = {
 export type DetailMetricProps = {
     label: string;
     value: string | number;
+    icon?: ComponentType<{ className?: string }>;
+    iconBg?: string;
+    iconColor?: string;
 };
 
 export type EmptyStateProps = {

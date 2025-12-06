@@ -3,7 +3,6 @@ import { format } from "date-fns";
 import { createFileRoute } from "@tanstack/react-router";
 import {
     AlertCircle,
-    BookOpen,
     Download,
     Edit,
     Upload,
@@ -14,9 +13,14 @@ import {
     Clock,
     CheckCircle2,
     Circle,
-    XCircle,
     PlayCircle,
+    ChevronUp,
+    ChevronDown,
+    Plus,
+    Trash2,
 } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -30,11 +34,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SkeletonPageDetail } from "@/components/ui/skeleton";
 import { DetailMetric } from "@/components/DetailMetric";
-
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useSubjectWithLessons } from "@/features/subjects/api/useSubjects";
 import { CreateSubjectModal } from "@/features/subjects/components/CreateSubjectModal";
+import { CreateLessonModal } from "@/features/subjects/components/CreateLessonModal";
 import type { EmptyStateProps } from "@/types/class.types";
 import type { Lesson } from "@saas/shared";
+import { getCategoryLabel, getCategoryConfig } from "@/lib/subject-category";
+import { getScopeLabel, getScopeConfig } from "@/lib/lesson-scope";
+import { orpc } from "@/orpc/client";
 
 export const Route = createFileRoute("/_protected/subjects/$subjectId")({
     component: SubjectDetailPage,
@@ -43,7 +59,20 @@ export const Route = createFileRoute("/_protected/subjects/$subjectId")({
 function SubjectDetailPage() {
     const { subjectId } = Route.useParams();
     const navigate = Route.useNavigate();
+    const queryClient = useQueryClient();
+
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isCreateLessonModalOpen, setIsCreateLessonModalOpen] =
+        useState(false);
+    const [lessonToEdit, setLessonToEdit] = useState<
+        (Lesson & { subject_name: string }) | null
+    >(null);
+    const [lessonForComments, setLessonForComments] = useState<Lesson | null>(
+        null
+    );
+    const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+    const [lessonToDelete, setLessonToDelete] = useState<Lesson | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const {
         data: subjectData,
@@ -54,13 +83,6 @@ function SubjectDetailPage() {
 
     console.log(subjectData);
 
-    const headerSubtitle = useMemo(() => {
-        if (!subjectData) {
-            return "";
-        }
-        return `${subjectData.type} • ${subjectData.hours_per_week}h / semaine • ${subjectData.total_hours}h total`;
-    }, [subjectData]);
-
     const upcomingLessons = useMemo(() => {
         if (!subjectData || !subjectData.lessons) {
             return [];
@@ -70,17 +92,83 @@ function SubjectDetailPage() {
             .map((lesson) => ({
                 ...lesson,
                 subject_name: subjectData.name,
-                start_at: lesson.start_at ?? null,
-                end_at: lesson.end_at ?? null,
                 label: lesson.label ?? "Sans titre",
             }))
             .sort((a, b) => {
-                const dateA = new Date(a.start_at || "").getTime();
-                const dateB = new Date(b.start_at || "").getTime();
-                return dateA - dateB;
-            })
-            .slice(0, 5);
+                const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+                const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.label.localeCompare(b.label);
+            });
     }, [subjectData]);
+
+    console.log("upcomingLessons", upcomingLessons);
+
+    const { mutate: updateLessonComments } = useMutation({
+        mutationFn: async (params: {
+            id: string;
+            comments: { title: string; description: string }[];
+        }) => {
+            return await orpc.lesson.patch.call({
+                id: params.id,
+                comments: params.comments,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lessons"] });
+            queryClient.invalidateQueries({
+                queryKey: orpc.lesson.list.queryKey({}),
+            });
+            if (subjectId) {
+                queryClient.invalidateQueries({
+                    queryKey: orpc.subject.getWithLessons.queryKey({
+                        input: { id: subjectId },
+                    }),
+                });
+            }
+            toast.success("Commentaires de la leçon mis à jour");
+            setIsCommentsModalOpen(false);
+            setLessonForComments(null);
+        },
+        onError: (error: unknown) => {
+            console.error("Error updating lesson comments:", error);
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue";
+            toast.error(errorMsg);
+        },
+    });
+
+    const { mutate: deleteLesson } = useMutation({
+        mutationFn: async (id: string) => {
+            return await orpc.lesson.delete.call({ id });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["lessons"] });
+            queryClient.invalidateQueries({
+                queryKey: orpc.lesson.list.queryKey({}),
+            });
+            if (subjectId) {
+                queryClient.invalidateQueries({
+                    queryKey: orpc.subject.getWithLessons.queryKey({
+                        input: { id: subjectId },
+                    }),
+                });
+            }
+            toast.success("Leçon supprimée avec succès");
+            setIsDeleteDialogOpen(false);
+            setLessonToDelete(null);
+        },
+        onError: (error: unknown) => {
+            console.error("Error deleting lesson:", error);
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue";
+            toast.error(errorMsg);
+        },
+    });
 
     if (isLoading) {
         return (
@@ -135,7 +223,6 @@ function SubjectDetailPage() {
         <div className="space-y-6">
             <PageHeader
                 title={subjectData.name}
-                subtitle={headerSubtitle}
                 variant="detailed"
                 actions={[
                     {
@@ -157,97 +244,239 @@ function SubjectDetailPage() {
             <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
                 <div className="space-y-6">
                     <section className="flex flex-row space-between gap-6">
-                        <DetailMetric
-                            label="Heures / semaine"
-                            value={subjectData.hours_per_week}
-                        />
-                        <DetailMetric
-                            label="Heures totales"
-                            value={subjectData.total_hours}
-                        />
+                        {(() => {
+                            const categoryConfig = getCategoryConfig(
+                                subjectData.category
+                            );
+                            const CategoryIcon = categoryConfig.icon;
+                            return (
+                                <DetailMetric
+                                    label="Catégorie"
+                                    value={getCategoryLabel(
+                                        subjectData.category
+                                    )}
+                                    icon={CategoryIcon}
+                                    iconBg={categoryConfig.color}
+                                    iconColor={categoryConfig.iconColor}
+                                />
+                            );
+                        })()}
                         <DetailMetric
                             label="Leçons"
                             value={subjectData.lessons?.length ?? 0}
                         />
                     </section>
 
-                    {/* {subjectData.description && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Description</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground">
-                                    {subjectData.description}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )} */}
+                    <div className="space-y-6 grid grid-cols-7 gap-6">
+                        <div className="col-span-5  gap-6">
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle>Leçons</CardTitle>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                setLessonToEdit(null);
+                                                setIsCreateLessonModalOpen(
+                                                    true
+                                                );
+                                            }}
+                                        >
+                                            <Plus className="size-4 mr-2" />
+                                            Nouvelle leçon
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {upcomingLessons.length === 0 ? (
+                                        <EmptyState
+                                            title="Aucune leçon planifiée prochainement"
+                                            description="Ajoutez une séance pour qu'elle s'affiche ici."
+                                        />
+                                    ) : (
+                                        upcomingLessons.map((lesson, index) => {
+                                            const estimatedTime =
+                                                lesson.duration ?? 60;
+                                            const displayOrder =
+                                                lesson.order ?? index + 1;
+                                            // Show fake data only on first lesson for design preview
+                                            const showFakeData = index === 0;
 
-                    <div className="grid grid-cols-1 gap-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Leçons</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {upcomingLessons.length === 0 ? (
+                                            return (
+                                                <LessonCard
+                                                    key={lesson.id}
+                                                    lesson={lesson}
+                                                    estimatedTime={
+                                                        estimatedTime
+                                                    }
+                                                    displayOrder={displayOrder}
+                                                    showFakeData={showFakeData}
+                                                    onEdit={() => {
+                                                        setLessonToEdit(lesson);
+                                                        setIsCreateLessonModalOpen(
+                                                            true
+                                                        );
+                                                    }}
+                                                    onImport={() =>
+                                                        console.log(
+                                                            "Import lesson",
+                                                            lesson.id
+                                                        )
+                                                    }
+                                                    onComment={() => {
+                                                        setLessonForComments(
+                                                            lesson
+                                                        );
+                                                        setIsCommentsModalOpen(
+                                                            true
+                                                        );
+                                                    }}
+                                                    onMoveUp={() => {
+                                                        if (index === 0) return;
+                                                        const prev =
+                                                            upcomingLessons[
+                                                                index - 1
+                                                            ];
+                                                        orpc.lesson.patch
+                                                            .call({
+                                                                id: lesson.id,
+                                                                order:
+                                                                    (prev.order ??
+                                                                        index) +
+                                                                    0,
+                                                            })
+                                                            .then(() =>
+                                                                orpc.lesson.patch.call(
+                                                                    {
+                                                                        id: prev.id,
+                                                                        order: displayOrder,
+                                                                    }
+                                                                )
+                                                            )
+                                                            .then(() => {
+                                                                queryClient.invalidateQueries(
+                                                                    {
+                                                                        queryKey:
+                                                                            orpc.subject.getWithLessons.queryKey(
+                                                                                {
+                                                                                    input: {
+                                                                                        id: subjectId,
+                                                                                    },
+                                                                                }
+                                                                            ),
+                                                                    }
+                                                                );
+                                                            });
+                                                    }}
+                                                    onMoveDown={() => {
+                                                        if (
+                                                            index ===
+                                                            upcomingLessons.length -
+                                                                1
+                                                        )
+                                                            return;
+                                                        const next =
+                                                            upcomingLessons[
+                                                                index + 1
+                                                            ];
+                                                        orpc.lesson.patch
+                                                            .call({
+                                                                id: lesson.id,
+                                                                order:
+                                                                    (next.order ??
+                                                                        index +
+                                                                            2) -
+                                                                    0,
+                                                            })
+                                                            .then(() =>
+                                                                orpc.lesson.patch.call(
+                                                                    {
+                                                                        id: next.id,
+                                                                        order: displayOrder,
+                                                                    }
+                                                                )
+                                                            )
+                                                            .then(() => {
+                                                                queryClient.invalidateQueries(
+                                                                    {
+                                                                        queryKey:
+                                                                            orpc.subject.getWithLessons.queryKey(
+                                                                                {
+                                                                                    input: {
+                                                                                        id: subjectId,
+                                                                                    },
+                                                                                }
+                                                                            ),
+                                                                    }
+                                                                );
+                                                            });
+                                                    }}
+                                                    onDelete={() => {
+                                                        setLessonToDelete(
+                                                            lesson
+                                                        );
+                                                        setIsDeleteDialogOpen(
+                                                            true
+                                                        );
+                                                    }}
+                                                />
+                                            );
+                                        })
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="col-span-2 space-y-6">
+                            {subjectData.description && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Description</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                            {subjectData.description}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Fichiers uploadés</CardTitle>
+                                    <CardDescription>
+                                        Tous les fichiers associés à cette
+                                        matière.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {/* TODO: Replace with actual files list when file upload is implemented */}
                                     <EmptyState
-                                        title="Aucune leçon planifiée prochainement"
-                                        description="Ajoutez une séance pour qu'elle s'affiche ici."
+                                        title="Aucun fichier uploadé"
+                                        description="Les fichiers que vous ajoutez à cette matière apparaîtront ici."
                                     />
-                                ) : (
-                                    upcomingLessons.map((lesson, index) => {
-                                        const estimatedTime = 50;
-                                        // Show fake data only on first lesson for design preview
-                                        const showFakeData = index === 0;
+                                </CardContent>
+                            </Card>
 
-                                        return (
-                                            <LessonCard
-                                                key={lesson.id}
-                                                lesson={lesson}
-                                                estimatedTime={estimatedTime}
-                                                showFakeData={showFakeData}
-                                                onEdit={() =>
-                                                    console.log(
-                                                        "Edit lesson",
-                                                        lesson.id
-                                                    )
-                                                }
-                                                onImport={() =>
-                                                    console.log(
-                                                        "Import lesson",
-                                                        lesson.id
-                                                    )
-                                                }
-                                                onComment={() =>
-                                                    console.log(
-                                                        "Comment lesson",
-                                                        lesson.id
-                                                    )
-                                                }
-                                            />
-                                        );
-                                    })
-                                )}
-                            </CardContent>
-                        </Card>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        Analyses et recommandations
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Points d&apos;attention identifiés par
+                                        la plateforme.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <EmptyState
+                                        title="Aucune analyse pour le moment"
+                                        description="Les recommandations apparaîtront ici dès qu'elles seront disponibles."
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Analyses et recommandations</CardTitle>
-                            <CardDescription>
-                                Points d&apos;attention identifiés par la
-                                plateforme.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <EmptyState
-                                title="Aucune analyse pour le moment"
-                                description="Les recommandations apparaîtront ici dès qu'elles seront disponibles."
-                            />
-                        </CardContent>
-                    </Card>
                 </div>
             </div>
 
@@ -261,71 +490,131 @@ function SubjectDetailPage() {
                               name: subjectData.name,
                               description: subjectData.description ?? null,
                               type: subjectData.type,
-                              total_hours: subjectData.total_hours,
-                              hours_per_week: subjectData.hours_per_week,
+                              category: subjectData.category,
                           }
                         : undefined
                 }
             />
+
+            {subjectId && (
+                <CreateLessonModal
+                    open={isCreateLessonModalOpen}
+                    onOpenChange={setIsCreateLessonModalOpen}
+                    subjectId={subjectId}
+                    initialData={
+                        lessonToEdit
+                            ? {
+                                  id: lessonToEdit.id,
+                                  label: lessonToEdit.label,
+                                  description: lessonToEdit.description,
+                                  duration: lessonToEdit.duration,
+                                  status: lessonToEdit.status,
+                                  scope: lessonToEdit.scope,
+                              }
+                            : undefined
+                    }
+                />
+            )}
+
+            {/* Comments modal */}
+            {lessonForComments && (
+                <LessonCommentsDialog
+                    open={isCommentsModalOpen}
+                    onOpenChange={(open: boolean) => {
+                        setIsCommentsModalOpen(open);
+                        if (!open) {
+                            setLessonForComments(null);
+                        }
+                    }}
+                    lesson={lessonForComments}
+                    onSave={(comments) =>
+                        updateLessonComments({
+                            id: lessonForComments.id,
+                            comments,
+                        })
+                    }
+                />
+            )}
+
+            {/* Delete lesson confirmation */}
+            <Dialog
+                open={isDeleteDialogOpen}
+                onOpenChange={(open: boolean) => {
+                    setIsDeleteDialogOpen(open);
+                    if (!open) {
+                        setLessonToDelete(null);
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Supprimer cette leçon ?</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        Cette action est définitive et supprimera la leçon{" "}
+                        <span className="font-semibold">
+                            {lessonToDelete?.label}
+                        </span>{" "}
+                        de cette matière. Les commentaires associés seront
+                        également supprimés.
+                    </p>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                        >
+                            Annuler
+                        </Button>
+                        <Button
+                            type="button"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => {
+                                if (lessonToDelete) {
+                                    deleteLesson(lessonToDelete.id);
+                                }
+                            }}
+                        >
+                            Supprimer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
 
-type LessonStatus = "planned" | "in-progress" | "completed" | "cancelled";
+type LessonStatus = "done" | "to_review" | "in_progress" | "to_do";
 
 function getLessonStatus(lesson: Lesson): LessonStatus {
-    const now = new Date();
-    const startDate = lesson.start_at ? new Date(lesson.start_at) : null;
-    const endDate = lesson.end_at ? new Date(lesson.end_at) : null;
-
-    // If no dates, consider it planned
-    if (!startDate && !endDate) {
-        return "planned";
-    }
-
-    // If end date is in the past, lesson is completed
-    if (endDate && endDate < now) {
-        return "completed";
-    }
-
-    // If start date is in the past but end date is in the future, it's in progress
-    if (startDate && startDate <= now && endDate && endDate > now) {
-        return "in-progress";
-    }
-
-    // If start date is in the future, it's planned
-    if (startDate && startDate > now) {
-        return "planned";
-    }
-
-    // Default to planned
-    return "planned";
+    // Utilise le statut stocké depuis le backend
+    return (lesson.status ?? "to_do") as LessonStatus;
 }
 
 function getStatusConfig(status: LessonStatus) {
     switch (status) {
-        case "completed":
+        case "done":
             return {
                 label: "Terminée",
                 variant: "success" as const,
                 icon: CheckCircle2,
             };
-        case "in-progress":
+        case "in_progress":
             return {
                 label: "En cours",
                 variant: "default" as const,
                 icon: PlayCircle,
             };
-        case "cancelled":
+        case "to_review":
             return {
-                label: "Annulée",
-                variant: "warning" as const,
-                icon: XCircle,
+                label: "À revoir",
+                variant: "outline" as const,
+                icon: Circle,
             };
-        case "planned":
+        case "to_do":
         default:
             return {
-                label: "Planifiée",
+                label: "À faire",
                 variant: "outline" as const,
                 icon: Circle,
             };
@@ -335,22 +624,39 @@ function getStatusConfig(status: LessonStatus) {
 function LessonCard({
     lesson,
     estimatedTime,
+    displayOrder,
     showFakeData = false,
     onEdit,
     onImport,
     onComment,
+    onDelete,
+    onMoveUp,
+    onMoveDown,
 }: {
     lesson: Lesson & { subject_name: string };
     estimatedTime: number;
+    displayOrder: number;
     showFakeData?: boolean;
     onEdit: () => void;
     onImport: () => void;
     onComment: () => void;
+    onDelete: () => void;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
 }) {
     // Determine lesson status
     const status = getLessonStatus(lesson);
     const statusConfig = getStatusConfig(status);
     const StatusIcon = statusConfig.icon;
+
+    // Get scope configuration for colors
+    const scope = lesson.scope ?? "core";
+    const scopeConfig = getScopeConfig(scope);
+    const scopeColors = {
+        bg: scopeConfig.color,
+        text: scopeConfig.iconColor,
+        border: scopeConfig.borderColor,
+    };
 
     // Fake data for design preview
     const hasFiles = showFakeData;
@@ -365,21 +671,25 @@ function LessonCard({
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex items-start gap-3">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-background border border-border/60">
-                            <BookOpen className="size-5 text-muted-foreground" />
+                        <div
+                            className={`flex size-10 shrink-0 items-center justify-center rounded-lg border ${scopeColors.bg} ${scopeColors.border}`}
+                        >
+                            <span
+                                className={`text-lg font-semibold ${scopeColors.text}`}
+                            >
+                                {displayOrder}
+                            </span>
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className="font-semibold text-foreground leading-tight">
                                     {lesson.label}
                                 </h4>
-                                <Badge
-                                    variant={statusConfig.variant}
-                                    className="text-xs"
+                                <p
+                                    className={`text-xs ${scopeColors.border} ${scopeColors.text} self-end`}
                                 >
-                                    <StatusIcon className="size-3" />
-                                    {statusConfig.label}
-                                </Badge>
+                                    {getScopeLabel(scope)}
+                                </p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                                 {estimatedTime > 0 && (
@@ -403,6 +713,28 @@ function LessonCard({
                     </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                    <Badge variant={statusConfig.variant} className="text-xs">
+                        <StatusIcon className="size-3" />
+                        {statusConfig.label}
+                    </Badge>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={onMoveUp}
+                        className="h-8 w-8"
+                        title="Monter la leçon"
+                    >
+                        <ChevronUp className="size-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={onMoveDown}
+                        className="h-8 w-8"
+                        title="Descendre la leçon"
+                    >
+                        <ChevronDown className="size-4" />
+                    </Button>
                     <Button
                         variant="ghost"
                         size="icon-sm"
@@ -429,6 +761,15 @@ function LessonCard({
                         title="Ajouter un commentaire"
                     >
                         <MessageSquare className="size-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={onDelete}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        title="Supprimer la leçon"
+                    >
+                        <Trash2 className="size-4" />
                     </Button>
                 </div>
             </div>
@@ -501,5 +842,150 @@ function EmptyState({ title, description }: EmptyStateProps) {
             <p className="font-medium text-foreground">{title}</p>
             <p className="text-sm text-muted-foreground">{description}</p>
         </div>
+    );
+}
+
+interface LessonCommentsDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    lesson: Lesson;
+    onSave: (comments: { title: string; description: string }[]) => void;
+}
+
+function LessonCommentsDialog({
+    open,
+    onOpenChange,
+    lesson,
+    onSave,
+}: LessonCommentsDialogProps) {
+    const [comments, setComments] = useState<
+        { id: number; title: string; description: string }[]
+    >(
+        (lesson.comments ?? []).map((comment, index) => ({
+            id: index,
+            title: comment.title,
+            description: comment.description,
+        }))
+    );
+
+    const handleAdd = () => {
+        setComments((prev) => [
+            ...prev,
+            { id: Date.now(), title: "", description: "" },
+        ]);
+    };
+
+    const handleChange = (
+        id: number,
+        field: "title" | "description",
+        value: string
+    ) => {
+        setComments((prev) =>
+            prev.map((comment) =>
+                comment.id === id ? { ...comment, [field]: value } : comment
+            )
+        );
+    };
+
+    const handleDelete = (id: number) => {
+        setComments((prev) => prev.filter((comment) => comment.id !== id));
+    };
+
+    const handleSave = () => {
+        const filtered = comments.filter(
+            (c) => c.title.trim().length > 0 || c.description.trim().length > 0
+        );
+        onSave(
+            filtered.map(({ title, description }) => ({
+                title,
+                description,
+            }))
+        );
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>
+                        Commentaires pour la leçon "{lesson.label}"
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                    {comments.length === 0 && (
+                        <p className="text-sm text-muted-foreground">
+                            Aucun commentaire pour le moment. Ajoutez-en un pour
+                            noter des idées, rappels ou consignes.
+                        </p>
+                    )}
+
+                    {comments.map((comment) => (
+                        <div
+                            key={comment.id}
+                            className="space-y-2 rounded-md border border-border/60 bg-muted/10 p-3"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    placeholder="Titre du commentaire"
+                                    value={comment.title}
+                                    onChange={(e) =>
+                                        handleChange(
+                                            comment.id,
+                                            "title",
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                                <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => handleDelete(comment.id)}
+                                    title="Supprimer le commentaire"
+                                >
+                                    <Trash2 className="size-4" />
+                                </Button>
+                            </div>
+                            <Textarea
+                                placeholder="Contenu du commentaire..."
+                                value={comment.description}
+                                onChange={(e) =>
+                                    handleChange(
+                                        comment.id,
+                                        "description",
+                                        e.target.value
+                                    )
+                                }
+                                rows={3}
+                            />
+                        </div>
+                    ))}
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAdd}
+                    >
+                        <Plus className="size-4 mr-2" />
+                        Ajouter un commentaire
+                    </Button>
+                </div>
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Annuler
+                    </Button>
+                    <Button type="button" onClick={handleSave}>
+                        Enregistrer
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

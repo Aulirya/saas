@@ -197,6 +197,24 @@ export const createSchoolClass = base
     .handler(async ({ input, context }): Promise<SchoolClass> => {
         const userId = new RecordId("users", context.user_id);
 
+        // Check if a class with the same name, school, and level already exists for this user
+        const checkQuery = surql`
+            SELECT * FROM classes 
+            WHERE user_id = ${userId} 
+            AND name = ${input.name} 
+            AND school = ${input.school} 
+            AND level = ${input.level}
+        `;
+        const existingClasses = await context.db
+            .query<[SchoolClassModel[]]>(checkQuery)
+            .collect();
+
+        if (existingClasses[0] && existingClasses[0].length > 0) {
+            throw new Error(
+                "Une classe avec ce nom, cette école et ce niveau existe déjà"
+            );
+        }
+
         try {
             const classesTable = new Table("classes");
             const result = await context.db
@@ -229,7 +247,17 @@ export const createSchoolClass = base
 
             return schoolClass;
         } catch (e) {
-            console.log("error: ", e);
+            // If it's a duplicate error from the database, provide a user-friendly message
+            if (
+                e instanceof Error &&
+                (e.message.includes("duplicate") ||
+                    e.message.includes("already exists") ||
+                    e.message.includes("unique"))
+            ) {
+                throw new Error(
+                    "Une classe avec ce nom, cette école et ce niveau existe déjà"
+                );
+            }
             throw e;
         }
     });

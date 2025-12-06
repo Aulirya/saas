@@ -136,3 +136,10 @@ code {
         @apply bg-background text-foreground;
     }
 }
+
+/* Sonner toast error styling */
+[data-sonner-toast][data-type="error"] {
+    background: var(--destructive) !important;
+    color: white !important;
+    border: 1px solid var(--destructive) !important;
+}
