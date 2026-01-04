@@ -33,7 +33,7 @@ const defaultSubjectTypes = ["core", "option", "support"] as const;
 // Subject categories matching the database enum
 const subjectCategories = SUBJECT_CATEGORIES as unknown as SubjectCategory[];
 
-interface CreateSubjectModalProps {
+interface SubjectFormModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialData?: {
@@ -45,11 +45,11 @@ interface CreateSubjectModalProps {
     };
 }
 
-export function CreateSubjectModal({
+export function SubjectFormModal({
     open,
     onOpenChange,
     initialData,
-}: CreateSubjectModalProps) {
+}: SubjectFormModalProps) {
     const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isEditMode = !!initialData;

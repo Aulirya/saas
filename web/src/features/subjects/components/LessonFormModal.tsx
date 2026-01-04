@@ -25,7 +25,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-interface CreateLessonModalProps {
+interface LessonFormModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     subjectId: string;
@@ -39,12 +39,12 @@ interface CreateLessonModalProps {
     };
 }
 
-export function CreateLessonModal({
+export function LessonFormModal({
     open,
     onOpenChange,
     subjectId,
     initialData,
-}: CreateLessonModalProps) {
+}: LessonFormModalProps) {
     const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isEditMode = !!initialData;

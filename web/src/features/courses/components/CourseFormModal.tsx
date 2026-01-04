@@ -26,15 +26,12 @@ const formSchema = z.object({
     subject_id: z.string().min(1, "La matière est requise"),
 });
 
-interface CreateCourseModalProps {
+interface CourseFormModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function CreateCourseModal({
-    open,
-    onOpenChange,
-}: CreateCourseModalProps) {
+export function CourseFormModal({ open, onOpenChange }: CourseFormModalProps) {
     const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
 

@@ -46,7 +46,7 @@ const formSchema = z.object({
     slot: z.string().min(1, "Le créneau est requis"), // e.g. "8h-10h"
 });
 
-export type LessonModalProps = {
+export type LessonFormModalProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialDate?: Date;
@@ -55,14 +55,14 @@ export type LessonModalProps = {
     onSubmit: (course: ScheduledCourse) => Promise<void> | void;
 };
 
-export function LessonModal({
+export function LessonFormModal({
     open,
     onOpenChange,
     initialDate,
     initialSlotLabel,
     initialCourse,
     onSubmit,
-}: LessonModalProps) {
+}: LessonFormModalProps) {
     const form = useForm({
         defaultValues: {
             subject: initialCourse?.subject ?? "",

@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { formatLessonDateTime } from "@/lib/date";
 
 import { useSchoolClassWithSubjects } from "@/features/classes/api/useSchoolClass";
-import { CreateClassModal } from "@/features/classes/components/CreateClassModal";
+import { ClassFormModal } from "@/features/classes/components/ClassFormModal";
 import type {
     SubjectWithLessons,
     LessonWithSubject,
@@ -309,7 +309,7 @@ function ClassDetailPage() {
                 </div>
             </div>
 
-            <CreateClassModal
+            <ClassFormModal
                 open={isEditModalOpen}
                 onOpenChange={setIsEditModalOpen}
                 initialData={

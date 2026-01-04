@@ -3,7 +3,7 @@ import { useState } from "react";
 import { WeeklySchedule } from "@/components/journal/weekly_schedule";
 import { useCalendar } from "../hooks/useCalendar";
 import { useCalendarEvents } from "../api/useCalendarEvents";
-import { LessonModal } from "./LessonModal";
+import { LessonFormModal } from "./LessonFormModal";
 import type { ScheduledCourse } from "../types";
 
 export function Calendar() {
@@ -25,7 +25,9 @@ export function Calendar() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalDate, setModalDate] = useState<Date | undefined>();
     const [modalSlot, setModalSlot] = useState<string | undefined>();
-    const [selectedCourse, setSelectedCourse] = useState<ScheduledCourse | undefined>();
+    const [selectedCourse, setSelectedCourse] = useState<
+        ScheduledCourse | undefined
+    >();
 
     const weekDatesByKey = {
         monday: weekDays[0],
@@ -53,12 +55,14 @@ export function Calendar() {
                     const found = courses.find((c) => c.id === id);
                     setSelectedCourse(found);
                     // Clear date/slot when editing to rely on selected course values
-                   
+
                     setModalOpen(true);
                 }}
             />
-            <LessonModal
-                key={`${selectedCourse?.id ?? "new"}-${modalDate?.toISOString() ?? ""}-${modalSlot ?? ""}`}
+            <LessonFormModal
+                key={`${selectedCourse?.id ?? "new"}-${
+                    modalDate?.toISOString() ?? ""
+                }-${modalSlot ?? ""}`}
                 open={modalOpen}
                 onOpenChange={setModalOpen}
                 initialDate={modalDate}

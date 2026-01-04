@@ -33,7 +33,7 @@ import { ViewDetailButton } from "@/components/ui/view-detail-button";
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
 import type { CourseProgram } from "@/features/courses/types";
 import { cn, getColorFromText } from "@/lib/utils";
-import { CreateCourseModal } from "@/features/courses/components/CreateCourseModal";
+import { CourseFormModal } from "@/features/courses/components/CourseFormModal";
 
 // School filter options - static for now since data doesn't have school field yet
 const SCHOOL_FILTER_OPTIONS = [
@@ -293,7 +293,7 @@ function CoursesPage() {
             />
 
             {/* Create Course Modal */}
-            <CreateCourseModal
+            <CourseFormModal
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
             />

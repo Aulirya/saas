@@ -44,7 +44,7 @@ const defaultClassLevels = [
     "6ème primaire",
 ] as const;
 
-interface CreateClassModalProps {
+interface ClassFormModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialData?: {
@@ -57,11 +57,11 @@ interface CreateClassModalProps {
     };
 }
 
-export function CreateClassModal({
+export function ClassFormModal({
     open,
     onOpenChange,
     initialData,
-}: CreateClassModalProps) {
+}: ClassFormModalProps) {
     const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isEditMode = !!initialData;

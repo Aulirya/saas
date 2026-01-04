@@ -44,8 +44,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSubjectWithLessons } from "@/features/subjects/api/useSubjects";
-import { CreateSubjectModal } from "@/features/subjects/components/CreateSubjectModal";
-import { CreateLessonModal } from "@/features/subjects/components/CreateLessonModal";
+import { SubjectFormModal } from "@/features/subjects/components/SubjectFormModal";
+import { LessonFormModal } from "@/features/subjects/components/LessonFormModal";
 import type { EmptyStateProps } from "@/types/class.types";
 import type { Lesson } from "@saas/shared";
 import { getCategoryLabel, getCategoryConfig } from "@/lib/subject-category";
@@ -62,8 +62,7 @@ function SubjectDetailPage() {
     const queryClient = useQueryClient();
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isCreateLessonModalOpen, setIsCreateLessonModalOpen] =
-        useState(false);
+    const [isLessonFormModalOpen, setIsLessonFormModalOpen] = useState(false);
     const [lessonToEdit, setLessonToEdit] = useState<
         (Lesson & { subject_name: string }) | null
     >(null);
@@ -276,9 +275,7 @@ function SubjectDetailPage() {
                                             size="sm"
                                             onClick={() => {
                                                 setLessonToEdit(null);
-                                                setIsCreateLessonModalOpen(
-                                                    true
-                                                );
+                                                setIsLessonFormModalOpen(true);
                                             }}
                                         >
                                             <Plus className="size-4 mr-2" />
@@ -312,7 +309,7 @@ function SubjectDetailPage() {
                                                     showFakeData={showFakeData}
                                                     onEdit={() => {
                                                         setLessonToEdit(lesson);
-                                                        setIsCreateLessonModalOpen(
+                                                        setIsLessonFormModalOpen(
                                                             true
                                                         );
                                                     }}
@@ -479,7 +476,7 @@ function SubjectDetailPage() {
                 </div>
             </div>
 
-            <CreateSubjectModal
+            <SubjectFormModal
                 open={isEditModalOpen}
                 onOpenChange={setIsEditModalOpen}
                 initialData={
@@ -496,9 +493,9 @@ function SubjectDetailPage() {
             />
 
             {subjectId && (
-                <CreateLessonModal
-                    open={isCreateLessonModalOpen}
-                    onOpenChange={setIsCreateLessonModalOpen}
+                <LessonFormModal
+                    open={isLessonFormModalOpen}
+                    onOpenChange={setIsLessonFormModalOpen}
                     subjectId={subjectId}
                     initialData={
                         lessonToEdit

@@ -38,7 +38,7 @@ import {
 
 import { useSubjects } from "@/features/subjects/api/useSubjects";
 import { SkeletonCard } from "@/components/ui/skeleton";
-import { CreateSubjectModal } from "@/features/subjects/components/CreateSubjectModal";
+import { SubjectFormModal } from "@/features/subjects/components/SubjectFormModal";
 import type { Subject } from "@saas/shared";
 import { cn } from "@/lib/utils";
 
@@ -446,7 +446,7 @@ function SubjectsPage() {
                 </div>
 
                 {/* Create Subject Modal */}
-                <CreateSubjectModal
+                <SubjectFormModal
                     open={isCreateModalOpen}
                     onOpenChange={setIsCreateModalOpen}
                 />

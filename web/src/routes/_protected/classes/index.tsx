@@ -41,7 +41,7 @@ import {
 } from "@/features/classes/api/useSchoolClasses";
 import { useSchoolClassWithSubjects } from "@/features/classes/api/useSchoolClass";
 import { SkeletonCard } from "@/components/ui/skeleton";
-import { CreateClassModal } from "@/features/classes/components/CreateClassModal";
+import { ClassFormModal } from "@/features/classes/components/ClassFormModal";
 import type { SchoolClass } from "@/features/classes/types";
 import { cn } from "@/lib/utils";
 import { CardInfoLayout } from "@/components/ui/card-info-layout";
@@ -494,7 +494,7 @@ function ClassesPage() {
                 />
 
                 {/* Create Class Modal */}
-                <CreateClassModal
+                <ClassFormModal
                     open={isCreateModalOpen}
                     onOpenChange={setIsCreateModalOpen}
                 />
