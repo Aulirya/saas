@@ -223,7 +223,6 @@ function SubjectDetailPage() {
         <div className="space-y-6">
             <PageHeader
                 title={subjectData.name}
-                variant="detailed"
                 actions={[
                     {
                         label: "Modifier",

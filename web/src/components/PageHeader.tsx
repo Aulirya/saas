@@ -128,8 +128,7 @@ export function PageHeader({
                     >
                         <h1
                             className={cn(
-                                "font-bold text-foreground",
-                                isDetailed ? "text-xl" : "text-2xl",
+                                "font-bold text-foreground text-3xl",
                                 isMobile && isDetailed && "text-lg"
                             )}
                         >
