@@ -9,22 +9,11 @@ import {
     type SchoolClass,
     type SchoolClassWithSubjectsAndLessons,
 } from "@saas/shared";
+import { parseRecordId } from "../utils/record-id";
 import { SubjectModel, SubjectModelMapper } from "../repository/model/subjects";
 import { LessonMapper } from "../repository/mapper/lesson";
 import type { LessonModel } from "../repository/model/lessons";
 import type { CourseProgressModel } from "../repository/model/course_progress";
-
-// Helper function to parse a subject ID that might be full (subjects:subject_01) or partial (subject_01)
-function parseId(id: string): RecordId {
-    // If the ID already contains a colon, it's a full record ID
-    if (id.includes(":")) {
-        // Parse it: split by colon and create RecordId
-        const [table, recordId] = id.split(":", 2);
-        return new RecordId(table, recordId);
-    }
-    // Otherwise, it's just the ID part
-    return new RecordId("subjects", id);
-}
 
 // get all classes
 export const listSchoolClasses = base
@@ -104,7 +93,7 @@ export const getSchoolClass = base
     .input(z.object({ id: z.string() }))
     .handler(async ({ input, context }): Promise<SchoolClass> => {
         const userId = new RecordId("users", context.user_id);
-        const classId = parseId(input.id);
+        const classId = parseRecordId(input.id, "classes");
         const query = surql`SELECT * FROM classes WHERE user_id = ${userId} AND id = ${classId}`;
 
         const classesModel = await context.db
@@ -129,7 +118,7 @@ export const getSchoolClassWithSubjects = base
             context,
         }): Promise<SchoolClassWithSubjectsAndLessons> => {
             const userId = new RecordId("users", context.user_id);
-            const classId = parseId(input.id);
+            const classId = parseRecordId(input.id, "classes");
 
             const query = surql`
               SELECT
@@ -231,11 +220,14 @@ export const createSchoolClass = base
 
             // Create course_progress entries for selected subjects
             if (input.subjects && input.subjects.length > 0) {
-                const classId = parseId(schoolClass.id);
+                const classId = parseRecordId(schoolClass.id, "classes");
                 const courseProgressTable = new Table("course_progress");
 
                 for (const subjectId of input.subjects) {
-                    const subjectRecordId = parseId(subjectId);
+                    const subjectRecordId = parseRecordId(
+                        subjectId,
+                        "subjects"
+                    );
                     await context.db
                         .create<CourseProgressModel>(courseProgressTable)
                         .content({
@@ -266,7 +258,7 @@ export const patchSchoolClass = base
     .input(school_class_patch_input)
     .handler(async ({ input, context }): Promise<SchoolClass> => {
         console.log("start patch");
-        const classId = parseId(input.id);
+        const classId = parseRecordId(input.id, "classes");
 
         const updateData: Partial<{
             name: string;
@@ -316,7 +308,7 @@ export const patchSchoolClass = base
                 // Normalize input subject IDs (handle both full and partial IDs)
                 const newSubjectIds = new Set(
                     input.subjects.map((id) => {
-                        const parsed = parseId(id);
+                        const parsed = parseRecordId(input.id, "classes");
                         return parsed.toString();
                     })
                 );
@@ -329,7 +321,7 @@ export const patchSchoolClass = base
 
                 // Find subjects to add (in new but not in current)
                 const subjectsToAdd = input.subjects.filter((id) => {
-                    const parsed = parseId(id);
+                    const parsed = parseRecordId(input.id, "classes");
                     const subjectIdStr = parsed.toString();
                     return !currentSubjectIds.has(subjectIdStr);
                 });
@@ -343,7 +335,10 @@ export const patchSchoolClass = base
 
                 // Add only new subjects
                 for (const subjectId of subjectsToAdd) {
-                    const subjectRecordId = parseId(subjectId);
+                    const subjectRecordId = parseRecordId(
+                        subjectId,
+                        "subjects"
+                    );
                     await context.db
                         .create<CourseProgressModel>(courseProgressTable)
                         .content({

@@ -48,7 +48,7 @@ import { SubjectFormModal } from "@/features/subjects/components/SubjectFormModa
 import { LessonFormModal } from "@/features/subjects/components/LessonFormModal";
 import type { EmptyStateProps } from "@/types/class.types";
 import type { Lesson } from "@saas/shared";
-import { getCategoryLabel, getCategoryConfig } from "@/lib/subject-category";
+import { getCategoryLabel, getCategoryConfig } from "@/lib/subject-utils";
 import { getScopeLabel, getScopeConfig } from "@/lib/lesson-scope";
 import { orpc } from "@/orpc/client";
 

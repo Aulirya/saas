@@ -3,22 +3,12 @@ import { base } from "./base";
 import type { LessonModel } from "../repository/model/lessons";
 import { LessonMapper } from "../repository/mapper/lesson";
 import z from "zod";
+import { parseRecordId } from "../utils/record-id";
 import {
     lesson_create_input,
     lesson_patch_input,
     type Lesson,
 } from "@saas/shared";
-
-function parseId(id: string): RecordId {
-    // If the ID already contains a colon, it's a full record ID
-    if (id.includes(":")) {
-        // Parse it: split by colon and create RecordId
-        const [table, recordId] = id.split(":", 2);
-        return new RecordId(table, recordId);
-    }
-    // Otherwise, it's just the ID part
-    return new RecordId("subjects", id);
-}
 
 export const listLessons = base.handler(
     async ({ context }): Promise<Lesson[]> => {
@@ -48,7 +38,7 @@ export const createLesson = base
     .input(lesson_create_input)
     .handler(async ({ input, context }): Promise<Lesson> => {
         const userId = new RecordId("users", context.user_id);
-        const subjectId = parseId(input.subject_id);
+        const subjectId = parseRecordId(input.subject_id, "subjects");
         const lessonsTable = new Table("lessons");
 
         // Check if a lesson with the same label already exists for this subject and user
@@ -346,7 +336,7 @@ export const deleteLesson = base
     .input(z.object({ id: z.string() }))
     .handler(async ({ input, context }): Promise<{ success: boolean }> => {
         console.log("start delete");
-        const lessonId = new RecordId("lessons", input.id);
+        const lessonId = parseRecordId(input.id, "lessons");
 
         try {
             await context.db.delete(lessonId);
