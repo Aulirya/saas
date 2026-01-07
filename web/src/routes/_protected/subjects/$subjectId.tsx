@@ -265,8 +265,8 @@ function SubjectDetailPage() {
                         />
                     </section>
 
-                    <div className="space-y-6 grid grid-cols-7 gap-6">
-                        <div className="col-span-5  gap-6">
+                    <div className="space-y-6 grid grid-cols-7 lg:gap-6">
+                        <div className="col-span-full lg:col-span-5  gap-6">
                             <Card>
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
@@ -423,7 +423,7 @@ function SubjectDetailPage() {
                             </Card>
                         </div>
 
-                        <div className="col-span-2 space-y-6">
+                        <div className="col-span-full lg:col-span-2 space-y-6">
                             {subjectData.description && (
                                 <Card>
                                     <CardHeader>
@@ -440,10 +440,6 @@ function SubjectDetailPage() {
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Fichiers uploadés</CardTitle>
-                                    <CardDescription>
-                                        Tous les fichiers associés à cette
-                                        matière.
-                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     {/* TODO: Replace with actual files list when file upload is implemented */}
@@ -459,10 +455,6 @@ function SubjectDetailPage() {
                                     <CardTitle>
                                         Analyses et recommandations
                                     </CardTitle>
-                                    <CardDescription>
-                                        Points d&apos;attention identifiés par
-                                        la plateforme.
-                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     <EmptyState
@@ -664,50 +656,7 @@ function LessonCard({
     return (
         <div className="group flex flex-col gap-4 rounded-lg border border-border/60 bg-muted/20 p-4 transition-all hover:border-border hover:bg-muted/30">
             {/* Main content */}
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-start gap-3">
-                        <div
-                            className={`flex size-10 shrink-0 items-center justify-center rounded-lg border ${scopeColors.bg} ${scopeColors.border}`}
-                        >
-                            <span
-                                className={`text-lg font-semibold ${scopeColors.text}`}
-                            >
-                                {displayOrder}
-                            </span>
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="font-semibold text-foreground leading-tight">
-                                    {lesson.label}
-                                </h4>
-                                <p
-                                    className={`text-xs ${scopeColors.border} ${scopeColors.text} self-end`}
-                                >
-                                    {getScopeLabel(scope)}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                {estimatedTime > 0 && (
-                                    <>
-                                        <Clock className="size-4" />{" "}
-                                        {estimatedTime} minutes
-                                    </>
-                                )}
-                                <span className="flex items-center gap-1">
-                                    <MessageSquare className="size-4" />
-                                    {lesson?.comments?.length ?? 0}
-                                </span>
-                                {hasFiles && (
-                                    <span className="flex items-center gap-1">
-                                        <Paperclip className="size-4" />
-                                        {fakeFiles.length}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="flex flex-col gap-4 lg:flex-row-reverse sm:items-start sm:justify-between">
                 <div className="flex shrink-0 items-center gap-1">
                     <Badge variant={statusConfig.variant} className="text-xs">
                         <StatusIcon className="size-3" />
@@ -767,6 +716,49 @@ function LessonCard({
                     >
                         <Trash2 className="size-4" />
                     </Button>
+                </div>
+                <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-start gap-3">
+                        <div
+                            className={`flex size-10 shrink-0 items-center justify-center rounded-lg border ${scopeColors.bg} ${scopeColors.border}`}
+                        >
+                            <span
+                                className={`text-lg font-semibold ${scopeColors.text}`}
+                            >
+                                {displayOrder}
+                            </span>
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="font-semibold text-foreground leading-tight">
+                                    {lesson.label}
+                                </h4>
+                                <p
+                                    className={`text-xs ${scopeColors.border} ${scopeColors.text} self-end`}
+                                >
+                                    {getScopeLabel(scope)}
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                {estimatedTime > 0 && (
+                                    <>
+                                        <Clock className="size-4" />{" "}
+                                        {estimatedTime} minutes
+                                    </>
+                                )}
+                                <span className="flex items-center gap-1">
+                                    <MessageSquare className="size-4" />
+                                    {lesson?.comments?.length ?? 0}
+                                </span>
+                                {hasFiles && (
+                                    <span className="flex items-center gap-1">
+                                        <Paperclip className="size-4" />
+                                        {fakeFiles.length}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
