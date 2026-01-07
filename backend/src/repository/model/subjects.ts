@@ -8,7 +8,7 @@ const subjectModel = z.object({
     id: z.custom<RecordId>(),
     name: z.string(),
     description: z.string().nullable(),
-    type: z.enum(["core", "option", "support"]).nullable().optional(),
+    type: z.string().nullable(),
     category: z.enum([
         "Mathematics",
         "Language",

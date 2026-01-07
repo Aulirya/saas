@@ -1,48 +1,49 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orpc } from "@/orpc/client";
-import { SUBJECT_CATEGORIES, SubjectCategory } from "@saas/shared";
-import { getCategoryLabel } from "@/lib/subject-category";
+import {
+    SUBJECT_CATEGORIES,
+    SUBJECT_TYPES,
+    SubjectCategory,
+    SubjectType,
+    Subject,
+    SubjectCreateInput,
+    SubjectPatchInput,
+} from "@saas/shared";
+import { getCategoryLabel, getSubjectTypeLabel } from "@/lib/subject-utils";
 
 import { FormSheet } from "@/components/ui/form-sheet";
 import { SheetClose } from "@/components/ui/sheet";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-    Field,
-    FieldGroup,
-    FieldLabel,
-    FieldError,
-} from "@/components/ui/field";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { subject_create_input, type SubjectCreateInput } from "@saas/shared";
+import { FieldGroup } from "@/components/ui/field";
 
-// Default subject types (can be supplemented by database values)
-const defaultSubjectTypes = ["core", "option", "support"] as const;
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
-// Subject categories matching the database enum
+import {
+    SelectFieldWithClear,
+    SelectField,
+    TextareaField,
+    TextField,
+} from "@/components/forms";
+
+// Subject categories and types matching the database enum
 const subjectCategories = SUBJECT_CATEGORIES as unknown as SubjectCategory[];
+const subjectTypes = SUBJECT_TYPES as unknown as SubjectType[];
 
 interface SubjectFormModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData?: {
-        id: string;
-        name: string;
-        description?: string | null;
-        type: "core" | "option" | "support" | null;
-        category: string;
-    };
+    initialData?: Subject;
 }
 
 export function SubjectFormModal({
@@ -52,8 +53,79 @@ export function SubjectFormModal({
 }: SubjectFormModalProps) {
     const queryClient = useQueryClient();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+    const [pendingSubmit, setPendingSubmit] = useState<{
+        type: "create" | "update";
+        data: any;
+    } | null>(null);
     const isEditMode = !!initialData;
 
+    async function checkNameExists(name: string) {
+        const checkResult = await orpc.subject.checkNameExists.call({
+            name,
+        });
+        return checkResult.exists;
+    }
+
+    // ---------- Mutations ----------
+    const { mutate: createSubject } = useMutation({
+        mutationFn: async (data: SubjectCreateInput) => {
+            return await orpc.subject.create.call(data);
+        },
+        onSuccess: () => {
+            handleSuccess("Matière créée avec succès");
+        },
+        onError: (error) => {
+            handleError(
+                error,
+                "Error creating subject:",
+                "Erreur lors de la création de la matière"
+            );
+        },
+    });
+
+    const { mutate: updateSubject } = useMutation({
+        mutationFn: async (data: SubjectPatchInput) => {
+            return await orpc.subject.patch.call(data);
+        },
+        onSuccess: () => {
+            handleSuccess("Matière modifiée avec succès");
+        },
+        onError: (error) => {
+            handleError(
+                error,
+                "Error updating subject:",
+                "Erreur lors de la modification de la matière"
+            );
+        },
+    });
+
+    function handleSuccess(message: string) {
+        // Invalidate the subjects list
+        queryClient.invalidateQueries({
+            queryKey: orpc.subject.list.queryKey({}),
+        });
+
+        // If editing, invalidate the specific subject queries
+        if (isEditMode && initialData?.id) {
+            queryClient.invalidateQueries({
+                queryKey: orpc.subject.getWithLessons.queryKey({
+                    input: { id: initialData.id },
+                }),
+            });
+        }
+
+        toast.success(message);
+        form.reset();
+        onOpenChange(false);
+    }
+
+    function handleError(error: any, contextMsg: string, toastMsg: string) {
+        console.error(contextMsg, error);
+        toast.error(toastMsg);
+    }
+
+    // ---------- Form ----------
     const form = useForm({
         defaultValues: {
             name: initialData?.name ?? "",
@@ -61,236 +133,100 @@ export function SubjectFormModal({
             type: initialData?.type ?? "",
             category: initialData?.category ?? "",
         },
-        validators: {
-            onSubmit: ({ value }) => {
-                const transformedValue = {
-                    ...value,
-                    description:
-                        value.description && value.description.trim().length > 0
-                            ? value.description
-                            : null,
-                };
-                const result = subject_create_input.safeParse(transformedValue);
 
-                if (!result.success) {
-                    return "Veuillez corriger les erreurs dans le formulaire";
-                }
-
-                return undefined;
-            },
-        },
         onSubmit: async ({ value }) => {
             setIsSubmitting(true);
 
-            if (isEditMode && initialData) {
-                updateSubject({
-                    id: initialData.id,
-                    name: value.name,
-                    description: value.description || null,
-                    type: value.type as "core" | "option" | "support",
-                    category: value.category as SubjectCategory,
-                });
-            } else {
-                createSubject({
-                    name: value.name,
-                    description: value.description || null,
-                    type: value.type as
-                        | "core"
-                        | "option"
-                        | "support"
-                        | undefined,
-                    category: value.category as SubjectCategory,
-                });
+            // Check if a subject with the same name already exists
+            if (isEditMode && initialData?.name !== value.name) {
+                try {
+                    const checkResult = await checkNameExists(value.name);
+
+                    if (checkResult) {
+                        // Show warning modal
+                        setPendingSubmit({
+                            type: isEditMode ? "update" : "create",
+                            data:
+                                isEditMode && initialData
+                                    ? {
+                                          id: initialData.id,
+                                          name: value.name,
+                                          description:
+                                              value.description || null,
+                                          type: value.type,
+                                          category:
+                                              value.category as SubjectCategory,
+                                      }
+                                    : {
+                                          name: value.name,
+                                          description:
+                                              value.description || null,
+                                          type: value.type,
+                                          category:
+                                              value.category as SubjectCategory,
+                                      },
+                        });
+                        setShowDuplicateWarning(true);
+                        setIsSubmitting(false);
+                        return;
+                    }
+                } catch (error) {
+                    console.error("Error checking subject name:", error);
+                    // Continue with submission if check fails (backend will validate)
+                }
             }
+
+            // No duplicate found, proceed with submission
+            proceedWithSubmission(value);
         },
     });
 
-    // Reset form when initialData changes (when modal opens with edit data)
-    useEffect(() => {
-        if (open && initialData) {
-            form.setFieldValue("name", initialData.name);
-            form.setFieldValue("description", initialData.description ?? "");
-            form.setFieldValue("type", initialData.type);
-            form.setFieldValue("category", initialData.category);
-        } else if (open && !initialData) {
-            // Reset to empty values when opening for create
-            form.reset();
+    // Helper function to proceed with submission after confirmation
+    const proceedWithSubmission = async (value: {
+        id?: string;
+        name: string;
+        description?: string;
+        type?: string;
+        category: string;
+    }) => {
+        setIsSubmitting(true);
+
+        if (isEditMode && initialData) {
+            if (
+                JSON.stringify(initialData) ===
+                JSON.stringify({ id: initialData.id, ...value })
+            ) {
+                toast.info("Aucune modification détectée");
+                setIsSubmitting(false);
+                return;
+            }
+
+            value.id = initialData?.id;
+            updateSubject(value as SubjectPatchInput);
+        } else {
+            createSubject(value as SubjectCreateInput);
         }
-    }, [open, initialData, form]);
-
-    // Helper function to extract error message from orpc errors
-    const extractErrorMessage = (error: unknown): string => {
-        console.log("Full error object:", error);
-        console.log("Error type:", typeof error);
-        console.log("Error constructor:", error?.constructor?.name);
-
-        // Handle ORPCError structure (has code and data properties)
-        if (
-            error &&
-            typeof error === "object" &&
-            "code" in error &&
-            "data" in error &&
-            error.data &&
-            typeof error.data === "object" &&
-            "message" in error.data &&
-            typeof error.data.message === "string"
-        ) {
-            console.log(
-                "Found ORPCError with data.message:",
-                error.data.message
-            );
-            return error.data.message;
-        }
-
-        // Handle Error objects
-        if (error instanceof Error) {
-            console.log("Found Error object with message:", error.message);
-            return error.message;
-        }
-
-        // Handle orpc error structure (may have data.message without code)
-        if (
-            error &&
-            typeof error === "object" &&
-            "data" in error &&
-            error.data &&
-            typeof error.data === "object" &&
-            "message" in error.data &&
-            typeof error.data.message === "string"
-        ) {
-            console.log("Found error with data.message:", error.data.message);
-            return error.data.message;
-        }
-
-        // Handle objects with direct message property
-        if (
-            error &&
-            typeof error === "object" &&
-            "message" in error &&
-            typeof error.message === "string"
-        ) {
-            console.log("Found error with direct message:", error.message);
-            return error.message;
-        }
-
-        // Fallback
-        console.log("Using fallback error message");
-        return "Une erreur est survenue";
     };
 
-    // Shared mutation handlers
-    const getMutationHandlers = (
-        errorMessage: string,
-        successMessage: string
-    ) => ({
-        onSuccess: () => {
-            // Invalidate all related queries to refresh the lists
-            queryClient.invalidateQueries({ queryKey: ["subjects"] });
-            queryClient.invalidateQueries({
-                queryKey: orpc.subject.list.queryKey({}),
-            });
-            if (initialData?.id) {
-                queryClient.invalidateQueries({
-                    queryKey: orpc.subject.getWithLessons.queryKey({
-                        input: { id: initialData.id },
-                    }),
-                });
-            }
-            toast.success(successMessage);
-            form.reset();
-            onOpenChange(false);
-        },
-        onError: (error: unknown) => {
-            const errorMsg = extractErrorMessage(error);
-            toast.error(errorMsg);
-            toast(errorMsg, {
-                description: errorMsg,
-                action: {
-                    label: "Fermer",
-                    onClick: () => handleClose(false),
-                },
-            });
-            setIsSubmitting(false);
-        },
-        onSettled: () => {
-            setIsSubmitting(false);
-        },
-    });
-
-    // Special handler for create that handles duplicate name errors
-    const getCreateMutationHandlers = (
-        errorMessage: string,
-        successMessage: string
-    ) => ({
-        onSuccess: () => {
-            // Invalidate all related queries to refresh the lists
-            queryClient.invalidateQueries({ queryKey: ["subjects"] });
-            queryClient.invalidateQueries({
-                queryKey: orpc.subject.list.queryKey({}),
-            });
-            toast.success(successMessage);
-            form.reset();
-            onOpenChange(false);
-        },
-        onError: (error: unknown) => {
-            console.error("Error in create subject:", errorMessage, error);
-            const errorMsg = extractErrorMessage(error);
-            console.log("Extracted error message:", errorMsg);
-            toast.error(errorMsg);
-            // Check if it's a duplicate name error
-            if (
-                errorMsg.includes("existe déjà") ||
-                errorMsg.includes("already exists")
-            ) {
-                // Set the error on the name field
-                form.setFieldMeta("name", (meta) => ({
-                    ...meta,
-                    errors: [errorMsg],
-                    isTouched: true,
-                }));
-                // Don't show toast, keep form open
+    // Handle confirmation from duplicate warning modal
+    const handleConfirmDuplicate = () => {
+        if (pendingSubmit) {
+            setShowDuplicateWarning(false);
+            if (pendingSubmit.type === "update") {
+                updateSubject(pendingSubmit.data);
             } else {
-                // For other errors, show toast
-                toast.error(errorMsg);
+                createSubject(pendingSubmit.data);
             }
-            setIsSubmitting(false);
-        },
-        onSettled: () => {
-            setIsSubmitting(false);
-        },
-    });
+            setPendingSubmit(null);
+        }
+    };
 
-    const { mutate: createSubject } = useMutation({
-        mutationFn: async (data: Omit<SubjectCreateInput, "user_id">) => {
-            const result = await orpc.subject.create.call(
-                data as unknown as Parameters<
-                    typeof orpc.subject.create.call
-                >[0]
-            );
-            console.log("Result of subject.create:", result);
-            return result;
-        },
-        ...getCreateMutationHandlers(
-            "Error creating subject:",
-            "Matière créée avec succès"
-        ),
-    });
-
-    const { mutate: updateSubject } = useMutation({
-        mutationFn: async (data: {
-            id: string;
-            name: string;
-            description?: string | null;
-            type: string;
-            category: SubjectCategory;
-        }) => {
-            return await orpc.subject.patch.call(data);
-        },
-        ...getMutationHandlers(
-            "Error updating subject:",
-            "Matière modifiée avec succès"
-        ),
-    });
+    // Handle cancellation from duplicate warning modal
+    const handleCancelDuplicate = () => {
+        setShowDuplicateWarning(false);
+        setPendingSubmit(null);
+        setIsSubmitting(false);
+    };
 
     const handleClose = (shouldClose: boolean) => {
         if (shouldClose && !isSubmitting) {
@@ -300,393 +236,207 @@ export function SubjectFormModal({
     };
 
     return (
-        <FormSheet
-            open={open}
-            onOpenChange={onOpenChange}
-            title={
-                isEditMode
-                    ? "Modifier la matière"
-                    : "Créer une nouvelle matière"
-            }
-            children={
-                <form
-                    id="create-subject-form"
-                    className="overflow-y-auto"
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        form.handleSubmit();
-                    }}
-                >
-                    <FieldGroup>
-                        {/* Subject Name */}
-                        <form.Field
-                            name="name"
-                            validators={{
-                                onChange: ({ value }) => {
-                                    if (!value || value.trim().length === 0) {
-                                        return "Le nom est requis";
-                                    }
-                                    return undefined;
-                                },
-                            }}
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    field.state.meta.errors.length > 0;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Nom de la matière
-                                        </FieldLabel>
-
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            value={field.state.value}
-                                            onChange={(e) => {
-                                                field.handleChange(
-                                                    e.target.value
-                                                );
-                                                // Clear server-side duplicate name errors when user starts typing
-                                                const errors =
-                                                    field.state.meta.errors ??
-                                                    [];
-                                                const hasServerError =
-                                                    errors.some(
-                                                        (error: unknown) =>
-                                                            typeof error ===
-                                                                "string" &&
-                                                            (error.includes(
-                                                                "existe déjà"
-                                                            ) ||
-                                                                error.includes(
-                                                                    "already exists"
-                                                                ))
-                                                    );
-                                                if (hasServerError) {
-                                                    // Clear only server errors using form instance
-                                                    form.setFieldMeta(
-                                                        "name",
-                                                        (meta: any) => {
-                                                            const currentErrors =
-                                                                (meta.errors as unknown[]) ??
-                                                                [];
-                                                            return {
-                                                                ...meta,
-                                                                errors: currentErrors.filter(
-                                                                    (
-                                                                        error: unknown
-                                                                    ) =>
-                                                                        typeof error !==
-                                                                            "string" ||
-                                                                        (!error.includes(
-                                                                            "existe déjà"
-                                                                        ) &&
-                                                                            !error.includes(
-                                                                                "already exists"
-                                                                            ))
-                                                                ),
-                                                            };
-                                                        }
-                                                    );
-                                                }
-                                            }}
-                                            onBlur={field.handleBlur}
-                                            placeholder="Nom de la matière"
-                                            aria-invalid={isInvalid}
-                                        />
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
-                        />
-
-                        {/* Subject Type */}
-                        <form.Field
-                            name="type"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Type
-                                        </FieldLabel>
-                                        <Select
-                                            value={field.state.value}
-                                            onValueChange={(value) => {
-                                                field.handleChange(value);
-                                                field.handleBlur();
-                                            }}
-                                        >
-                                            <SelectTrigger
-                                                id={field.name}
-                                                aria-invalid={isInvalid}
-                                            >
-                                                <SelectValue placeholder="Sélectionnez un type" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {defaultSubjectTypes.map(
-                                                    (type) => (
-                                                        <SelectItem
-                                                            key={type}
-                                                            value={type}
-                                                        >
-                                                            {type}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
-                        />
-
-                        {/* Description */}
-                        <form.Field
-                            name="description"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Description (optionnel)
-                                        </FieldLabel>
-                                        <Textarea
-                                            id={field.name}
-                                            name={field.name}
-                                            value={field.state.value}
-                                            onChange={(e) =>
-                                                field.handleChange(
-                                                    e.target.value
-                                                )
-                                            }
-                                            onBlur={field.handleBlur}
-                                            placeholder="Description de la matière..."
-                                            aria-invalid={isInvalid}
-                                            rows={3}
-                                        />
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
-                        />
-
-                        {/* Category */}
-                        <form.Field
-                            name="category"
-                            validators={{
-                                onChange: ({ value }) => {
-                                    if (!value) {
-                                        return "La catégorie est requise";
-                                    }
-                                    if (
-                                        !subjectCategories.includes(
-                                            value as SubjectCategory
-                                        )
-                                    ) {
-                                        return "Catégorie invalide";
-                                    }
-                                    return undefined;
-                                },
-                            }}
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    field.state.meta.errors.length > 0;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Catégorie
-                                        </FieldLabel>
-                                        <Select
-                                            value={field.state.value}
-                                            onValueChange={(value) => {
-                                                field.handleChange(value);
-                                                field.handleBlur();
-                                            }}
-                                        >
-                                            <SelectTrigger
-                                                id={field.name}
-                                                aria-invalid={isInvalid}
-                                            >
-                                                <SelectValue placeholder="Sélectionnez une catégorie" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {subjectCategories.map(
-                                                    (category) => (
-                                                        <SelectItem
-                                                            key={category}
-                                                            value={category}
-                                                        >
-                                                            {getCategoryLabel(
-                                                                category
-                                                            )}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
-                        />
-                    </FieldGroup>
-                </form>
-            }
-            footer={
-                <div className="flex w-full items-center justify-end gap-2">
-                    <SheetClose asChild>
-                        <form.Subscribe
-                            selector={(state) => [
-                                state.canSubmit,
-                                state.isSubmitting,
-                            ]}
-                            children={([canSubmit, isSubmitting]) => (
-                                <>
-                                    <Button
-                                        variant="outline"
-                                        type="reset"
-                                        onClick={(e) => {
-                                            handleClose(false);
-                                            e.preventDefault();
-                                            form.reset();
-                                        }}
-                                        disabled={isSubmitting}
-                                    >
-                                        Annuler
-                                    </Button>
-                                    {canSubmit ? "true" : "false"}{" "}
-                                    {form.state.isValid ? "true" : "false"}
-                                    <Button
-                                        type="submit"
-                                        form="create-subject-form"
-                                        disabled={
-                                            !canSubmit || !form.state.isValid
+        <>
+            <FormSheet
+                open={open}
+                onOpenChange={onOpenChange}
+                title={
+                    isEditMode
+                        ? "Modifier la matière"
+                        : "Créer une nouvelle matière"
+                }
+                children={
+                    <form
+                        id="create-subject-form"
+                        className="overflow-y-auto"
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            form.handleSubmit();
+                        }}
+                    >
+                        <FieldGroup>
+                            {/* Subject Name */}
+                            <form.Field
+                                name="name"
+                                validators={{
+                                    onChange: ({ value }) => {
+                                        if (
+                                            !value ||
+                                            value.trim().length === 0
+                                        ) {
+                                            return "Le nom est requis";
                                         }
-                                    >
-                                        {isSubmitting
-                                            ? isEditMode
-                                                ? "Modification..."
-                                                : "Création..."
-                                            : isEditMode
-                                            ? "Modifier la matière"
-                                            : "Créer la matière"}
-                                    </Button>
-                                </>
-                            )}
-                        />
-                    </SheetClose>
-                </div>
-            }
-        />
+                                        return undefined;
+                                    },
+                                }}
+                                children={(field) => {
+                                    const isInvalid =
+                                        field.state.meta.isTouched &&
+                                        field.state.meta.errors.length > 0;
+
+                                    return (
+                                        <TextField
+                                            field={field}
+                                            label="Intitulé"
+                                            placeholder="Intitulé de la matière"
+                                            aria-invalid={isInvalid}
+                                        />
+                                    );
+                                }}
+                            />
+
+                            {/* Subject Type */}
+                            <form.Field
+                                name="type"
+                                children={(field) => {
+                                    const isInvalid =
+                                        field.state.meta.isTouched &&
+                                        !field.state.meta.isValid;
+
+                                    return (
+                                        <SelectFieldWithClear
+                                            field={field}
+                                            label="Type"
+                                            placeholder="Type de la matière"
+                                            aria-invalid={isInvalid}
+                                            options={subjectTypes}
+                                            getLabel={getSubjectTypeLabel}
+                                        />
+                                    );
+                                }}
+                            />
+
+                            {/* Description */}
+                            <form.Field
+                                name="description"
+                                children={(field) => {
+                                    const isInvalid =
+                                        field.state.meta.isTouched &&
+                                        !field.state.meta.isValid;
+
+                                    return (
+                                        <TextareaField
+                                            field={field}
+                                            label="Description"
+                                            placeholder="Description de la matière"
+                                            aria-invalid={isInvalid}
+                                        />
+                                    );
+                                }}
+                            />
+
+                            {/* Category */}
+                            <form.Field
+                                name="category"
+                                validators={{
+                                    onChange: ({ value }) => {
+                                        if (!value) {
+                                            return "La catégorie est requise";
+                                        }
+                                        if (
+                                            !subjectCategories.includes(
+                                                value as SubjectCategory
+                                            )
+                                        ) {
+                                            return "Catégorie invalide";
+                                        }
+                                        return undefined;
+                                    },
+                                }}
+                                children={(field) => {
+                                    const isInvalid =
+                                        field.state.meta.isTouched &&
+                                        field.state.meta.errors.length > 0;
+
+                                    return (
+                                        <SelectField
+                                            field={field}
+                                            label="Catégorie"
+                                            placeholder="Sélectionnez une catégorie"
+                                            aria-invalid={isInvalid}
+                                            options={subjectCategories}
+                                            getLabel={getCategoryLabel}
+                                        />
+                                    );
+                                }}
+                            />
+                        </FieldGroup>
+                    </form>
+                }
+                footer={
+                    <div className="flex w-full items-center justify-end gap-2">
+                        <SheetClose asChild>
+                            <form.Subscribe
+                                selector={(state) => [
+                                    state.canSubmit,
+                                    state.isSubmitting,
+                                ]}
+                                children={([canSubmit, isSubmitting]) => (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            type="reset"
+                                            onClick={(e) => {
+                                                handleClose(false);
+                                                e.preventDefault();
+                                                form.reset();
+                                            }}
+                                            disabled={isSubmitting}
+                                        >
+                                            Annuler
+                                        </Button>
+
+                                        <Button
+                                            type="submit"
+                                            form="create-subject-form"
+                                            disabled={
+                                                !canSubmit ||
+                                                !form.state.isValid
+                                            }
+                                        >
+                                            {isSubmitting
+                                                ? isEditMode
+                                                    ? "Modification..."
+                                                    : "Création..."
+                                                : isEditMode
+                                                ? "Modifier la matière"
+                                                : "Créer la matière"}
+                                        </Button>
+                                    </>
+                                )}
+                            />
+                        </SheetClose>
+                    </div>
+                }
+            />
+
+            {/* Duplicate Warning Dialog */}
+            <Dialog
+                open={showDuplicateWarning}
+                onOpenChange={setShowDuplicateWarning}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Matière existante</DialogTitle>
+                        <DialogDescription>
+                            Une matière avec le nom "{pendingSubmit?.data.name}"
+                            existe déjà. Êtes-vous sûr de vouloir continuer ?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={handleCancelDuplicate}
+                        >
+                            Annuler
+                        </Button>
+                        <Button onClick={handleConfirmDuplicate}>
+                            Continuer quand même
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

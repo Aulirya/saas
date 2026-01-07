@@ -19,9 +19,20 @@ import {
     FolderOpen,
 } from "lucide-react";
 
-import type { SubjectCategory } from "@saas/shared";
+import type { SubjectCategory, SubjectType } from "@saas/shared";
 
+// ----- CATEGORY UTILS -----
 export interface CategoryConfig {
+    label: string; // French label
+    icon: LucideIcon;
+    color: string; // Tailwind color class for background
+    iconColor: string; // Tailwind color class for icon
+    buttonColor: string; // Tailwind color class for button background
+    buttonHoverColor: string; // Tailwind color class for button hover state
+}
+
+// ----- TYPE UTILS -----
+export interface TypeConfig {
     label: string; // French label
     icon: LucideIcon;
     color: string; // Tailwind color class for background
@@ -161,23 +172,54 @@ export const CATEGORY_CONFIG: Record<SubjectCategory, CategoryConfig> = {
     },
 };
 
-/**
- * Get the French label for a category
- */
 export function getCategoryLabel(category: SubjectCategory): string {
     return CATEGORY_CONFIG[category]?.label ?? category;
 }
 
-/**
- * Get the icon component for a category
- */
 export function getCategoryIcon(category: SubjectCategory): LucideIcon {
     return CATEGORY_CONFIG[category]?.icon ?? BookOpen;
 }
 
-/**
- * Get the color configuration for a category
- */
 export function getCategoryConfig(category: SubjectCategory): CategoryConfig {
     return CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG.Other;
+}
+
+// ----- TYPE UTILS -----
+export const TYPE_CONFIG: Record<SubjectType, TypeConfig> = {
+    core: {
+        label: "Tronc commun",
+        icon: BookOpen,
+        color: "bg-blue-100 dark:bg-blue-900/30",
+        iconColor: "text-blue-600 dark:text-blue-400",
+        buttonColor: "bg-blue-600 dark:bg-blue-500",
+        buttonHoverColor: "hover:bg-blue-700 dark:hover:bg-blue-600",
+    },
+    option: {
+        label: "Option",
+        icon: BookOpen,
+        color: "bg-green-100 dark:bg-green-900/30",
+        iconColor: "text-green-600 dark:text-green-400",
+        buttonColor: "bg-green-600 dark:bg-green-500",
+        buttonHoverColor: "hover:bg-green-700 dark:hover:bg-green-600",
+    },
+    support: {
+        label: "Soutien",
+        icon: BookOpen,
+        color: "bg-red-100 dark:bg-red-900/30",
+        iconColor: "text-red-600 dark:text-red-400",
+        buttonColor: "bg-red-600 dark:bg-red-500",
+        buttonHoverColor: "hover:bg-red-700 dark:hover:bg-red-600",
+    },
+};
+
+export function getSubjectTypeLabel(type: SubjectType): string {
+    return TYPE_CONFIG[type]?.label ?? type;
+}
+
+export function getSubjectTypeIcon(type: SubjectType): LucideIcon {
+    return TYPE_CONFIG[type]?.icon ?? BookOpen;
+}
+
+export function getSubjectTypeConfig(type: SubjectType): TypeConfig {
+    return TYPE_CONFIG[type] ?? TYPE_CONFIG.core;
 }

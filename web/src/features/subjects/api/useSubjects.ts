@@ -8,16 +8,6 @@ export function useSubjects() {
     });
 }
 
-export function useSubject(subjectId: string) {
-    return useQuery({
-        ...orpc.subject.get.queryOptions({
-            input: { id: subjectId },
-        }),
-        staleTime: 60_000,
-        enabled: !!subjectId,
-    });
-}
-
 export function useSubjectWithLessons(
     subjectId: string,
     options?: { enabled?: boolean }

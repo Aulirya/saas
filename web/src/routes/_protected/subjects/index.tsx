@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as SubjectDetailRoute } from "./$subjectId";
 import { Plus, Eye, ArrowUp, ArrowDown, Search } from "lucide-react";
-import { getCategoryConfig, getCategoryLabel } from "@/lib/subject-category";
+import { getCategoryConfig, getCategoryLabel } from "@/lib/subject-utils";
 
 import type { SubjectCategory } from "@saas/shared";
 
@@ -94,7 +94,14 @@ function SubjectsPage() {
 
     // Get unique types for filter
     const subjectTypes = useMemo(() => {
-        const types = new Set(subjects.map((s) => s.type));
+        const types = new Set(
+            subjects
+                .map((s) => s.type)
+                .filter(
+                    (type): type is string =>
+                        type !== null && type !== undefined && type !== ""
+                )
+        );
         return Array.from(types).sort();
     }, [subjects]);
 

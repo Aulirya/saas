@@ -17,10 +17,10 @@ import {
     patchLesson,
 } from "./lesson";
 import {
+    checkSubjectNameExists,
     createSubject,
-    getSubject,
     getSubjectWithLessons,
-    listSubjects,
+    getAllSubjects,
     patchSubject,
 } from "./subject";
 
@@ -39,9 +39,9 @@ export const router = base.router({
         create: createSchoolClass,
     },
     subject: {
-        list: listSubjects,
-        get: getSubject,
+        list: getAllSubjects,
         getWithLessons: getSubjectWithLessons,
+        checkNameExists: checkSubjectNameExists,
         create: createSubject,
         patch: patchSubject,
     },

@@ -1,4 +1,4 @@
-import type { Subject } from "@saas/shared";
+import type { Subject, SUBJECT_CATEGORIES } from "@saas/shared";
 import type { SubjectModel } from "../model/subjects";
 
 // Type for models that may have nested subject_id (from SurrealDB queries with subject_id.*)
@@ -6,8 +6,7 @@ type SubjectModelWithNestedId = SubjectModel & {
     subject_id?: SubjectModel;
 };
 
-type SubjectType = "core" | "option" | "support";
-type SubjectCategory = SubjectCategory;
+type SubjectCategory = (typeof SUBJECT_CATEGORIES)[number];
 
 export namespace SubjectMapper {
     /**
@@ -35,9 +34,7 @@ export namespace SubjectMapper {
                 getValue(modelWithNested, "description") ??
                 model.description ??
                 "",
-            type:
-                (getValue(modelWithNested, "type") as SubjectType) ??
-                model.type,
+            type: (getValue(modelWithNested, "type") as string) ?? model.type,
             category:
                 (getValue(modelWithNested, "category") as SubjectCategory) ??
                 model.category,

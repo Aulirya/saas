@@ -9,118 +9,138 @@ import {
     type SubjectWithLessons,
 } from "@saas/shared";
 import z from "zod";
+import { SUBJECT_CATEGORIES } from "@saas/shared";
 import type { LessonModel } from "../repository/model/lessons";
 import { LessonMapper } from "../repository/mapper/lesson";
 import { ORPCError } from "@orpc/server";
+import { parseRecordId } from "../utils/record-id";
 
-// Helper function to parse a subject ID that might be full (subjects:subject_01) or partial (subject_01)
-function parseId(id: string): RecordId {
-    // If the ID already contains a colon, it's a full record ID
-    if (id.includes(":")) {
-        // Parse it: split by colon and create RecordId
-        const [table, recordId] = id.split(":", 2);
-        return new RecordId(table, recordId);
-    }
-    // Otherwise, it's just the ID part
-    return new RecordId("subjects", id);
-}
-
-export const listSubjects = base.handler(
+// ---------- GET REQUESTS ----------
+export const getAllSubjects = base.handler(
     async ({ context }): Promise<Subject[]> => {
         const userId = new RecordId("users", context.user_id);
         const query = surql`SELECT * FROM subjects WHERE user_id = ${userId}`;
-        const classesModel = await context.db
-            .query<[SubjectModel[]]>(query)
-            .collect();
-        const classes = classesModel[0].map(SubjectMapper.fromModel);
-        return classes;
+
+        let subjectsModel: [SubjectModel[]];
+        try {
+            subjectsModel = await context.db
+                .query<[SubjectModel[]]>(query)
+                .collect();
+            if (
+                !subjectsModel ||
+                !Array.isArray(subjectsModel) ||
+                !Array.isArray(subjectsModel[0])
+            ) {
+                throw new ORPCError("DATABASE_ERROR", {
+                    message: "Erreur de récupération des matières",
+                });
+            }
+        } catch (err) {
+            console.error("error in getAllSubjects: ", err);
+            throw new ORPCError("DATABASE_ERROR", {
+                message: "Erreur de récupération des matières",
+            });
+        }
+        const subjects = subjectsModel[0].map(SubjectMapper.fromModel);
+        return subjects;
     }
 );
-
-export const getSubject = base
-    .input(z.object({ id: z.string() }))
-    .handler(async ({ input, context }): Promise<Subject> => {
-        const userId = new RecordId("users", context.user_id);
-        const subjectId = parseId(input.id);
-        const query = surql`SELECT * FROM subjects WHERE user_id = ${userId} AND id = ${subjectId}`;
-        const classesModel = await context.db
-            .query<[SubjectModel[]]>(query)
-            .collect();
-        const classes = classesModel[0].map(SubjectMapper.fromModel);
-        return classes[0];
-    });
 
 // get a subject by id with its linked lessons
 export const getSubjectWithLessons = base
     .input(z.object({ id: z.string() }))
     .handler(async ({ input, context }): Promise<SubjectWithLessons> => {
         const userId = new RecordId("users", context.user_id);
-        const subjectId = parseId(input.id);
+        const subjectId = parseRecordId(input.id, "subjects");
 
         const query = surql`
-      SELECT
-        *,
-        (
-          SELECT *
-          FROM lessons
-          WHERE subject_id = $parent.id
-          ORDER BY start_at ASC
-        ) AS lessons
-      FROM subjects
-      WHERE user_id = ${userId} AND id = ${subjectId}
-    `;
+        SELECT * ,
+            (SELECT *
+            FROM lessons
+            WHERE subject_id = $parent.id
+            ORDER BY start_at ASC
+            ) AS lessons
+        FROM subjects
+        WHERE user_id = ${userId} AND id = ${subjectId}
+        `;
 
-        const result = await context.db
-            .query<
-                [
-                    Array<
-                        SubjectModel & {
-                            lessons?: LessonModel[];
-                        }
-                    >
-                ]
-            >(query)
-            .collect();
+        let result;
+        try {
+            result = await context.db
+                .query<
+                    [
+                        Array<
+                            SubjectModel & {
+                                lessons?: LessonModel[];
+                            }
+                        >
+                    ]
+                >(query)
+                .collect();
+        } catch (err) {
+            console.error("error in getSubjectWithLessons: ", err);
+            throw new ORPCError("DATABASE_ERROR", {
+                message: "Erreur de récupération de la matière avec ses leçons",
+            });
+        }
 
         const subjectData = result[0][0];
         if (!subjectData) {
-            throw new Error("Subject not found");
+            throw new ORPCError("NOT_FOUND", {
+                message: "Matière non trouvée",
+            });
         }
 
         const subject = SubjectMapper.fromModel(subjectData);
 
         // Map lessons
         const lessons = subjectData.lessons?.map(LessonMapper.fromModel) ?? [];
-
-        console.log("lessons: ", lessons);
         return {
             ...subject,
             lessons,
         };
     });
 
+// Check if a subject with the same name exists for the current user
+export const checkSubjectNameExists = base
+    .input(
+        z.object({
+            name: z.string(),
+        })
+    )
+    .handler(
+        async ({
+            input,
+            context,
+        }): Promise<{ exists: boolean; subject?: Subject }> => {
+            const userId = new RecordId("users", context.user_id);
+
+            // Build query to check if name exists
+            let query: ReturnType<typeof surql>;
+            query = surql`SELECT * FROM subjects WHERE user_id = ${userId} AND name = ${input.name}`;
+
+            const existingSubjects = await context.db
+                .query<[SubjectModel[]]>(query)
+                .collect();
+
+            const existingSubjectsArray = existingSubjects[0] ?? [];
+
+            if (existingSubjectsArray.length > 0) {
+                return {
+                    exists: true,
+                    subject: SubjectMapper.fromModel(existingSubjectsArray[0]),
+                };
+            }
+
+            return { exists: false };
+        }
+    );
+
+// ---------- CREATE REQUEST ----------
 export const createSubject = base
     .input(subject_create_input)
     .handler(async ({ input, context }): Promise<Subject> => {
-        console.log("start create");
         const userId = new RecordId("users", context.user_id);
-        console.log("userId: ", userId);
-
-        // Check if a subject with the same name already exists for this user
-        const checkQuery = surql`SELECT * FROM subjects WHERE user_id = ${userId} AND name = ${input.name}`;
-        const existingSubjects = await context.db
-            .query<[SubjectModel[]]>(checkQuery)
-            .collect();
-
-        const existingSubjectsArray = existingSubjects[0] ?? [];
-        console.log("existingSubjectsArray: ", existingSubjectsArray);
-        if (existingSubjectsArray.length > 0) {
-            // Throw error using oRPC's error system to preserve the message
-            throw new ORPCError("UNPROCESSABLE_ENTITY", {
-                message: "Une matière avec ce nom existe déjà",
-            });
-        }
-        console.log("no existing subject", input);
 
         try {
             const subjectsTable = new Table("subjects");
@@ -129,113 +149,68 @@ export const createSubject = base
                 .content({
                     name: input.name,
                     description: input.description || "",
-                    type: input.type,
+                    type: input.type || "",
                     category: input.category,
                     user_id: userId,
                 });
 
-            console.log("result: ", result);
             const subject = SubjectMapper.fromModel(result[0]);
-            console.log("subject: ", subject);
-            console.log("end create");
+
             return subject;
         } catch (e) {
-            console.log("error catch: ", e);
-            // If it's a duplicate error from the database, provide a user-friendly message
-            if (
-                e instanceof Error &&
-                (e.message.includes("duplicate") ||
-                    e.message.includes("already exists") ||
-                    e.message.includes("unique"))
-            ) {
-                throw new ORPCError("UNPROCESSABLE_ENTITY", {
-                    message: "Une matière avec ce nom existe déjà",
-                });
-            }
-            // Re-throw other errors as-is (they'll be caught by oRPC and converted to INTERNAL_SERVER_ERROR)
-            throw e;
+            console.error("error in createSubject: ", e);
+            throw new ORPCError("DATABASE_ERROR", {
+                message: "Erreur de création de la matière",
+            });
         }
     });
 
+// ---------- PATCH REQUEST ----------
 export const patchSubject = base
     .input(subject_patch_input)
     .handler(async ({ input, context }): Promise<Subject> => {
-        console.log("start patch");
-        const subjectId = new RecordId("subjects", input.id);
-
-        const updateData: Partial<
-            Pick<SubjectModel, "name" | "description" | "type" | "category">
-        > = {};
-
-        if (input.name !== undefined) {
-            updateData.name = input.name;
-        }
-        if (input.description !== undefined) {
-            updateData.description = input.description;
-        }
-        if (input.type !== undefined) {
-            // Validate and cast type to match model enum
-            if (
-                input.type === "core" ||
-                input.type === "option" ||
-                input.type === "support"
-            ) {
-                updateData.type = input.type;
-            } else {
-                throw new Error(`Invalid type: ${input.type}`);
-            }
-        }
-        if (input.category !== undefined) {
-            // Map "Mathematic" to "Mathematics" if needed, and validate against model enum
-            const categoryMap: Record<string, SubjectModel["category"]> = {
-                Mathematic: "Mathematics",
-            };
-            const mappedCategory =
-                categoryMap[input.category] || input.category;
-            // Validate it's a valid category
-            const validCategories = [
-                "Mathematics",
-                "Language",
-                "Science",
-                "Social",
-                "Literature",
-                "Sport",
-                "History",
-                "Geography",
-                "Philosophy",
-                "Civic",
-                "Music",
-                "Art",
-                "Technology",
-                "Computer Science",
-                "Economics",
-                "Other",
-            ] as const;
-            if (
-                validCategories.includes(
-                    mappedCategory as (typeof validCategories)[number]
-                )
-            ) {
-                updateData.category =
-                    mappedCategory as SubjectModel["category"];
-            } else {
-                throw new Error(`Invalid category: ${input.category}`);
-            }
-        }
-
-        if (Object.keys(updateData).length === 0) {
-            throw new Error("No fields to update");
-        }
-
         try {
+            const subjectId = parseRecordId(input.id, "subjects");
+            const updateData: Partial<
+                Pick<SubjectModel, "name" | "description" | "type" | "category">
+            > = {};
+
+            if (input.name !== undefined) {
+                updateData.name = input.name;
+            }
+            if (input.description !== undefined) {
+                updateData.description = input.description;
+            }
+            if (input.type !== undefined) {
+                updateData.type = input.type;
+            }
+            if (input.category !== undefined) {
+                if (
+                    SUBJECT_CATEGORIES.includes(
+                        input.category as (typeof SUBJECT_CATEGORIES)[number]
+                    )
+                ) {
+                    updateData.category =
+                        input.category as (typeof SUBJECT_CATEGORIES)[number];
+                } else {
+                    throw new ORPCError("INVALID_REQUEST", {
+                        message: `Invalid category: ${input.category}`,
+                    });
+                }
+            }
+
             const result = await context.db
                 .update<SubjectModel>(subjectId)
                 .merge(updateData);
+
+            if (!result) {
+                throw new ORPCError("DATABASE_ERROR", {
+                    message: "Erreur de mise à jour de la matière",
+                });
+            }
             const subject = SubjectMapper.fromModel(result);
-            console.log("end patch");
             return subject;
         } catch (e) {
-            console.log("error: ", e);
             throw e;
         }
     });
