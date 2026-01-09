@@ -46,7 +46,7 @@ export function CardInfoLayout({
                 {children}
             </CardContent>
             {footer && (
-                <CardFooter className={cn("mt-auto", footerClassName)}>
+                <CardFooter className={cn("mt-4", footerClassName)}>
                     {footer}
                 </CardFooter>
             )}

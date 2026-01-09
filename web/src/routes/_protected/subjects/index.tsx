@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as SubjectDetailRoute } from "./$subjectId";
-import { Plus, Eye, ArrowUp, ArrowDown, Search } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
 import { getCategoryConfig, getCategoryLabel } from "@/lib/subject-utils";
 
 import type { SubjectCategory } from "@saas/shared";
@@ -17,15 +17,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { FilterBar } from "@/components/ui/filter-bar";
 import {
     Pagination,
     PaginationContent,
@@ -181,130 +173,41 @@ function SubjectsPage() {
                         }}
                     />
 
-                    <section className="mb-6 ">
-                        <div className="flex flex-row gap-6 flex-wrap">
-                            <div className="space-y-2 flex-1 min-w-[200px]">
-                                <Label htmlFor="subject-search">
-                                    Rechercher
-                                </Label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
-                                    <Input
-                                        id="subject-search"
-                                        type="text"
-                                        placeholder="Rechercher une matière..."
-                                        value={searchQuery}
-                                        onChange={(e) =>
-                                            setSearchQuery(e.target.value)
-                                        }
-                                        className="pl-9"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="subject-type-filter">
-                                    Type
-                                </Label>
-                                <Select
-                                    value={typeFilter}
-                                    onValueChange={(value: string) =>
-                                        setTypeFilter(value as TypeFilterValue)
-                                    }
-                                >
-                                    <SelectTrigger id="subject-type-filter">
-                                        <SelectValue placeholder="Tous les types" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {typeFilterOptions.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="subject-category-filter">
-                                    Catégorie
-                                </Label>
-                                <Select
-                                    value={categoryFilter}
-                                    onValueChange={(value: string) =>
-                                        setCategoryFilter(
-                                            value as CategoryFilterValue
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="subject-category-filter">
-                                        <SelectValue placeholder="Toutes les catégories" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categoryFilterOptions.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="subject-sort-by">
-                                    Trier par
-                                </Label>
-                                <div className="flex gap-2">
-                                    <Select
-                                        value={sortBy}
-                                        onValueChange={(
-                                            value: "name" | "updated_at"
-                                        ) => setSortBy(value)}
-                                    >
-                                        <SelectTrigger
-                                            id="subject-sort-by"
-                                            className="w-[140px]"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="name">
-                                                Nom
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() =>
-                                            setSortOrder(
-                                                sortOrder === "asc"
-                                                    ? "desc"
-                                                    : "asc"
-                                            )
-                                        }
-                                        title={
-                                            sortOrder === "asc"
-                                                ? "Trier par ordre décroissant"
-                                                : "Trier par ordre croissant"
-                                        }
-                                    >
-                                        {sortOrder === "asc" ? (
-                                            <ArrowUp className="h-4 w-4" />
-                                        ) : (
-                                            <ArrowDown className="h-4 w-4" />
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    <FilterBar
+                        searchId="subject-search"
+                        searchPlaceholder="Rechercher une matière..."
+                        searchValue={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        filters={[
+                            {
+                                id: "subject-type-filter",
+                                label: "Type",
+                                value: typeFilter,
+                                options: typeFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setTypeFilter(value as TypeFilterValue),
+                                placeholder: "Tous les types",
+                            },
+                            {
+                                id: "subject-category-filter",
+                                label: "Catégorie",
+                                value: categoryFilter,
+                                options: categoryFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setCategoryFilter(
+                                        value as CategoryFilterValue
+                                    ),
+                                placeholder: "Toutes les catégories",
+                            },
+                        ]}
+                        sortBy={sortBy}
+                        sortOptions={[{ value: "name", label: "Nom" }]}
+                        onSortByChange={(value: string) =>
+                            setSortBy(value as "name" | "updated_at")
+                        }
+                        sortOrder={sortOrder}
+                        onSortOrderChange={setSortOrder}
+                    />
                 </div>
 
                 <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">

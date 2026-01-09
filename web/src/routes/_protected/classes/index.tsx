@@ -4,14 +4,7 @@ import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as ClassDetailRoute } from "./$classId";
-import {
-    Plus,
-    Eye,
-    GraduationCap,
-    ArrowUp,
-    ArrowDown,
-    Search,
-} from "lucide-react";
+import { Plus, Eye, GraduationCap } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -23,15 +16,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { FilterBar } from "@/components/ui/filter-bar";
 import {
     Pagination,
     PaginationContent,
@@ -218,193 +203,95 @@ function ClassesPage() {
                         }}
                     />
 
-                    <section className="mb-6 ">
-                        <div className="flex flex-row gap-6 flex-wrap">
-                            <div className="space-y-2 flex-1 min-w-[200px]">
-                                <Label htmlFor="class-search">Rechercher</Label>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
-                                    <Input
-                                        id="class-search"
-                                        type="text"
-                                        placeholder="Rechercher une classe..."
-                                        value={searchQuery}
-                                        onChange={(e) =>
-                                            setSearchQuery(e.target.value)
-                                        }
-                                        className="pl-9"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="class-school-filter">
-                                    École
-                                </Label>
-                                <Select
-                                    value={schoolFilter}
-                                    onValueChange={(value: string) =>
-                                        setSchoolFilter(
-                                            value as SchoolFilterValue
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="class-school-filter">
-                                        <SelectValue placeholder="Toutes les écoles" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {isLoadingSchools ? (
-                                            <SelectItem
-                                                value="loading"
-                                                disabled
-                                            >
-                                                Chargement...
-                                            </SelectItem>
-                                        ) : (
-                                            schoolFilterOptions.map(
-                                                (option) => (
-                                                    <SelectItem
-                                                        key={option.value}
-                                                        value={option.value}
-                                                    >
-                                                        {option.label}
-                                                    </SelectItem>
-                                                )
-                                            )
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="class-level-filter">
-                                    Niveau
-                                </Label>
-                                <Select
-                                    value={levelFilter}
-                                    onValueChange={(value) =>
-                                        setLevelFilter(
-                                            value as LevelFilterValue
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="class-level-filter">
-                                        <SelectValue placeholder="Tous les niveaux" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {isLoadingLevels ? (
-                                            <SelectItem
-                                                value="loading"
-                                                disabled
-                                            >
-                                                Chargement...
-                                            </SelectItem>
-                                        ) : (
-                                            levelFilterOptions.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="class-sort-by">Trier par</Label>
-                                <div className="flex gap-2">
-                                    <Select
-                                        value={sortBy}
-                                        onValueChange={(
-                                            value: "name" | "updated_at"
-                                        ) => setSortBy(value)}
-                                    >
-                                        <SelectTrigger
-                                            id="class-sort-by"
-                                            className="w-[140px]"
-                                        >
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="name">
-                                                Nom
-                                            </SelectItem>
-                                            <SelectItem value="updated_at">
-                                                Date de modification
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() =>
-                                            setSortOrder(
-                                                sortOrder === "asc"
-                                                    ? "desc"
-                                                    : "asc"
-                                            )
-                                        }
-                                        title={
-                                            sortOrder === "asc"
-                                                ? "Trier par ordre décroissant"
-                                                : "Trier par ordre croissant"
-                                        }
-                                    >
-                                        {sortOrder === "asc" ? (
-                                            <ArrowUp className="h-4 w-4" />
-                                        ) : (
-                                            <ArrowDown className="h-4 w-4" />
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    <FilterBar
+                        searchId="class-search"
+                        searchPlaceholder="Rechercher une classe..."
+                        searchValue={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        filters={[
+                            {
+                                id: "class-school-filter",
+                                label: "École",
+                                value: schoolFilter,
+                                options: schoolFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setSchoolFilter(value as SchoolFilterValue),
+                                placeholder: "Toutes les écoles",
+                                isLoading: isLoadingSchools,
+                            },
+                            {
+                                id: "class-level-filter",
+                                label: "Niveau",
+                                value: levelFilter,
+                                options: levelFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setLevelFilter(value as LevelFilterValue),
+                                placeholder: "Tous les niveaux",
+                                isLoading: isLoadingLevels,
+                            },
+                        ]}
+                        sortBy={sortBy}
+                        sortOptions={[
+                            { value: "name", label: "Nom" },
+                            {
+                                value: "updated_at",
+                                label: "Date de modification",
+                            },
+                        ]}
+                        onSortByChange={(value: string) =>
+                            setSortBy(value as "name" | "updated_at")
+                        }
+                        sortOrder={sortOrder}
+                        onSortOrderChange={setSortOrder}
+                    />
                 </div>
 
                 <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                    <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5 overflow-y-auto pr-3 flex flex-col">
-                        <div className="flex-1 space-y-5">
-                            {isLoading ? (
-                                <SkeletonCard />
-                            ) : paginatedClasses.length ? (
-                                paginatedClasses.map((cls) => (
-                                    <ClassCard
-                                        key={cls.id}
-                                        classData={cls}
-                                        isSelected={cls.id === selectedId}
-                                        onSelect={handleClassSelect}
-                                    />
-                                ))
-                            ) : (
-                                <Card className="border-dashed">
-                                    <CardHeader>
-                                        <CardTitle>
-                                            Aucune classe trouvée
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Créez votre première classe pour
-                                            commencer à suivre vos élèves.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardFooter>
-                                        <Button
-                                            onClick={() =>
-                                                console.log("Create new class")
-                                            }
-                                        >
-                                            <Plus className="size-4" />
-                                            Nouvelle classe
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            )}
+                    <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col overflow-hidden">
+                        {/* Scrollable classes list */}
+                        <div className="flex-1 overflow-y-auto pr-3">
+                            <div className="space-y-5">
+                                {isLoading ? (
+                                    <SkeletonCard />
+                                ) : paginatedClasses.length ? (
+                                    paginatedClasses.map((cls) => (
+                                        <ClassCard
+                                            key={cls.id}
+                                            classData={cls}
+                                            isSelected={cls.id === selectedId}
+                                            onSelect={handleClassSelect}
+                                        />
+                                    ))
+                                ) : (
+                                    <Card className="border-dashed">
+                                        <CardHeader>
+                                            <CardTitle>
+                                                Aucune classe trouvée
+                                            </CardTitle>
+                                            <CardDescription>
+                                                Créez votre première classe pour
+                                                commencer à suivre vos élèves.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardFooter>
+                                            <Button
+                                                onClick={() =>
+                                                    console.log(
+                                                        "Create new class"
+                                                    )
+                                                }
+                                            >
+                                                <Plus className="size-4" />
+                                                Nouvelle classe
+                                            </Button>
+                                        </CardFooter>
+                                    </Card>
+                                )}
+                            </div>
                         </div>
-                        {/* Pagination */}
-                        {!isLoading && classes.length > 0 && totalPages > 1 && (
-                            <div className="mt-6 flex justify-center">
+                        {/* Fixed Pagination */}
+                        {!isLoading && filteredClasses.length > 0 && (
+                            <div className="flex justify-center shrink-0 pt-4 border-t">
                                 <Pagination>
                                     <PaginationContent>
                                         <PaginationItem>
@@ -757,7 +644,7 @@ function ClassSummaryContent({
         <div className="flex flex-col gap-6">
             {/* Upcoming Lessons */}
             <section>
-                <p className="font-medium pb-3">Prochaines leçons</p>
+                <p className="font-medium py-3">Prochaines leçons</p>
                 {isLoading ? (
                     <div className="space-y-2">
                         <div className="h-16 rounded-lg border border-border/60 bg-muted/20 animate-pulse" />
