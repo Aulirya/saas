@@ -75,12 +75,16 @@ export function SubjectFormModal({
         onSuccess: () => {
             handleSuccess("Matière créée avec succès");
         },
+        // CORRIGER
         onError: (error) => {
-            handleError(
-                error,
-                "Error creating subject:",
-                "Erreur lors de la création de la matière"
-            );
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue lors de la création de la matière";
+            toast.error(errorMsg);
+        },
+        onSettled: () => {
+            setIsSubmitting(false);
         },
     });
 
@@ -92,11 +96,14 @@ export function SubjectFormModal({
             handleSuccess("Matière modifiée avec succès");
         },
         onError: (error) => {
-            handleError(
-                error,
-                "Error updating subject:",
-                "Erreur lors de la modification de la matière"
-            );
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue lors de la modification de la matière";
+            toast.error(errorMsg);
+        },
+        onSettled: () => {
+            setIsSubmitting(false);
         },
     });
 
@@ -118,11 +125,6 @@ export function SubjectFormModal({
         toast.success(message);
         form.reset();
         onOpenChange(false);
-    }
-
-    function handleError(error: any, contextMsg: string, toastMsg: string) {
-        console.error(contextMsg, error);
-        toast.error(toastMsg);
     }
 
     // ---------- Form ----------

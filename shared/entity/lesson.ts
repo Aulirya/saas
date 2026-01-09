@@ -1,5 +1,16 @@
 import z from "zod";
 
+export const LESSON_SCOPES = ["core", "bonus", "optional"] as const;
+export const LESSON_STATUSES = [
+    "done",
+    "to_review",
+    "in_progress",
+    "to_do",
+] as const;
+
+export type LessonScope = (typeof LESSON_SCOPES)[number];
+export type LessonStatus = (typeof LESSON_STATUSES)[number];
+
 export const comments = z.object({
     title: z.string(),
     description: z.string(),

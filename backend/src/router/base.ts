@@ -29,4 +29,10 @@ export const base = os.$context<{ db: Surreal; user_id: string }>().errors({
             })
             .optional(),
     },
+    INVALID_REQUEST: {
+        message: "Requête invalide",
+        data: z.object({
+            message: z.string(),
+        }),
+    },
 });

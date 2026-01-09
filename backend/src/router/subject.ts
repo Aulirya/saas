@@ -158,9 +158,13 @@ export const createSubject = base
 
             return subject;
         } catch (e) {
+            if (e instanceof ORPCError) {
+                throw e; // Preserve existing ORPCErrors
+            }
             console.error("error in createSubject: ", e);
             throw new ORPCError("DATABASE_ERROR", {
-                message: "Erreur de création de la matière",
+                message:
+                    "Une erreur est survenue lors de la création de la matière",
             });
         }
     });

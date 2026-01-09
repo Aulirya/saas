@@ -15,6 +15,7 @@ import {
     getLesson,
     listLessons,
     patchLesson,
+    reorderLesson,
 } from "./lesson";
 import {
     checkSubjectNameExists,
@@ -49,6 +50,7 @@ export const router = base.router({
         list: listLessons,
         get: getLesson,
         create: createLesson,
+        reorder: reorderLesson,
         patch: patchLesson,
         delete: deleteLesson,
     },

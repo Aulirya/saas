@@ -1,4 +1,4 @@
-import { DateTime, RecordId, surql, Table } from "surrealdb";
+import { DateTime, RecordId, surql, Surreal, Table } from "surrealdb";
 import { base } from "./base";
 import type { LessonModel } from "../repository/model/lessons";
 import { LessonMapper } from "../repository/mapper/lesson";
@@ -9,35 +9,70 @@ import {
     lesson_patch_input,
     type Lesson,
 } from "@saas/shared";
+import { ORPCError } from "@orpc/server";
 
+// ------- HELPERS -------
+// Helper function to create user RecordId
+const getUserRecordId = (userId: string): RecordId =>
+    new RecordId("users", userId);
+
+// Helper function to verify lesson ownership
+async function verifyLessonOwnership(
+    db: Surreal,
+    lessonId: RecordId,
+    userId: RecordId
+): Promise<LessonModel> {
+    const query = surql`
+        SELECT * FROM lessons 
+        WHERE id = ${lessonId} 
+        AND user_id = ${userId}
+    `;
+    const result = await db.query<[LessonModel[]]>(query).collect();
+    const lesson = result[0]?.[0];
+
+    if (!lesson) {
+        throw new ORPCError("NOT_FOUND", {
+            message:
+                "Leçon non trouvée ou vous n'avez pas l'autorisation d'y accéder",
+        });
+    }
+
+    return lesson;
+}
+
+// ------- ENDPOINTS GET -------
 export const listLessons = base.handler(
     async ({ context }): Promise<Lesson[]> => {
-        const userId = new RecordId("users", context.user_id);
+        const userId = getUserRecordId(context.user_id);
         const query = surql`SELECT * FROM lessons WHERE user_id = ${userId}`;
-        const classesModel = await context.db
+        const lessonsModel = await context.db
             .query<[LessonModel[]]>(query)
             .collect();
-        const classes = classesModel[0].map(LessonMapper.fromModel);
-        return classes;
+        const lessons = lessonsModel[0].map(LessonMapper.fromModel);
+        return lessons;
     }
 );
 
 export const getLesson = base
     .input(z.object({ id: z.string() }))
     .handler(async ({ input, context }): Promise<Lesson> => {
-        const userId = new RecordId("users", context.user_id);
-        const query = surql`SELECT * FROM lessons WHERE user_id = ${userId} AND id = ${input.id}`;
-        const classesModel = await context.db
-            .query<[LessonModel[]]>(query)
-            .collect();
-        const classes = classesModel[0].map(LessonMapper.fromModel);
-        return classes[0];
+        const userId = getUserRecordId(context.user_id);
+        const lessonId = parseRecordId(input.id, "lessons");
+
+        const lesson = await verifyLessonOwnership(
+            context.db,
+            lessonId,
+            userId
+        );
+
+        return LessonMapper.fromModel(lesson);
     });
 
+// ------- ENDPOINTS POST -------
 export const createLesson = base
     .input(lesson_create_input)
     .handler(async ({ input, context }): Promise<Lesson> => {
-        const userId = new RecordId("users", context.user_id);
+        const userId = getUserRecordId(context.user_id);
         const subjectId = parseRecordId(input.subject_id, "subjects");
         const lessonsTable = new Table("lessons");
 
@@ -48,26 +83,28 @@ export const createLesson = base
             AND subject_id = ${subjectId} 
             AND label = ${input.label}
         `;
+
+        // à gérer dans la db surreal si après sondage les profs ont des nom uniques pour les leçons
         const existingLessons = await context.db
             .query<[LessonModel[]]>(checkQuery)
             .collect();
 
         if (existingLessons[0] && existingLessons[0].length > 0) {
-            throw new Error(
-                "Une leçon avec ce nom existe déjà pour cette matière"
-            );
-            console.log("here");
+            throw new ORPCError("INVALID_REQUEST", {
+                message: "Une leçon avec ce nom existe déjà pour cette matière",
+            });
         }
 
-        // If order is not provided, compute next order for this subject
+        // If order is not provided, compute next order for this subject (number of lessons + 1)
         let nextOrder: number | undefined = input.order;
         if (nextOrder === undefined) {
-            const query = surql`SELECT math::max(order ?? 0) AS max_order FROM lessons WHERE subject_id = ${subjectId}`;
-            const resultMax = await context.db
-                .query<[Array<{ max_order: number | null }>]>(query)
+            const query = surql`SELECT count() AS lesson_count FROM lessons WHERE subject_id = ${subjectId} GROUP ALL`;
+            const resultCount = await context.db
+                .query<[Array<{ lesson_count: number }>]>(query)
                 .collect();
-            const maxOrder = resultMax[0][0]?.max_order ?? 0;
-            nextOrder = maxOrder + 1;
+            const lessonCount = resultCount[0][0]?.lesson_count ?? 0;
+
+            nextOrder = lessonCount + 1;
         }
 
         try {
@@ -86,7 +123,7 @@ export const createLesson = base
                             ? []
                             : input.comments.map((comment) => ({
                                   title: comment.title,
-                                  description: input.description,
+                                  description: comment.description,
                                   created_at: new DateTime(),
                                   updated_at: new DateTime(),
                               })),
@@ -95,255 +132,179 @@ export const createLesson = base
             const lesson = LessonMapper.fromModel(result[0]);
             return lesson;
         } catch (e) {
-            // If it's a duplicate error from the database, provide a user-friendly message
-            if (
-                e instanceof Error &&
-                (e.message.includes("duplicate") ||
-                    e.message.includes("already exists") ||
-                    e.message.includes("unique"))
-            ) {
-                throw new Error(
-                    "Une leçon avec ce nom existe déjà pour cette matière"
-                );
-            }
-            throw e;
+            console.error("error in createLesson: ", e);
+            throw new ORPCError("DATABASE_ERROR", {
+                message: "Erreur lors de la création de la leçon",
+            });
         }
     });
 
+// ------- ENDPOINTS PATCH -------
 export const patchLesson = base
     .input(lesson_patch_input)
     .handler(async ({ input, context }): Promise<Lesson> => {
-        console.log("=== PATCH LESSON START ===");
-        console.log("Input received:", JSON.stringify(input, null, 2));
-        console.log("Input ID:", input.id);
-        console.log("Input ID type:", typeof input.id);
+        const userId = getUserRecordId(context.user_id);
+        const lessonId = parseRecordId(input.id, "lessons");
 
-        // Parse the ID - handle both full record ID and just the ID part
-        let lessonId: RecordId;
-        if (input.id.includes(":")) {
-            // Full record ID like "lessons:lesson_001"
-            const [table, recordId] = input.id.split(":", 2);
-            console.log(
-                "Parsing full record ID - table:",
-                table,
-                "recordId:",
-                recordId
-            );
-            lessonId = new RecordId(table, recordId);
-        } else {
-            // Just the ID part
-            console.log("Using ID as-is with 'lessons' table");
-            lessonId = new RecordId("lessons", input.id);
-        }
-        console.log("Parsed lessonId:", lessonId.toString());
+        // Verify lesson ownership before updating
+        await verifyLessonOwnership(context.db, lessonId, userId);
 
-        const updateData: Partial<LessonModel> = {};
+        const updateData: Partial<LessonModel> = {
+            ...(input.label !== undefined && { label: input.label }),
+            ...(input.duration !== undefined && { duration: input.duration }),
+            ...(input.status !== undefined && { status: input.status }),
+            ...(input.scope !== undefined && { scope: input.scope }),
+            ...(input.order !== undefined && { order: input.order }),
+            ...(input.description !== undefined && {
+                description: input.description,
+            }),
+            ...(input.subject_id !== undefined && {
+                subject_id: parseRecordId(input.subject_id, "subjects"),
+            }),
+            ...(input.comments !== undefined && {
+                comments: input.comments.map((comment) => ({
+                    title: comment.title,
+                    description: comment.description,
+                    created_at: new DateTime(),
+                    updated_at: new DateTime(),
+                })),
+            }),
+        };
 
-        if (input.label !== undefined) {
-            console.log("Updating label:", input.label);
-            updateData.label = input.label;
-        }
-        if (input.duration !== undefined) {
-            console.log("Updating duration:", input.duration);
-            updateData.duration = input.duration;
-        }
-        // Handle order update with swap logic to ensure uniqueness
-        if (input.order !== undefined) {
-            console.log("Updating order:", input.order);
-
-            // Get current lesson to know its current order and subject
-            const currentLessonQuery = surql`SELECT * FROM ${lessonId} LIMIT 1`;
-            const currentLessonResult = await context.db
-                .query<[LessonModel[]]>(currentLessonQuery)
-                .collect();
-
-            if (
-                !currentLessonResult[0] ||
-                currentLessonResult[0].length === 0
-            ) {
-                console.error("ERROR: Lesson not found for order swap");
-                throw new Error(`Lesson not found: ${lessonId.toString()}`);
-            }
-
-            const currentLesson = currentLessonResult[0][0];
-            const currentOrder = currentLesson.order;
-            const subjectId = currentLesson.subject_id;
-
-            console.log("Current lesson order:", currentOrder);
-            console.log("New order:", input.order);
-            console.log("Subject ID:", subjectId.toString());
-
-            // If order is changing, check if another lesson has this order
-            if (currentOrder !== input.order) {
-                // Find lesson with the target order in the same subject
-                const conflictQuery = surql`
-                    SELECT * FROM lessons 
-                    WHERE subject_id = ${subjectId} 
-                    AND order = ${input.order} 
-                    AND id != ${lessonId}
-                    LIMIT 1
-                `;
-                const conflictResult = await context.db
-                    .query<[LessonModel[]]>(conflictQuery)
-                    .collect();
-
-                if (conflictResult[0] && conflictResult[0].length > 0) {
-                    // Another lesson has this order - swap them
-                    const conflictingLesson = conflictResult[0][0];
-                    const conflictingLessonId = conflictingLesson.id;
-
-                    console.log("Order conflict detected! Swapping orders...");
-                    console.log(
-                        "Conflicting lesson ID:",
-                        conflictingLessonId.toString()
-                    );
-                    console.log(
-                        "Swapping: lesson",
-                        lessonId.toString(),
-                        "order",
-                        currentOrder,
-                        "with lesson",
-                        conflictingLessonId.toString(),
-                        "order",
-                        input.order
-                    );
-
-                    // Update the conflicting lesson with the current lesson's order
-                    await context.db
-                        .update<LessonModel>(conflictingLessonId)
-                        .merge({
-                            order: currentOrder ?? undefined,
-                            updated_at: new DateTime(),
-                        });
-
-                    console.log("Swapped order for conflicting lesson");
-                }
-            }
-
-            updateData.order = input.order;
-        }
-        if (input.subject_id !== undefined) {
-            console.log("Updating subject_id:", input.subject_id);
-            const subjectId = new RecordId("subjects", input.subject_id);
-            updateData.subject_id = subjectId;
-        }
-        if (input.status !== undefined) {
-            console.log("Updating status:", input.status);
-            updateData.status = input.status;
-        }
-        if (input.scope !== undefined) {
-            console.log("Updating scope:", input.scope);
-            updateData.scope = input.scope;
-        }
-        if (input.description !== undefined) {
-            console.log("Updating description:", input.description);
-            updateData.description = input.description;
-        }
-        if (input.comments !== undefined) {
-            console.log(
-                "Updating comments:",
-                input.comments.length,
-                "comments"
-            );
-            updateData.comments = input.comments.map((comment) => ({
-                title: comment.title,
-                description: comment.description,
-                created_at: new DateTime(),
-                updated_at: new DateTime(),
-            }));
-        }
-
-        if (Object.keys(updateData).length === 0) {
-            console.error("ERROR: No fields to update");
-            throw new Error("No fields to update");
-        }
         updateData.updated_at = new DateTime();
 
-        console.log("Update data:", JSON.stringify(updateData, null, 2));
-        console.log("Update data keys:", Object.keys(updateData));
-
         try {
-            // First, check if the lesson exists
-            console.log("Checking if lesson exists...");
-            const checkQuery = surql`SELECT * FROM ${lessonId} LIMIT 1`;
-            const checkResult = await context.db
-                .query<[LessonModel[]]>(checkQuery)
-                .collect();
-            console.log("Check result:", checkResult);
-            console.log("Check result length:", checkResult[0]?.length ?? 0);
-
-            if (!checkResult[0] || checkResult[0].length === 0) {
-                console.error(
-                    "ERROR: Lesson not found with ID:",
-                    lessonId.toString()
-                );
-                throw new Error(`Lesson not found: ${lessonId.toString()}`);
-            }
-
-            console.log("Lesson found, proceeding with update...");
             const result = await context.db
                 .update<LessonModel>(lessonId)
                 .merge(updateData);
 
-            console.log("Update result:", result);
-            console.log("Update result type:", typeof result);
-            console.log("Update result is array:", Array.isArray(result));
-
-            if (Array.isArray(result)) {
-                console.log("Update result length:", result.length);
-                if (result.length === 0) {
-                    console.error("ERROR: Update returned empty array");
-                    throw new Error("Update returned no results");
-                }
-                if (result.length > 1) {
-                    console.error(
-                        "ERROR: Update returned multiple results:",
-                        result.length
-                    );
-                    throw new Error(
-                        `Update returned ${result.length} results, expected 1`
-                    );
-                }
-                console.log("Using first result from array");
-                const lesson = LessonMapper.fromModel(result[0]);
-                console.log("Mapped lesson:", lesson.id);
-                console.log("=== PATCH LESSON SUCCESS ===");
-                return lesson;
-            } else {
-                console.log("Update result is single object");
-                const lesson = LessonMapper.fromModel(result);
-                console.log("Mapped lesson:", lesson.id);
-                console.log("=== PATCH LESSON SUCCESS ===");
-                return lesson;
+            if (!result) {
+                throw new ORPCError("DATABASE_ERROR", {
+                    message: "Erreur lors de la mise à jour de la leçon",
+                });
             }
+
+            const lesson = LessonMapper.fromModel(result);
+            return lesson;
         } catch (e) {
-            console.error("=== PATCH LESSON ERROR ===");
-            console.error("Error type:", e?.constructor?.name);
-            console.error(
-                "Error message:",
-                e instanceof Error ? e.message : String(e)
-            );
-            console.error(
-                "Error stack:",
-                e instanceof Error ? e.stack : "No stack"
-            );
-            console.error("Full error:", e);
-            throw e;
+            if (e instanceof ORPCError) {
+                throw e; // Preserve existing ORPCErrors
+            }
+            console.error("error in patchLesson: ", e);
+            throw new ORPCError("DATABASE_ERROR", {
+                message: "Erreur lors de la mise à jour de la leçon",
+            });
         }
     });
 
-export const deleteLesson = base
-    .input(z.object({ id: z.string() }))
+export const reorderLesson = base
+    .input(
+        z.object({
+            lesson_id: z.string(),
+            target_lesson_id: z.string(),
+            subject_id: z.string(),
+        })
+    )
     .handler(async ({ input, context }): Promise<{ success: boolean }> => {
-        console.log("start delete");
+        const userId = getUserRecordId(context.user_id);
+        const lessonId = parseRecordId(input.lesson_id, "lessons");
+        const targetLessonId = parseRecordId(input.target_lesson_id, "lessons");
+        const subjectId = parseRecordId(input.subject_id, "subjects");
+
+        // Get both lessons to verify they exist, belong to the user, and are in the same subject
+        const lessonQuery = surql`
+            SELECT * FROM lessons 
+            WHERE id IN [${lessonId}, ${targetLessonId}]
+            AND user_id = ${userId}
+            AND subject_id = ${subjectId}
+        `;
+
+        const lessonsResult = await context.db
+            .query<[LessonModel[]]>(lessonQuery)
+            .collect();
+
+        const lessons = lessonsResult[0];
+
+        if (!lessons || lessons.length !== 2) {
+            throw new ORPCError("NOT_FOUND", {
+                message:
+                    "One or both lessons not found or not in the specified subject",
+            });
+        }
+
+        // Find the specific lessons by comparing RecordId objects
+        const lesson = lessons.find((l) => l.id.equals(lessonId));
+        const targetLesson = lessons.find((l) => l.id.equals(targetLessonId));
+
+        if (!lesson || !targetLesson) {
+            throw new ORPCError("NOT_FOUND", {
+                message:
+                    "One or both lessons not found or not in the specified subject",
+            });
+        }
+
+        // Swap the orders
+        const lessonOrder = lesson.order;
+        const targetOrder = targetLesson.order;
+
+        try {
+            // Update both lessons
+            await context.db.update<LessonModel>(lessonId).merge({
+                order: targetOrder,
+                updated_at: new DateTime(),
+            });
+
+            await context.db.update<LessonModel>(targetLessonId).merge({
+                order: lessonOrder,
+                updated_at: new DateTime(),
+            });
+
+            return { success: true };
+        } catch (e) {
+            console.error("Error reordering lessons:", e);
+            throw new ORPCError("DATABASE_ERROR", {
+                message: "Erreur lors du réordonnancement des leçons",
+            });
+        }
+    });
+
+// ------- ENDPOINTS DELETE -------
+export const deleteLesson = base
+    .input(
+        z.object({
+            id: z.string(),
+            order: z.number().nullable().optional(),
+            subject_id: z.string(),
+        })
+    )
+    .handler(async ({ input, context }): Promise<{ success: boolean }> => {
+        const userId = getUserRecordId(context.user_id);
         const lessonId = parseRecordId(input.id, "lessons");
+        const subjectId = parseRecordId(input.subject_id, "subjects");
+
+        await verifyLessonOwnership(context.db, lessonId, userId);
 
         try {
             await context.db.delete(lessonId);
-            console.log("end delete");
+
+            // Update orders of lessons that come after the deleted one
+            if (input.order !== null && input.order !== undefined) {
+                const updateQuery = surql`
+                    UPDATE lessons
+                    SET order = (order ?? 0) - 1
+                    WHERE user_id = ${userId}
+                    AND subject_id = ${subjectId}
+                    AND order > ${input.order}
+                `;
+
+                await context.db.query(updateQuery);
+            }
+
             return { success: true };
         } catch (e) {
-            console.log("error: ", e);
-            throw e;
+            console.error("Error deleting lesson:", e);
+            throw new ORPCError("DATABASE_ERROR", {
+                message: "Erreur lors de la suppression de la leçon",
+            });
         }
     });
