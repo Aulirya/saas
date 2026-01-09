@@ -4,7 +4,14 @@ import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as ClassDetailRoute } from "./$classId";
-import { Plus, Eye, GraduationCap, ArrowUp, ArrowDown } from "lucide-react";
+import {
+    Plus,
+    Eye,
+    GraduationCap,
+    ArrowUp,
+    ArrowDown,
+    Search,
+} from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -24,6 +31,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
     Pagination,
     PaginationContent,
@@ -73,6 +81,7 @@ function ClassesPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [schoolFilter, setSchoolFilter] = useState<SchoolFilterValue>("all");
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(5); // Items per page
     const [sortBy, setSortBy] = useState<"name" | "updated_at">("name");
@@ -133,9 +142,24 @@ function ClassesPage() {
         return classes.find((cls) => cls.id === selectedId);
     }, [classes, selectedId]);
 
+    // Filter classes by search query
+    const filteredClasses = useMemo(() => {
+        let filtered = classes;
+
+        // Filter by search query
+        if (searchQuery.trim() !== "") {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter((cls) =>
+                cls.name.toLowerCase().includes(query)
+            );
+        }
+
+        return filtered;
+    }, [classes, searchQuery]);
+
     // Sort classes
     const sortedClasses = useMemo(() => {
-        const sorted = [...classes].sort((a, b) => {
+        const sorted = [...filteredClasses].sort((a, b) => {
             if (sortBy === "name") {
                 const nameA = a.name.toLowerCase();
                 const nameB = b.name.toLowerCase();
@@ -149,7 +173,7 @@ function ClassesPage() {
             return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
         });
         return sorted;
-    }, [classes, sortBy, sortOrder]);
+    }, [filteredClasses, sortBy, sortOrder]);
 
     // Calculate pagination
     const totalPages = Math.ceil(sortedClasses.length / pageSize);
@@ -159,10 +183,10 @@ function ClassesPage() {
         return sortedClasses.slice(startIndex, endIndex);
     }, [sortedClasses, startIndex, endIndex]);
 
-    // Reset to page 1 when filters or sorting change
+    // Reset to page 1 when filters, search, or sorting change
     useEffect(() => {
         setCurrentPage(1);
-    }, [schoolFilter, levelFilter, sortBy, sortOrder]);
+    }, [schoolFilter, levelFilter, searchQuery, sortBy, sortOrder]);
 
     // Fetch full class data (with subjects and lessons) only when a class is selected
     // This avoids loading lessons for all classes, only fetching when needed
@@ -195,7 +219,23 @@ function ClassesPage() {
                     />
 
                     <section className="mb-6 ">
-                        <div className="flex flex-row gap-6">
+                        <div className="flex flex-row gap-6 flex-wrap">
+                            <div className="space-y-2 flex-1 min-w-[200px]">
+                                <Label htmlFor="class-search">Rechercher</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-muted-foreground" />
+                                    <Input
+                                        id="class-search"
+                                        type="text"
+                                        placeholder="Rechercher une classe..."
+                                        value={searchQuery}
+                                        onChange={(e) =>
+                                            setSearchQuery(e.target.value)
+                                        }
+                                        className="pl-9"
+                                    />
+                                </div>
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="class-school-filter">
                                     École
