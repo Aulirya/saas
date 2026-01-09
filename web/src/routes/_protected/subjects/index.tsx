@@ -12,12 +12,12 @@ import {
     Card,
     CardAction,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import {
     Pagination,
     PaginationContent,
@@ -217,7 +217,7 @@ function SubjectsPage() {
                             <div className="space-y-5">
                                 {isLoading ? (
                                     <SkeletonCard />
-                                ) : paginatedSubjects.length ? (
+                                ) : paginatedSubjects.length > 0 ? (
                                     paginatedSubjects.map((subject) => (
                                         <SubjectCard
                                             key={subject.id}
@@ -225,28 +225,14 @@ function SubjectsPage() {
                                         />
                                     ))
                                 ) : (
-                                    <Card className="border-dashed">
-                                        <CardHeader>
-                                            <CardTitle>
-                                                Aucune matière trouvée
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Créez votre première matière
-                                                pour commencer à organiser vos
-                                                cours.
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardFooter>
-                                            <Button
-                                                onClick={() =>
-                                                    setIsCreateModalOpen(true)
-                                                }
-                                            >
-                                                <Plus className="size-4" />
-                                                Nouvelle matière
-                                            </Button>
-                                        </CardFooter>
-                                    </Card>
+                                    <EmptyStateCard
+                                        title="Aucune matière trouvée"
+                                        description="Créez votre première matière pour commencer à organiser vos cours."
+                                        buttonText="Nouvelle matière"
+                                        onButtonClick={() =>
+                                            setIsCreateModalOpen(true)
+                                        }
+                                    />
                                 )}
                             </div>
                         </div>

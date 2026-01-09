@@ -11,12 +11,12 @@ import {
     Card,
     CardAction,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import {
     Pagination,
     PaginationContent,
@@ -253,7 +253,7 @@ function ClassesPage() {
                             <div className="space-y-5">
                                 {isLoading ? (
                                     <SkeletonCard />
-                                ) : paginatedClasses.length ? (
+                                ) : paginatedClasses.length > 0 ? (
                                     paginatedClasses.map((cls) => (
                                         <ClassCard
                                             key={cls.id}
@@ -263,29 +263,14 @@ function ClassesPage() {
                                         />
                                     ))
                                 ) : (
-                                    <Card className="border-dashed">
-                                        <CardHeader>
-                                            <CardTitle>
-                                                Aucune classe trouvée
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Créez votre première classe pour
-                                                commencer à suivre vos élèves.
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardFooter>
-                                            <Button
-                                                onClick={() =>
-                                                    console.log(
-                                                        "Create new class"
-                                                    )
-                                                }
-                                            >
-                                                <Plus className="size-4" />
-                                                Nouvelle classe
-                                            </Button>
-                                        </CardFooter>
-                                    </Card>
+                                    <EmptyStateCard
+                                        title="Aucune classe trouvée"
+                                        description="Créez votre première classe pour commencer à suivre vos élèves."
+                                        buttonText="Nouvelle classe"
+                                        onButtonClick={() =>
+                                            setIsCreateModalOpen(true)
+                                        }
+                                    />
                                 )}
                             </div>
                         </div>
