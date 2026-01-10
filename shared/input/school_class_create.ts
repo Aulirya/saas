@@ -1,7 +1,5 @@
 import z from "zod";
 
-// Tell me if this method is correct or if I should use the simple schema then extend
-// validation in the form component
 export const school_class_create_input = z.object({
     name: z
         .string()
