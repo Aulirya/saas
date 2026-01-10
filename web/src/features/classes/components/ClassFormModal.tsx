@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { orpc } from "@/orpc/client";
+import { getClassLevelsForCountry } from "@saas/shared";
+import { useCurrentUser } from "@/features/classes/api/useSchoolClasses";
 
 import { FormSheet } from "@/components/ui/form-sheet";
 import { SheetClose } from "@/components/ui/sheet";
@@ -27,22 +29,6 @@ import {
     useSchools,
     useSubjects,
 } from "@/features/classes/api/useSchoolClasses";
-
-// Default levels for French education system (can be supplemented by database values)
-const defaultClassLevels = [
-    "1ère secondaire",
-    "2ème secondaire",
-    "3ème secondaire",
-    "4ème secondaire",
-    "5ème secondaire",
-    "6ème secondaire",
-    "1ère primaire",
-    "2ème primaire",
-    "3ème primaire",
-    "4ème primaire",
-    "5ème primaire",
-    "6ème primaire",
-] as const;
 
 interface ClassFormModalProps {
     open: boolean;
@@ -69,6 +55,12 @@ export function ClassFormModal({
     // Fetch existing schools and levels from database
     const { data: existingSchools = [] } = useSchools();
     const { data: availableSubjects = [] } = useSubjects();
+    const { data: currentUser } = useCurrentUser();
+
+    // Get country-specific class levels
+    const classLevels = useMemo(() => {
+        return getClassLevelsForCountry(currentUser?.country);
+    }, [currentUser?.country]);
 
     const form = useForm({
         defaultValues: {
@@ -331,8 +323,8 @@ export function ClassFormModal({
                                                 <SelectValue placeholder="Sélectionner un niveau" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {defaultClassLevels.map(
-                                                    (level) => (
+                                                {classLevels.map(
+                                                    (level: string) => (
                                                         <SelectItem
                                                             key={level}
                                                             value={level}

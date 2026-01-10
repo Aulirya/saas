@@ -9,4 +9,6 @@ DEFINE FIELD last_name ON users FLEXIBLE TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD role ON users TYPE 'teacher' | 'student' PERMISSIONS FULL;
 DEFINE FIELD schools ON users TYPE array<string> PERMISSIONS FULL;
 DEFINE FIELD schools[*] ON users TYPE string PERMISSIONS FULL;
+DEFINE FIELD country ON users TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD updated_at ON users TYPE datetime VALUE time::now() PERMISSIONS FULL;
+

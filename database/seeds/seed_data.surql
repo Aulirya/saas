@@ -10,6 +10,7 @@ CREATE users:user_353UyKo0yGYVRwzFjWRZzg8DaYr SET
     first_name = 'Sophie',
     last_name = 'Gillard',
     role = 'teacher',
+    country = 'FR',
     schools = ['Athénée Royal de Bruxelles', 'Institut Saint-Joseph', 'Lycée Français Jean Monnet'],
     created_at = time::now(),
     updated_at = time::now();
@@ -19,6 +20,7 @@ CREATE users:user_353ScLkTjg7WIPeEfUZ7xC76M23 SET
     first_name = 'Vincent',
     last_name = 'Devilers',
     role = 'teacher',
+    country = 'BE',
     schools = ['Collège Saint-Michel', 'École Européenne de Bruxelles', 'Athénée Royal de Liège'],
     created_at = time::now(),
     updated_at = time::now();

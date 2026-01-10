@@ -7,6 +7,13 @@ export type SchoolClassesFilters = {
     search?: string | null;
 };
 
+export function useCurrentUser() {
+    return useQuery({
+        ...orpc.user.getCurrent.queryOptions({}),
+        staleTime: 60_000,
+    });
+}
+
 export function useSchools() {
     return useQuery({
         ...orpc.schoolClass.listSchools.queryOptions({}),

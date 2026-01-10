@@ -24,8 +24,12 @@ import {
     getAllSubjects,
     patchSubject,
 } from "./subject";
+import { getCurrentUser } from "./user";
 
 export const router = base.router({
+    user: {
+        getCurrent: getCurrentUser,
+    },
     todo: {
         list: listTodos,
         add: addTodo,

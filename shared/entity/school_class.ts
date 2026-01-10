@@ -12,8 +12,6 @@ export const school_class = z.object({
     created_at: z.string().optional(),
 });
 
-export type SchoolClass = z.infer<typeof school_class>;
-
 export const school_class_with_subjects_and_lessons = z.object({
     ...school_class.shape,
     subjects_count: z.number(),
@@ -23,6 +21,8 @@ export const school_class_with_subjects_and_lessons = z.object({
         lessons: z.array(lesson),
     },
 });
+
+export type SchoolClass = z.infer<typeof school_class>;
 
 export type SchoolClassWithSubjectsAndLessons = z.infer<
     typeof school_class_with_subjects_and_lessons
