@@ -32,7 +32,7 @@ export function CardInfoLayout({
 }: CardInfoLayoutProps) {
     return (
         <Card className={cn("h-full flex flex-col", className)}>
-            <CardHeader className={cn("border-b", headerClassName)}>
+            <CardHeader className={cn("", headerClassName)}>
                 <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                         <CardTitle>{title}</CardTitle>
