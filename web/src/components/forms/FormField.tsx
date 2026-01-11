@@ -279,3 +279,148 @@ export function SelectFieldWithClear<T extends string>({
         </Field>
     );
 }
+
+/**
+ * Reusable Number Input Field Component
+ */
+export function NumberField({
+    field,
+    label,
+    required = false,
+    description,
+    placeholder,
+    min,
+    max,
+    step,
+}: BaseFieldProps<number> & {
+    placeholder?: string;
+    min?: number;
+    max?: number;
+    step?: number;
+}) {
+    const isInvalid =
+        field.state.meta.isTouched && field.state.meta.errors.length > 0;
+
+    return (
+        <Field data-invalid={isInvalid}>
+            <FieldLabel htmlFor={field.name}>
+                {label}
+                {required && <span className="text-destructive"> *</span>}
+            </FieldLabel>
+            {description && (
+                <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+            <Input
+                id={field.name}
+                name={field.name}
+                type="number"
+                min={min}
+                max={max}
+                step={step}
+                value={
+                    field.state.value === 0 || field.state.value === undefined
+                        ? ""
+                        : field.state.value
+                }
+                onChange={(e) => {
+                    const value = e.target.value;
+                    field.handleChange(value === "" ? 0 : parseInt(value, 10));
+                }}
+                onBlur={field.handleBlur}
+                placeholder={placeholder}
+                aria-invalid={isInvalid}
+                required={required}
+            />
+            <FieldError>
+                {field.state.meta.errors?.map(
+                    (error: unknown, index: number) => (
+                        <span key={index}>{formatError(error)}</span>
+                    )
+                )}
+            </FieldError>
+        </Field>
+    );
+}
+
+/**
+ * Reusable Checkbox List Field Component
+ */
+export function CheckboxListField<T extends { id: string; name: string }>({
+    field,
+    label,
+    required = false,
+    description,
+    options,
+    emptyMessage,
+    maxHeight = "12rem",
+}: BaseFieldProps<string[]> & {
+    options: T[];
+    emptyMessage?: string;
+    maxHeight?: string;
+}) {
+    const isInvalid =
+        field.state.meta.isTouched && field.state.meta.errors.length > 0;
+
+    const currentValue = field.state.value ?? [];
+
+    return (
+        <Field data-invalid={isInvalid}>
+            <FieldLabel>
+                {label}
+                {required && <span className="text-destructive"> *</span>}
+            </FieldLabel>
+            {description && (
+                <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+            <div
+                className="space-y-2 overflow-y-auto border rounded-md p-3"
+                style={{ maxHeight }}
+            >
+                {options.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        {emptyMessage || "Aucune option disponible."}
+                    </p>
+                ) : (
+                    options.map((option) => {
+                        const isChecked = currentValue.includes(option.id);
+                        return (
+                            <label
+                                key={option.id}
+                                className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            field.handleChange([
+                                                ...currentValue,
+                                                option.id,
+                                            ]);
+                                        } else {
+                                            field.handleChange(
+                                                currentValue.filter(
+                                                    (id) => id !== option.id
+                                                )
+                                            );
+                                        }
+                                        field.handleBlur();
+                                    }}
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                />
+                                <span className="text-sm">{option.name}</span>
+                            </label>
+                        );
+                    })
+                )}
+            </div>
+            <FieldError>
+                {field.state.meta.errors?.map(
+                    (error: unknown, index: number) => (
+                        <span key={index}>{formatError(error)}</span>
+                    )
+                )}
+            </FieldError>
+        </Field>
+    );
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -10,20 +10,14 @@ import { FormSheet } from "@/components/ui/form-sheet";
 import { SheetClose } from "@/components/ui/sheet";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { FieldGroup } from "@/components/ui/field";
+
 import {
-    Field,
-    FieldGroup,
-    FieldLabel,
-    FieldError,
-} from "@/components/ui/field";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+    TextField,
+    SelectField,
+    NumberField,
+    CheckboxListField,
+} from "@/components/forms";
 import { school_class_create_input } from "@saas/shared";
 import {
     useSchools,
@@ -62,6 +56,7 @@ export function ClassFormModal({
         return getClassLevelsForCountry(currentUser?.country);
     }, [currentUser?.country]);
 
+    // ---------- Form ----------
     const form = useForm({
         defaultValues: {
             name: initialData?.name ?? "",
@@ -93,85 +88,37 @@ export function ClassFormModal({
         },
         onSubmit: async ({ value }) => {
             setIsSubmitting(true);
-            if (isEditMode && initialData) {
-                updateClass({
-                    id: initialData.id,
-                    name: value.name,
-                    level: value.level,
-                    school: value.school,
-                    students_count: value.students_count,
-                    subjects:
-                        value.subjects && value.subjects.length > 0
-                            ? value.subjects
-                            : undefined,
-                });
-            } else {
-                createClass({
-                    name: value.name,
-                    level: value.level,
-                    school: value.school,
-                    students_count: value.students_count,
-                    subjects:
-                        value.subjects && value.subjects.length > 0
-                            ? value.subjects
-                            : undefined,
-                });
-            }
+            proceedWithSubmission(value);
         },
     });
 
-    // Reset form when initialData changes (when modal opens with edit data)
-    useEffect(() => {
-        if (open && initialData) {
-            form.setFieldValue("name", initialData.name);
-            form.setFieldValue("level", initialData.level);
-            form.setFieldValue("school", initialData.school);
-            form.setFieldValue("students_count", initialData.students_count);
-            form.setFieldValue("subjects", initialData.subjects ?? []);
-        } else if (open && !initialData) {
-            // Reset to empty values when opening for create
-            form.reset();
-        }
-    }, [open, initialData, form]);
+    // ---------- Success Handler ----------
+    function handleSuccess(message: string) {
+        // Invalidate all related queries to refresh the lists
+        queryClient.invalidateQueries({ queryKey: ["schoolClasses"] });
+        queryClient.invalidateQueries({ queryKey: ["school-classes"] });
+        queryClient.invalidateQueries({
+            queryKey: orpc.schoolClass.listSchools.queryKey({}),
+        });
+        queryClient.invalidateQueries({
+            queryKey: orpc.schoolClass.listLevels.queryKey({}),
+        });
 
-    // Shared mutation handlers
-    const getMutationHandlers = (
-        errorMessage: string,
-        successMessage: string
-    ) => ({
-        onSuccess: () => {
-            // Invalidate all related queries to refresh the lists
-            queryClient.invalidateQueries({ queryKey: ["schoolClasses"] });
-            queryClient.invalidateQueries({ queryKey: ["school-classes"] });
-            queryClient.invalidateQueries({
-                queryKey: orpc.schoolClass.listSchools.queryKey({}),
-            });
-            queryClient.invalidateQueries({
-                queryKey: orpc.schoolClass.listLevels.queryKey({}),
-            });
+        // If editing, invalidate the specific class queries
+        if (isEditMode && initialData?.id) {
             queryClient.invalidateQueries({
                 queryKey: orpc.schoolClass.getWithSubjects.queryKey({
-                    input: { id: initialData?.id ?? "" },
+                    input: { id: initialData.id },
                 }),
             });
-            toast.success(successMessage);
-            form.reset();
-            onOpenChange(false);
-        },
-        onError: (error: unknown) => {
-            console.error(errorMessage, error);
-            const errorMsg =
-                error instanceof Error
-                    ? error.message
-                    : "Une erreur est survenue";
-            toast.error(errorMsg);
-            setIsSubmitting(false);
-        },
-        onSettled: () => {
-            setIsSubmitting(false);
-        },
-    });
+        }
 
+        toast.success(message);
+        form.reset();
+        onOpenChange(false);
+    }
+
+    // ---------- Mutations ----------
     const { mutate: createClass } = useMutation({
         mutationFn: async (data: {
             name: string;
@@ -180,14 +127,21 @@ export function ClassFormModal({
             students_count: number;
             subjects?: string[];
         }) => {
-            console.log("createClass mutation");
-
             return await orpc.schoolClass.create.call(data);
         },
-        ...getMutationHandlers(
-            "Error creating class:",
-            "Classe créée avec succès"
-        ),
+        onSuccess: () => {
+            handleSuccess("Classe créée avec succès");
+        },
+        onError: (error) => {
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue lors de la création de la classe";
+            toast.error(errorMsg);
+        },
+        onSettled: () => {
+            setIsSubmitting(false);
+        },
     });
 
     const { mutate: updateClass } = useMutation({
@@ -199,15 +153,72 @@ export function ClassFormModal({
             students_count: number;
             subjects?: string[];
         }) => {
-            console.log("updateClass mutation");
-
             return await orpc.schoolClass.patch.call(data);
         },
-        ...getMutationHandlers(
-            "Error updating class:",
-            "Classe modifiée avec succès"
-        ),
+        onSuccess: () => {
+            handleSuccess("Classe modifiée avec succès");
+        },
+        onError: (error) => {
+            const errorMsg =
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue lors de la modification de la classe";
+            toast.error(errorMsg);
+        },
+        onSettled: () => {
+            setIsSubmitting(false);
+        },
     });
+
+    // Helper function to proceed with submission
+    const proceedWithSubmission = async (value: {
+        name: string;
+        level: string;
+        school: string;
+        students_count: number;
+        subjects?: string[];
+    }) => {
+        setIsSubmitting(true);
+
+        if (isEditMode && initialData) {
+            // Check if anything changed
+            if (
+                initialData.name === value.name &&
+                initialData.level === value.level &&
+                initialData.school === value.school &&
+                initialData.students_count === value.students_count &&
+                JSON.stringify(initialData.subjects?.sort()) ===
+                    JSON.stringify((value.subjects ?? []).sort())
+            ) {
+                toast.info("Aucune modification détectée");
+                setIsSubmitting(false);
+                return;
+            }
+
+            updateClass({
+                id: initialData.id,
+                name: value.name,
+                level: value.level,
+                school: value.school,
+                students_count: value.students_count,
+                subjects:
+                    value.subjects && value.subjects.length > 0
+                        ? value.subjects
+                        : undefined,
+            });
+        } else {
+            createClass({
+                name: value.name,
+                level: value.level,
+                school: value.school,
+                students_count: value.students_count,
+                subjects:
+                    value.subjects && value.subjects.length > 0
+                        ? value.subjects
+                        : undefined,
+            });
+        }
+    };
 
     const handleClose = (shouldClose: boolean) => {
         if (shouldClose && !isSubmitting) {
@@ -237,56 +248,26 @@ export function ClassFormModal({
                         {/* Class Name */}
                         <form.Field
                             name="name"
+                            validators={{
+                                onChange: ({ value }) => {
+                                    if (!value || value.trim().length === 0) {
+                                        return "Le nom est requis";
+                                    }
+                                    return undefined;
+                                },
+                            }}
                             children={(field) => {
                                 const isInvalid =
                                     field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
+                                    field.state.meta.errors.length > 0;
 
                                 return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Nom de la classe
-                                        </FieldLabel>
-
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            value={field.state.value}
-                                            onChange={(e) =>
-                                                field.handleChange(
-                                                    e.target.value
-                                                )
-                                            }
-                                            onBlur={field.handleBlur}
-                                            placeholder="Ex: Terminale S1"
-                                            aria-invalid={isInvalid}
-                                        />
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
+                                    <TextField
+                                        field={field}
+                                        label="Nom de la classe"
+                                        placeholder="Ex: Terminale S1"
+                                        aria-invalid={isInvalid}
+                                    />
                                 );
                             }}
                         />
@@ -294,73 +275,28 @@ export function ClassFormModal({
                         {/* Level */}
                         <form.Field
                             name="level"
+                            validators={{
+                                onChange: ({ value }) => {
+                                    if (!value) {
+                                        return "Le niveau est requis";
+                                    }
+                                    return undefined;
+                                },
+                            }}
                             children={(field) => {
                                 const isInvalid =
                                     field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
+                                    field.state.meta.errors.length > 0;
 
                                 return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Niveau
-                                        </FieldLabel>
-                                        <Select
-                                            value={field.state.value}
-                                            onValueChange={(value) =>
-                                                field.handleChange(value)
-                                            }
-                                            onOpenChange={(open) => {
-                                                if (!open) {
-                                                    field.handleBlur();
-                                                }
-                                            }}
-                                        >
-                                            <SelectTrigger
-                                                id={field.name}
-                                                className="w-full"
-                                                aria-invalid={isInvalid}
-                                            >
-                                                <SelectValue placeholder="Sélectionner un niveau" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {classLevels.map(
-                                                    (level: string) => (
-                                                        <SelectItem
-                                                            key={level}
-                                                            value={level}
-                                                        >
-                                                            {level}
-                                                        </SelectItem>
-                                                    )
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
+                                    <SelectField
+                                        field={field}
+                                        label="Niveau"
+                                        placeholder="Sélectionner un niveau"
+                                        aria-invalid={isInvalid}
+                                        options={classLevels}
+                                        getLabel={(level) => level}
+                                    />
                                 );
                             }}
                         />
@@ -368,28 +304,24 @@ export function ClassFormModal({
                         {/* School */}
                         <form.Field
                             name="school"
+                            validators={{
+                                onChange: ({ value }) => {
+                                    if (!value || value.trim().length === 0) {
+                                        return "L'établissement est requis";
+                                    }
+                                    return undefined;
+                                },
+                            }}
                             children={(field) => {
                                 const isInvalid =
                                     field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
+                                    field.state.meta.errors.length > 0;
 
                                 return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Établissement
-                                        </FieldLabel>
-
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            list={`${field.name}-list`}
-                                            value={field.state.value}
-                                            onChange={(e) =>
-                                                field.handleChange(
-                                                    e.target.value
-                                                )
-                                            }
-                                            onBlur={field.handleBlur}
+                                    <div>
+                                        <TextField
+                                            field={field}
+                                            label="Établissement"
                                             placeholder="Ex: Lycée Jean Moulin"
                                             aria-invalid={isInvalid}
                                         />
@@ -405,33 +337,7 @@ export function ClassFormModal({
                                                 )}
                                             </datalist>
                                         )}
-
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
+                                    </div>
                                 );
                             }}
                         />
@@ -439,175 +345,36 @@ export function ClassFormModal({
                         {/* Students Count */}
                         <form.Field
                             name="students_count"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Nombre d'élèves
-                                        </FieldLabel>
-                                        <Input
-                                            id={field.name}
-                                            name={field.name}
-                                            type="number"
-                                            min="1"
-                                            value={
-                                                field.state.value === 0
-                                                    ? ""
-                                                    : field.state.value
-                                            }
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                field.handleChange(
-                                                    value === ""
-                                                        ? 0
-                                                        : parseInt(value, 10)
-                                                );
-                                            }}
-                                            onBlur={field.handleBlur}
-                                            placeholder="Ex: 32"
-                                            aria-invalid={isInvalid}
-                                        />
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
+                            validators={{
+                                onChange: ({ value }) => {
+                                    if (value < 1) {
+                                        return "Le nombre d'élèves doit être supérieur à 0";
+                                    }
+                                    return undefined;
+                                },
                             }}
+                            children={(field) => (
+                                <NumberField
+                                    field={field}
+                                    label="Nombre d'élèves"
+                                    placeholder="Ex: 32"
+                                    min={1}
+                                />
+                            )}
                         />
 
                         {/* Subjects Selection */}
                         <form.Field
                             name="subjects"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel>
-                                            Matières (optionnel)
-                                        </FieldLabel>
-                                        <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                                            {availableSubjects.length === 0 ? (
-                                                <p className="text-sm text-muted-foreground">
-                                                    Aucune matière disponible.
-                                                    Créez d'abord des matières.
-                                                </p>
-                                            ) : (
-                                                availableSubjects.map(
-                                                    (subject) => {
-                                                        const currentValue =
-                                                            field.state.value ??
-                                                            [];
-                                                        const isChecked =
-                                                            currentValue.includes(
-                                                                subject.id
-                                                            );
-                                                        return (
-                                                            <label
-                                                                key={subject.id}
-                                                                className="flex items-center space-x-2 cursor-pointer hover:bg-accent p-2 rounded"
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={
-                                                                        isChecked
-                                                                    }
-                                                                    onChange={(
-                                                                        e
-                                                                    ) => {
-                                                                        if (
-                                                                            e
-                                                                                .target
-                                                                                .checked
-                                                                        ) {
-                                                                            field.handleChange(
-                                                                                [
-                                                                                    ...currentValue,
-                                                                                    subject.id,
-                                                                                ]
-                                                                            );
-                                                                        } else {
-                                                                            field.handleChange(
-                                                                                currentValue.filter(
-                                                                                    (
-                                                                                        id
-                                                                                    ) =>
-                                                                                        id !==
-                                                                                        subject.id
-                                                                                )
-                                                                            );
-                                                                        }
-                                                                        field.handleBlur();
-                                                                    }}
-                                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                                                />
-                                                                <span className="text-sm">
-                                                                    {
-                                                                        subject.name
-                                                                    }
-                                                                </span>
-                                                            </label>
-                                                        );
-                                                    }
-                                                )
-                                            )}
-                                        </div>
-                                        <FieldError>
-                                            {field.state.meta.errors?.map(
-                                                (error, index) => (
-                                                    <span key={index}>
-                                                        {typeof error ===
-                                                        "string"
-                                                            ? error
-                                                            : (error &&
-                                                              typeof error ===
-                                                                  "object" &&
-                                                              "message" in error
-                                                                  ? String(
-                                                                        (
-                                                                            error as {
-                                                                                message?: unknown;
-                                                                            }
-                                                                        )
-                                                                            .message
-                                                                    )
-                                                                  : "Erreur de validation") ||
-                                                              "Erreur de validation"}
-                                                    </span>
-                                                )
-                                            )}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
+                            children={(field) => (
+                                <CheckboxListField
+                                    field={field}
+                                    label="Matières (optionnel)"
+                                    options={availableSubjects}
+                                    emptyMessage="Aucune matière disponible. Créez d'abord des matières."
+                                    maxHeight="12rem"
+                                />
+                            )}
                         />
                     </FieldGroup>
                 </form>

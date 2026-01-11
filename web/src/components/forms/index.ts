@@ -6,4 +6,6 @@ export {
     TextareaField,
     SelectField,
     SelectFieldWithClear,
+    NumberField,
+    CheckboxListField,
 } from "./FormField";
