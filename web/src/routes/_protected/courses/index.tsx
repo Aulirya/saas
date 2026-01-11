@@ -7,6 +7,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
+import { PageLayout } from "@/components/PageLayout";
+
 import {
     Card,
     CardAction,
@@ -140,95 +142,111 @@ function CoursesPage() {
     };
 
     return (
-        <div className="space-y-6 lg:space-y-6">
-            <PageHeader
-                title="Progression des cours"
-                primaryAction={{
-                    label: "Nouveau cours",
-                    icon: Plus,
-                    onClick: () => {
-                        setIsCreateModalOpen(true);
-                    },
-                }}
-            />
+        <PageLayout
+            header={
+                <>
+                    <PageHeader
+                        title="Progression des cours"
+                        primaryAction={{
+                            label: "Nouveau cours",
+                            icon: Plus,
+                            onClick: () => {
+                                setIsCreateModalOpen(true);
+                            },
+                        }}
+                    />
 
-            {/* Filters */}
-            <section className="mb-6">
-                <div className="flex flex-row gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="course-school-filter">École</Label>
-                        <Select
-                            value={schoolFilter}
-                            onValueChange={(value) =>
-                                setSchoolFilter(value as SchoolFilterValue)
-                            }
-                        >
-                            <SelectTrigger id="course-school-filter">
-                                <SelectValue placeholder="Toutes les écoles" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {SCHOOL_FILTER_OPTIONS.map((option) => (
-                                    <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                    >
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {/* Filters */}
+                    <section className="mb-6">
+                        <div className="flex flex-row gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="course-school-filter">
+                                    École
+                                </Label>
+                                <Select
+                                    value={schoolFilter}
+                                    onValueChange={(value) =>
+                                        setSchoolFilter(
+                                            value as SchoolFilterValue
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="course-school-filter">
+                                        <SelectValue placeholder="Toutes les écoles" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {SCHOOL_FILTER_OPTIONS.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="course-class-filter">Classe</Label>
-                        <Select
-                            value={classFilter}
-                            onValueChange={(value) =>
-                                setClassFilter(value as ClassFilterValue)
-                            }
-                        >
-                            <SelectTrigger id="course-class-filter">
-                                <SelectValue placeholder="Toutes les classes" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {classFilterOptions.map((option) => (
-                                    <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                    >
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="course-class-filter">
+                                    Classe
+                                </Label>
+                                <Select
+                                    value={classFilter}
+                                    onValueChange={(value) =>
+                                        setClassFilter(
+                                            value as ClassFilterValue
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="course-class-filter">
+                                        <SelectValue placeholder="Toutes les classes" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {classFilterOptions.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="course-subject-filter">Matière</Label>
-                        <Select
-                            value={subjectFilter}
-                            onValueChange={(value) =>
-                                setSubjectFilter(value as SubjectFilterValue)
-                            }
-                        >
-                            <SelectTrigger id="course-subject-filter">
-                                <SelectValue placeholder="Toutes les matières" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {subjectFilterOptions.map((option) => (
-                                    <SelectItem
-                                        key={option.value}
-                                        value={option.value}
-                                    >
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            </section>
-
+                            <div className="space-y-2">
+                                <Label htmlFor="course-subject-filter">
+                                    Matière
+                                </Label>
+                                <Select
+                                    value={subjectFilter}
+                                    onValueChange={(value) =>
+                                        setSubjectFilter(
+                                            value as SubjectFilterValue
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="course-subject-filter">
+                                        <SelectValue placeholder="Toutes les matières" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {subjectFilterOptions.map((option) => (
+                                            <SelectItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </section>
+                </>
+            }
+        >
             {/* Programs list */}
             <div className="grid grid-cols-7 gap-6 flex-1 min-h-0">
                 <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5">
@@ -297,7 +315,7 @@ function CoursesPage() {
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
             />
-        </div>
+        </PageLayout>
     );
 }
 

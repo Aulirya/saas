@@ -8,6 +8,7 @@ import { getCategoryConfig, getCategoryLabel } from "@/lib/subject-utils";
 import type { SubjectCategory } from "@saas/shared";
 
 import { PageHeader } from "@/components/PageHeader";
+import { PageLayout } from "@/components/PageLayout";
 import {
     Card,
     CardAction,
@@ -152,56 +153,58 @@ function SubjectsPage() {
 
     return (
         <>
-            <div id="main" className="h-full flex flex-col">
-                <div className="space-y-6 lg:space-y-6 ">
-                    <PageHeader
-                        title="Mes matières"
-                        primaryAction={{
-                            label: "Nouvelle matière",
-                            icon: Plus,
-                            onClick: () => {
-                                setIsCreateModalOpen(true);
-                            },
-                        }}
-                    />
+            <PageLayout
+                header={
+                    <>
+                        <PageHeader
+                            title="Mes matières"
+                            primaryAction={{
+                                label: "Nouvelle matière",
+                                icon: Plus,
+                                onClick: () => {
+                                    setIsCreateModalOpen(true);
+                                },
+                            }}
+                        />
 
-                    <FilterBar
-                        searchId="subject-search"
-                        searchPlaceholder="Rechercher une matière..."
-                        searchValue={searchQuery}
-                        onSearchChange={setSearchQuery}
-                        filters={[
-                            {
-                                id: "subject-type-filter",
-                                label: "Type",
-                                value: typeFilter,
-                                options: typeFilterOptions,
-                                onValueChange: (value: string) =>
-                                    setTypeFilter(value as TypeFilterValue),
-                                placeholder: "Tous les types",
-                            },
-                            {
-                                id: "subject-category-filter",
-                                label: "Catégorie",
-                                value: categoryFilter,
-                                options: categoryFilterOptions,
-                                onValueChange: (value: string) =>
-                                    setCategoryFilter(
-                                        value as CategoryFilterValue
-                                    ),
-                                placeholder: "Toutes les catégories",
-                            },
-                        ]}
-                        sortBy={sortBy}
-                        sortOptions={[{ value: "name", label: "Nom" }]}
-                        onSortByChange={(value: string) =>
-                            setSortBy(value as "name" | "updated_at")
-                        }
-                        sortOrder={sortOrder}
-                        onSortOrderChange={setSortOrder}
-                    />
-                </div>
-
+                        <FilterBar
+                            searchId="subject-search"
+                            searchPlaceholder="Rechercher une matière..."
+                            searchValue={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            filters={[
+                                {
+                                    id: "subject-type-filter",
+                                    label: "Type",
+                                    value: typeFilter,
+                                    options: typeFilterOptions,
+                                    onValueChange: (value: string) =>
+                                        setTypeFilter(value as TypeFilterValue),
+                                    placeholder: "Tous les types",
+                                },
+                                {
+                                    id: "subject-category-filter",
+                                    label: "Catégorie",
+                                    value: categoryFilter,
+                                    options: categoryFilterOptions,
+                                    onValueChange: (value: string) =>
+                                        setCategoryFilter(
+                                            value as CategoryFilterValue
+                                        ),
+                                    placeholder: "Toutes les catégories",
+                                },
+                            ]}
+                            sortBy={sortBy}
+                            sortOptions={[{ value: "name", label: "Nom" }]}
+                            onSortByChange={(value: string) =>
+                                setSortBy(value as "name" | "updated_at")
+                            }
+                            sortOrder={sortOrder}
+                            onSortOrderChange={setSortOrder}
+                        />
+                    </>
+                }
+            >
                 <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
                     <div className="col-span-7 flex flex-col overflow-hidden">
                         {/* Scrollable subjects list */}
@@ -245,7 +248,7 @@ function SubjectsPage() {
                     open={isCreateModalOpen}
                     onOpenChange={setIsCreateModalOpen}
                 />
-            </div>
+            </PageLayout>
         </>
     );
 }

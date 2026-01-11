@@ -4,9 +4,11 @@ import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as ClassDetailRoute } from "./$classId";
-import { Plus, Eye, GraduationCap } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
+import { getClassConfig } from "@/lib/class-utils";
 
 import { PageHeader } from "@/components/PageHeader";
+import { PageLayout } from "@/components/PageLayout";
 import {
     Card,
     CardAction,
@@ -182,66 +184,72 @@ function ClassesPage() {
 
     return (
         <>
-            <div id="main" className="h-full flex flex-col">
-                <div className="space-y-6 lg:space-y-6 ">
-                    <PageHeader
-                        title="Mes classes"
-                        primaryAction={{
-                            label: "Nouvelle classe",
-                            icon: Plus,
-                            onClick: () => {
-                                setIsCreateModalOpen(true);
-                            },
-                        }}
-                    />
+            <PageLayout
+                header={
+                    <>
+                        <PageHeader
+                            title="Mes classes"
+                            primaryAction={{
+                                label: "Nouvelle classe",
+                                icon: Plus,
+                                onClick: () => {
+                                    setIsCreateModalOpen(true);
+                                },
+                            }}
+                        />
 
-                    <FilterBar
-                        searchId="class-search"
-                        searchPlaceholder="Rechercher une classe..."
-                        searchValue={searchQuery}
-                        onSearchChange={setSearchQuery}
-                        filters={[
-                            {
-                                id: "class-school-filter",
-                                label: "École",
-                                value: schoolFilter,
-                                options: schoolFilterOptions,
-                                onValueChange: (value: string) =>
-                                    setSchoolFilter(value as SchoolFilterValue),
-                                placeholder: "Toutes les écoles",
-                                isLoading: isLoadingSchools,
-                            },
-                            {
-                                id: "class-level-filter",
-                                label: "Niveau",
-                                value: levelFilter,
-                                options: levelFilterOptions,
-                                onValueChange: (value: string) =>
-                                    setLevelFilter(value as LevelFilterValue),
-                                placeholder: "Tous les niveaux",
-                                isLoading: isLoadingLevels,
-                            },
-                        ]}
-                        sortBy={sortBy}
-                        sortOptions={[
-                            { value: "name", label: "Nom" },
-                            {
-                                value: "updated_at",
-                                label: "Date de modification",
-                            },
-                        ]}
-                        onSortByChange={(value: string) =>
-                            setSortBy(value as "name" | "updated_at")
-                        }
-                        sortOrder={sortOrder}
-                        onSortOrderChange={setSortOrder}
-                    />
-                </div>
-
+                        <FilterBar
+                            searchId="class-search"
+                            searchPlaceholder="Rechercher une classe..."
+                            searchValue={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            filters={[
+                                {
+                                    id: "class-school-filter",
+                                    label: "École",
+                                    value: schoolFilter,
+                                    options: schoolFilterOptions,
+                                    onValueChange: (value: string) =>
+                                        setSchoolFilter(
+                                            value as SchoolFilterValue
+                                        ),
+                                    placeholder: "Toutes les écoles",
+                                    isLoading: isLoadingSchools,
+                                },
+                                {
+                                    id: "class-level-filter",
+                                    label: "Niveau",
+                                    value: levelFilter,
+                                    options: levelFilterOptions,
+                                    onValueChange: (value: string) =>
+                                        setLevelFilter(
+                                            value as LevelFilterValue
+                                        ),
+                                    placeholder: "Tous les niveaux",
+                                    isLoading: isLoadingLevels,
+                                },
+                            ]}
+                            sortBy={sortBy}
+                            sortOptions={[
+                                { value: "name", label: "Nom" },
+                                {
+                                    value: "updated_at",
+                                    label: "Date de modification",
+                                },
+                            ]}
+                            onSortByChange={(value: string) =>
+                                setSortBy(value as "name" | "updated_at")
+                            }
+                            sortOrder={sortOrder}
+                            onSortOrderChange={setSortOrder}
+                        />
+                    </>
+                }
+            >
                 <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
                     <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col overflow-hidden">
                         {/* Scrollable classes list */}
-                        <div className="flex-1 overflow-y-auto pr-3">
+                        <div className="flex-1 overflow-y-auto pr-3 pt-3 pl-3">
                             <div className="space-y-5">
                                 {isLoading ? (
                                     <SkeletonCard />
@@ -277,7 +285,7 @@ function ClassesPage() {
                     </div>
                     {/* Desktop sidebar - hidden on mobile */}
                     <div
-                        className="space-y-4 hidden lg:block lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
+                        className="space-y-4 hidden lg:block pt-3 pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
                         style={{ top: "auto" }}
                     >
                         <ClassSummarySidebar
@@ -307,7 +315,7 @@ function ClassesPage() {
                     open={isCreateModalOpen}
                     onOpenChange={setIsCreateModalOpen}
                 />
-            </div>
+            </PageLayout>
         </>
     );
 }
@@ -321,7 +329,7 @@ function ClassCard({
     isSelected: boolean;
     onSelect: (id: string) => void;
 }) {
-    // const colorTheme = classData.colorTheme;
+    const classConfig = getClassConfig(classData.level);
 
     return (
         <Card
@@ -335,29 +343,39 @@ function ClassCard({
                 }
             }}
             className={cn(
-                "group cursor-pointer border-border/70 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                "group cursor-pointer border-border/70 transition-all duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                "hover:shadow-md hover:scale-[1.01]",
                 isSelected
-                    ? "border-primary shadow-sm"
-                    : "hover:border-primary/50 hover:shadow-sm"
+                    ? `${classConfig.ringColor} shadow-md ring-2 `
+                    : `${classConfig.ringHoverColor} `
             )}
         >
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                    <div
-                        className={cn(
-                            "flex size-12 items-center justify-center rounded-xl"
-                            // colorTheme?.bg,
-                            // colorTheme?.text
-                        )}
-                    >
-                        <GraduationCap className="size-6" aria-hidden />
-                    </div>
-                    <div className="space-y-1">
-                        <CardTitle className="">{classData.name}</CardTitle>
+                <div className="flex items-start gap-4 flex-1">
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                        <CardTitle className="text-lg font-semibold">
+                            {classData.name}
+                        </CardTitle>
                         <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
-                            <span>{classData.school}</span>
+                            <span className="font-medium text-foreground/80">
+                                {classData.school}
+                            </span>
                             <span className="text-muted-foreground">•</span>
-                            <span>Année "to be defined"</span>
+                            <span>{classData.level}</span>
+                            {classData.students_count !== undefined && (
+                                <>
+                                    <span className="text-muted-foreground">
+                                        •
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                        {classData.students_count} élève
+                                        {classData.students_count > 1
+                                            ? "s"
+                                            : ""}
+                                    </span>
+                                </>
+                            )}
                         </CardDescription>
                     </div>
                 </div>
@@ -365,12 +383,18 @@ function ClassCard({
                 <CardAction>
                     <Button
                         asChild
-                        className="shrink-0 bg-primary hover:bg-primary/90"
+                        className={cn(
+                            "shrink-0 text-white transition-all",
+                            classConfig.buttonColor,
+                            classConfig.buttonHoverColor,
+                            "group-hover:shadow-sm"
+                        )}
                         aria-label="Voir la classe"
                     >
                         <Link
                             to={ClassDetailRoute.to}
                             params={{ classId: classData.id }}
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <Eye className="size-4" /> Voir la classe
                         </Link>
@@ -388,6 +412,7 @@ function ClassSummarySidebar({
     classData: SchoolClassWithSubjectsAndLessons | SchoolClass | undefined;
     isLoading?: boolean;
 }) {
+    const classConfig = getClassConfig(classData?.level ?? "");
     if (!classData) {
         return (
             <Card className="border-dashed">
@@ -406,6 +431,7 @@ function ClassSummarySidebar({
         <CardInfoLayout
             title={`${classData.name}`}
             description={`${classData.school} - ${classData.level}`}
+            className={classConfig.ringColor}
             footer={
                 <ViewDetailButton
                     to={ClassDetailRoute.to}
