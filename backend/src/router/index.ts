@@ -24,6 +24,19 @@ import {
     getAllSubjects,
     patchSubject,
 } from "./subject";
+import {
+    createCourseProgress,
+    deleteCourseProgress,
+    getCourseProgress,
+    getCourseProgressByClassAndSubject,
+    getCourseProgressWithLessons,
+    listCourseProgress,
+    patchCourseProgress,
+    createLessonProgress,
+    deleteLessonProgress,
+    getLessonProgress,
+    patchLessonProgress,
+} from "./course_progress";
 import { getCurrentUser } from "./user";
 
 export const router = base.router({
@@ -57,6 +70,21 @@ export const router = base.router({
         reorder: reorderLesson,
         patch: patchLesson,
         delete: deleteLesson,
+    },
+    courseProgress: {
+        list: listCourseProgress,
+        get: getCourseProgress,
+        getWithLessons: getCourseProgressWithLessons,
+        getByClassAndSubject: getCourseProgressByClassAndSubject,
+        create: createCourseProgress,
+        patch: patchCourseProgress,
+        delete: deleteCourseProgress,
+    },
+    lessonProgress: {
+        get: getLessonProgress,
+        create: createLessonProgress,
+        patch: patchLessonProgress,
+        delete: deleteLessonProgress,
     },
 });
 

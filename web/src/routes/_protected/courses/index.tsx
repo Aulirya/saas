@@ -12,42 +12,30 @@ import { PageLayout } from "@/components/PageLayout";
 import {
     Card,
     CardAction,
-    CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { FormSheet } from "@/components/ui/form-sheet";
 import { CardInfoLayout } from "@/components/ui/card-info-layout";
 import { ViewDetailButton } from "@/components/ui/view-detail-button";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { EmptyStateCard } from "@/components/ui/empty-state-card";
+import { SkeletonCard } from "@/components/ui/skeleton";
 
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
 import type { CourseProgram } from "@/features/courses/types";
 import { cn, getColorFromText } from "@/lib/utils";
 import { CourseFormModal } from "@/features/courses/components/CourseFormModal";
 
-// School filter options - static for now since data doesn't have school field yet
-const SCHOOL_FILTER_OPTIONS = [
-    { value: "all", label: "Toutes les écoles" },
-    { value: "Lycée Jean Moulin", label: "Lycée Jean Moulin" },
-    { value: "Collège Saint-Exupéry", label: "Collège Saint-Exupéry" },
-] as const;
-
-// DON'T PAY ATTENTION TO THE LOGIC OF FILTERS, IT'S JUST FOR DEMO PURPOSES
-type SchoolFilterValue = string;
-type ClassFilterValue = string;
+type LevelFilterValue = string;
 type SubjectFilterValue = string;
+type ClassFilterValue = string;
+
+const ITEMS_PER_PAGE = 5;
 
 export const Route = createFileRoute("/_protected/courses/")({
     component: CoursesPage,
@@ -61,21 +49,22 @@ function CoursesPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-    // DON'T PAY ATTENTION TO THE LOGIC OF FILTERS, IT'S JUST FOR DEMO PURPOSES
-    // ------- START OF FILTERS LOGIC (NOT FOR PRODUCTION) -------
-    const [schoolFilter, setSchoolFilter] = useState<SchoolFilterValue>("all");
-    const [classFilter, setClassFilter] = useState<ClassFilterValue>("all");
+    const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
     const [subjectFilter, setSubjectFilter] =
         useState<SubjectFilterValue>("all");
+    const [classFilter, setClassFilter] = useState<ClassFilterValue>("all");
+    const [searchQuery, setSearchQuery] = useState<string>("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [sortBy, setSortBy] = useState<"subject" | "level">("subject");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
     // Generate filter options dynamically from data
-    const classFilterOptions = useMemo(() => {
+    const levelFilterOptions = useMemo(() => {
         const uniqueLevels = Array.from(
             new Set(allPrograms.map((p) => p.level))
         ).sort();
         return [
-            { value: "all", label: "Toutes les classes" },
+            { value: "all", label: "Tous les niveaux" },
             ...uniqueLevels.map((level) => ({ value: level, label: level })),
         ];
     }, [allPrograms]);
@@ -93,28 +82,101 @@ function CoursesPage() {
         ];
     }, [allPrograms]);
 
-    // Frontend filtering logic
-    const programs = useMemo(() => {
-        return allPrograms.filter((program) => {
-            // Subject filter
-            if (subjectFilter !== "all" && program.subject !== subjectFilter) {
-                return false;
-            }
+    const classFilterOptions = useMemo(() => {
+        const uniqueClasses = Array.from(
+            new Set(allPrograms.map((p) => p.className))
+        ).sort();
+        return [
+            { value: "all", label: "Toutes les classes" },
+            ...uniqueClasses.map((className) => ({
+                value: className,
+                label: className,
+            })),
+        ];
+    }, [allPrograms]);
 
-            // Class filter (using level field)
-            if (classFilter !== "all" && program.level !== classFilter) {
-                return false;
-            }
+    // Filter programs by search query, level, subject, and class
+    const filteredPrograms = useMemo(() => {
+        let filtered = allPrograms;
 
-            return true;
+        // Filter by search query
+        if (searchQuery.trim() !== "") {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(
+                (program) =>
+                    program.subject.toLowerCase().includes(query) ||
+                    program.level.toLowerCase().includes(query) ||
+                    program.className.toLowerCase().includes(query)
+            );
+        }
+
+        // Filter by subject
+        if (subjectFilter !== "all") {
+            filtered = filtered.filter(
+                (program) => program.subject === subjectFilter
+            );
+        }
+
+        // Filter by level
+        if (levelFilter !== "all") {
+            filtered = filtered.filter(
+                (program) => program.level === levelFilter
+            );
+        }
+
+        // Filter by class
+        if (classFilter !== "all") {
+            filtered = filtered.filter(
+                (program) => program.className === classFilter
+            );
+        }
+
+        return filtered;
+    }, [allPrograms, searchQuery, subjectFilter, levelFilter, classFilter]);
+
+    // Sort programs
+    const sortedPrograms = useMemo(() => {
+        const sorted = [...filteredPrograms].sort((a, b) => {
+            if (sortBy === "subject") {
+                const subjectA = a.subject.toLowerCase();
+                const subjectB = b.subject.toLowerCase();
+                return sortOrder === "asc"
+                    ? subjectA.localeCompare(subjectB)
+                    : subjectB.localeCompare(subjectA);
+            }
+            // Sort by level
+            const levelA = a.level.toLowerCase();
+            const levelB = b.level.toLowerCase();
+            return sortOrder === "asc"
+                ? levelA.localeCompare(levelB)
+                : levelB.localeCompare(levelA);
         });
-    }, [allPrograms, schoolFilter, classFilter, subjectFilter]);
+        return sorted;
+    }, [filteredPrograms, sortBy, sortOrder]);
 
-    // ------- END OF FILTERS LOGIC (NOT FOR PRODUCTION) -------
+    // Calculate pagination
+    const totalPages = Math.ceil(sortedPrograms.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedPrograms = useMemo(() => {
+        return sortedPrograms.slice(startIndex, endIndex);
+    }, [sortedPrograms, startIndex, endIndex]);
+
+    // Reset to page 1 when filters, search, or sorting change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [
+        levelFilter,
+        subjectFilter,
+        classFilter,
+        searchQuery,
+        sortBy,
+        sortOrder,
+    ]);
 
     // If desktop and no selection, select the first program
-    if (!isMobile && !selectedId && programs.length > 0) {
-        setSelectedId(programs[0].id);
+    if (!isMobile && !selectedId && sortedPrograms.length > 0) {
+        setSelectedId(sortedPrograms[0].id);
     }
 
     // If mobile and modal is closed, reset the selection
@@ -130,8 +192,8 @@ function CoursesPage() {
     }, [isMobile]);
 
     const selectedProgram = useMemo(() => {
-        return programs.find((program) => program.id === selectedId);
-    }, [programs, selectedId]);
+        return sortedPrograms.find((program) => program.id === selectedId);
+    }, [sortedPrograms, selectedId]);
 
     const handleProgramSelect = (id: string) => {
         setSelectedId(id);
@@ -156,144 +218,99 @@ function CoursesPage() {
                         }}
                     />
 
-                    {/* Filters */}
-                    <section className="mb-6">
-                        <div className="flex flex-row gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="course-school-filter">
-                                    École
-                                </Label>
-                                <Select
-                                    value={schoolFilter}
-                                    onValueChange={(value) =>
-                                        setSchoolFilter(
-                                            value as SchoolFilterValue
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="course-school-filter">
-                                        <SelectValue placeholder="Toutes les écoles" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {SCHOOL_FILTER_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="course-class-filter">
-                                    Classe
-                                </Label>
-                                <Select
-                                    value={classFilter}
-                                    onValueChange={(value) =>
-                                        setClassFilter(
-                                            value as ClassFilterValue
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="course-class-filter">
-                                        <SelectValue placeholder="Toutes les classes" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {classFilterOptions.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="course-subject-filter">
-                                    Matière
-                                </Label>
-                                <Select
-                                    value={subjectFilter}
-                                    onValueChange={(value) =>
-                                        setSubjectFilter(
-                                            value as SubjectFilterValue
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger id="course-subject-filter">
-                                        <SelectValue placeholder="Toutes les matières" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {subjectFilterOptions.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </section>
+                    <FilterBar
+                        searchId="course-search"
+                        searchPlaceholder="Rechercher un cours..."
+                        searchValue={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        filters={[
+                            {
+                                id: "course-subject-filter",
+                                label: "Matière",
+                                value: subjectFilter,
+                                options: subjectFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setSubjectFilter(
+                                        value as SubjectFilterValue
+                                    ),
+                                placeholder: "Toutes les matières",
+                            },
+                            {
+                                id: "course-level-filter",
+                                label: "Niveau",
+                                value: levelFilter,
+                                options: levelFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setLevelFilter(value as LevelFilterValue),
+                                placeholder: "Tous les niveaux",
+                            },
+                            {
+                                id: "course-class-filter",
+                                label: "Classe",
+                                value: classFilter,
+                                options: classFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setClassFilter(value as ClassFilterValue),
+                                placeholder: "Toutes les classes",
+                            },
+                        ]}
+                        sortBy={sortBy}
+                        sortOptions={[
+                            { value: "subject", label: "Matière" },
+                            { value: "level", label: "Niveau" },
+                        ]}
+                        onSortByChange={(value: string) =>
+                            setSortBy(value as "subject" | "level")
+                        }
+                        sortOrder={sortOrder}
+                        onSortOrderChange={setSortOrder}
+                    />
                 </>
             }
         >
-            {/* Programs list */}
-            <div className="grid grid-cols-7 gap-6 flex-1 min-h-0">
-                <div className="space-y-5 col-span-7 lg:col-span-4 xl:col-span-5">
-                    {isLoading ? (
-                        <Card className="animate-pulse border-dashed">
-                            <CardHeader>
-                                <CardTitle className="h-6 w-40 rounded bg-muted" />
-                                <CardDescription className="h-4 w-64 rounded bg-muted" />
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="h-3 w-full rounded-full bg-muted" />
-                                <div className="h-3 w-3/5 rounded-full bg-muted" />
-                                <div className="h-3 w-2/5 rounded-full bg-muted" />
-                            </CardContent>
-                        </Card>
-                    ) : programs.length ? (
-                        programs.map((program) => (
-                            <ProgramCard
-                                key={program.id}
-                                program={program}
-                                isSelected={program.id === selectedId}
-                                onSelect={handleProgramSelect}
-                            />
-                        ))
-                    ) : (
-                        <Card className="border-dashed">
-                            <CardHeader>
-                                <CardTitle>Aucun cours trouvé</CardTitle>
-                                <CardDescription>
-                                    Créez votre premier programme pour commencer
-                                    à planifier vos cours.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardFooter>
-                                <Button
-                                    onClick={() => setIsCreateModalOpen(true)}
-                                >
-                                    <Plus className="size-4" />
-                                    Nouveau cours
-                                </Button>
-                            </CardFooter>
-                        </Card>
+            <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
+                <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col overflow-hidden">
+                    {/* Scrollable programs list */}
+                    <div className="flex-1 overflow-y-auto pr-3 pt-3 pl-3">
+                        <div className="space-y-5">
+                            {isLoading ? (
+                                <SkeletonCard />
+                            ) : paginatedPrograms.length > 0 ? (
+                                paginatedPrograms.map((program) => (
+                                    <ProgramCard
+                                        key={program.id}
+                                        program={program}
+                                        isSelected={program.id === selectedId}
+                                        onSelect={handleProgramSelect}
+                                    />
+                                ))
+                            ) : (
+                                <EmptyStateCard
+                                    title="Aucun cours trouvé"
+                                    description="Créez votre premier programme pour commencer à planifier vos cours."
+                                    buttonText="Nouveau cours"
+                                    onButtonClick={() =>
+                                        setIsCreateModalOpen(true)
+                                    }
+                                />
+                            )}
+                        </div>
+                    </div>
+                    {/* Fixed Pagination */}
+                    {!isLoading && filteredPrograms.length > 0 && (
+                        <PaginationControls
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
                     )}
                 </div>
 
                 {/* Desktop sidebar - hidden on mobile */}
-                <div className="hidden lg:block lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 xl:h-full xl:flex xl:flex-col">
+                <div
+                    className="space-y-4 hidden lg:block pt-3 pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
+                    style={{ top: "auto" }}
+                >
                     <ProgramSummary program={selectedProgram} />
                 </div>
             </div>
@@ -364,7 +381,7 @@ function ProgramCard({
                     </div>
                     <div className="space-y-1">
                         <CardTitle className="text-xl sm:text-2xl">
-                            {program.subject}
+                            {program.subject} • {program.className}
                         </CardTitle>
                         <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
                             <span>{program.level}</span>

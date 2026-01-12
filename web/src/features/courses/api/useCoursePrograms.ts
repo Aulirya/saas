@@ -1,108 +1,117 @@
 import { useQuery } from "@tanstack/react-query";
-import { Atom, Calculator, FlaskConical } from "lucide-react";
-
+import { useMemo } from "react";
+import { useCourseProgress } from "./useCourseProgress";
+import { useSubjects } from "@/features/subjects/api/useSubjects";
+import { useSchoolClasses } from "@/features/classes/api/useSchoolClasses";
+import { transformCourseProgressToProgram } from "../utils/transformCourseProgress";
 import type { CourseProgram } from "../types";
+import type { CourseProgressWithLessons, Lesson } from "@saas/shared";
+import { orpc } from "@/orpc/client";
 
-export const demoPrograms: CourseProgram[] = [
-    {
-        id: "math-terminale-s",
-        subject: "Mathématiques",
-        icon: Calculator,
-        level: "Terminale S",
-        weeklyHours: 18,
-        students: 32,
-        totalHours: 156,
-        completedHours: 42,
-        status: "defined",
-        statusLabel: "Programme défini",
-        nextLessons: [
-            {
-                id: "log-functions-1",
-                title: "Fonctions logarithmes 1/3",
-                plannedHours: 8,
-                date: new Date("2025-11-19"),
-            },
-            {
-                id: "log-functions-2",
-                title: "Fonctions logarithmes 2/3",
-                plannedHours: 8,
-                date: new Date("2025-11-20"),
-            },
-            {
-                id: "log-functions-3",
-                title: "Fonctions logarithmes 3/3",
-                plannedHours: 8,
-                date: new Date("2025-11-21"),
-            },
-            {
-                id: "integrales",
-                title: "Intégrales",
-                plannedHours: 12,
-                date: new Date("2025-11-22"),
-            },
-        ],
-        stats: {
-            uploads: 24,
-            evaluations: 6,
-            averageLessonMinutes: 135,
-        },
-    },
-    {
-        id: "physics-premiere-s",
-        subject: "Physique",
-        icon: Atom,
-        level: "1ère S",
-        weeklyHours: 12,
-        students: 28,
-        totalHours: 120,
-        completedHours: 38,
-        status: "partial",
-        statusLabel: "Programme partiel",
-        nextLessons: [
-            { id: "optics", title: "Optique avancée", plannedHours: 6 },
-            {
-                id: "thermodynamics",
-                title: "Thermodynamique",
-                plannedHours: 10,
-            },
-        ],
-        stats: {
-            uploads: 18,
-            evaluations: 4,
-            averageLessonMinutes: 120,
-        },
-    },
-    {
-        id: "chemistry-seconde",
-        subject: "Chimie",
-        icon: FlaskConical,
-        level: "2nde",
-        weeklyHours: 8,
-        students: 25,
-        totalHours: 96,
-        completedHours: 28,
-        status: "draft",
-        statusLabel: "Programme à définir",
-        nextLessons: [
-            { id: "stoichiometry", title: "Stœchiométrie", plannedHours: 5 },
-            {
-                id: "chemical-bonds",
-                title: "Liaisons chimiques",
-                plannedHours: 7,
-            },
-        ],
-        stats: {
-            uploads: 11,
-            evaluations: 3,
-            averageLessonMinutes: 110,
-        },
-    },
-];
-
+/**
+ * Custom hook to fetch all course progress and transform them to CourseProgram format
+ *
+ * This hook:
+ * 1. Fetches all course progress for the current user
+ * 2. Fetches all subjects and classes
+ * 3. Fetches all lessons for all subjects
+ * 4. Transforms everything to CourseProgram format for the UI
+ */
 export function useCoursePrograms() {
-    return useQuery({
-        queryKey: ["course-programs"],
-        queryFn: async () => demoPrograms,
+    // Fetch all course progress
+    const { data: allCourseProgress = [], isLoading: isLoadingProgress } =
+        useCourseProgress();
+
+    // Fetch all subjects
+    const { data: allSubjects = [], isLoading: isLoadingSubjects } =
+        useSubjects();
+
+    // Fetch all classes (no filter to get all)
+    const { data: allClasses = [], isLoading: isLoadingClasses } =
+        useSchoolClasses();
+
+    // Fetch all lessons
+    const { data: allLessons = [], isLoading: isLoadingLessons } = useQuery({
+        ...orpc.lesson.list.queryOptions({}),
         staleTime: 60_000,
     });
+
+    // Transform data
+    const programs = useMemo(() => {
+        if (
+            isLoadingProgress ||
+            isLoadingSubjects ||
+            isLoadingClasses ||
+            isLoadingLessons ||
+            allCourseProgress.length === 0
+        ) {
+            return [];
+        }
+
+        // Create maps for quick lookup
+        const subjectsMap = new Map(allSubjects.map((s) => [s.id, s]));
+        const classesMap = new Map(allClasses.map((c) => [c.id, c]));
+        const lessonsMap = new Map<string, Lesson[]>();
+
+        // Group lessons by subject_id
+        allLessons.forEach((lesson) => {
+            const subjectId = lesson.subject_id;
+            if (!lessonsMap.has(subjectId)) {
+                lessonsMap.set(subjectId, []);
+            }
+            lessonsMap.get(subjectId)!.push(lesson);
+        });
+
+        // Transform each course progress to CourseProgram
+        const transformed: CourseProgram[] = allCourseProgress
+            .map((courseProgress) => {
+                const subject = subjectsMap.get(courseProgress.subject_id);
+                const schoolClass = classesMap.get(courseProgress.class_id);
+
+                // Skip if subject or class is not found
+                if (!subject || !schoolClass) {
+                    return null;
+                }
+
+                // Get lessons for this subject
+                const subjectLessons = lessonsMap.get(subject.id) || [];
+
+                // Create CourseProgressWithLessons object with empty lesson_progress for now
+                // We'll fetch lesson_progress separately if needed, but for now we'll calculate from lessons
+                const courseProgressWithLessons: CourseProgressWithLessons = {
+                    ...courseProgress,
+                    lesson_progress: [], // TODO: Fetch lesson_progress if needed for more accurate data
+                };
+
+                return transformCourseProgressToProgram(
+                    courseProgressWithLessons,
+                    subject,
+                    schoolClass,
+                    subjectLessons
+                );
+            })
+            .filter((program): program is CourseProgram => program !== null);
+
+        return transformed;
+    }, [
+        allCourseProgress,
+        allSubjects,
+        allClasses,
+        allLessons,
+        isLoadingProgress,
+        isLoadingSubjects,
+        isLoadingClasses,
+        isLoadingLessons,
+    ]);
+
+    const isLoading =
+        isLoadingProgress ||
+        isLoadingSubjects ||
+        isLoadingClasses ||
+        isLoadingLessons;
+
+    return {
+        data: programs,
+        isLoading,
+    };
 }

@@ -20,6 +20,7 @@ export type CourseProgram = {
     subject: string;
     icon: LucideIcon;
     level: string;
+    className: string;
     weeklyHours: number;
     students: number;
     totalHours: number;
@@ -27,5 +28,6 @@ export type CourseProgram = {
     status: CourseProgramStatus;
     statusLabel: string;
     nextLessons: CourseChapter[];
+    completedLessons: CourseChapter[];
     stats: CourseProgramStats;
 };
