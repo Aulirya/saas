@@ -46,6 +46,16 @@ export const lesson_progress = z.object({
 
 export type LessonProgress = z.infer<typeof lesson_progress>;
 
+// Recurring schedule slot
+export const recurring_schedule_slot = z.object({
+    day_of_week: z.number().int().min(1).max(7), // 1 = Monday, 7 = Sunday
+    start_hour: z.number().int().min(0).max(23),
+    end_hour: z.number().int().min(0).max(23),
+    start_date: z.string(), // ISO datetime string
+});
+
+export type RecurringScheduleSlot = z.infer<typeof recurring_schedule_slot>;
+
 // Course progress entity
 export const course_progress = z.object({
     id: z.string(),
@@ -53,6 +63,8 @@ export const course_progress = z.object({
     subject_id: z.string(),
     user_id: z.string(),
     status: z.enum(COURSE_PROGRESS_STATUSES).default("not_started"),
+    recurring_schedule: z.array(recurring_schedule_slot).optional().default([]),
+    auto_scheduled: z.boolean().optional().default(false),
     created_at: z.string(),
     updated_at: z.string(),
 });

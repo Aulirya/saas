@@ -35,8 +35,6 @@ type LevelFilterValue = string;
 type SubjectFilterValue = string;
 type ClassFilterValue = string;
 
-const ITEMS_PER_PAGE = 5;
-
 export const Route = createFileRoute("/_protected/courses/")({
     component: CoursesPage,
 });
@@ -44,25 +42,48 @@ export const Route = createFileRoute("/_protected/courses/")({
 function CoursesPage() {
     const isMobile = useMediaQuery(`(max-width: ${breakpoints.lg}px)`);
 
-    const { data: allPrograms = [], isLoading } = useCoursePrograms();
-
+    // ---------------------------
+    // Selection & Modal State
+    // ---------------------------
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    // ---------------------------
+    // Filters State
+    // ---------------------------
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
     const [subjectFilter, setSubjectFilter] =
         useState<SubjectFilterValue>("all");
     const [classFilter, setClassFilter] = useState<ClassFilterValue>("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
+
+    // ---------------------------
+    // Pagination State
+    // ---------------------------
     const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(5);
+
+    // ---------------------------
+    // Sorting State
+    // ---------------------------
     const [sortBy, setSortBy] = useState<"subject" | "level">("subject");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-    // Generate filter options dynamically from data
+    // ---------------------------
+    // Data Fetching
+    // ---------------------------
+    const { data: allPrograms = [], isLoading } = useCoursePrograms();
+
+    // ---------------------------
+    // FILTERING
+    // ---------------------------
+    // Generate filter options dynamically from data, Derive from allPrograms
     const levelFilterOptions = useMemo(() => {
         const uniqueLevels = Array.from(
             new Set(allPrograms.map((p) => p.level))
         ).sort();
+
         return [
             { value: "all", label: "Tous les niveaux" },
             ...uniqueLevels.map((level) => ({ value: level, label: level })),
@@ -134,7 +155,9 @@ function CoursesPage() {
         return filtered;
     }, [allPrograms, searchQuery, subjectFilter, levelFilter, classFilter]);
 
-    // Sort programs
+    // ---------------------------
+    // SORTING
+    // ---------------------------
     const sortedPrograms = useMemo(() => {
         const sorted = [...filteredPrograms].sort((a, b) => {
             if (sortBy === "subject") {
@@ -154,10 +177,12 @@ function CoursesPage() {
         return sorted;
     }, [filteredPrograms, sortBy, sortOrder]);
 
-    // Calculate pagination
-    const totalPages = Math.ceil(sortedPrograms.length / ITEMS_PER_PAGE);
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
+    // ---------------------------
+    // PAGINATION
+    // ---------------------------
+    const totalPages = Math.ceil(sortedPrograms.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
     const paginatedPrograms = useMemo(() => {
         return sortedPrograms.slice(startIndex, endIndex);
     }, [sortedPrograms, startIndex, endIndex]);
@@ -174,7 +199,9 @@ function CoursesPage() {
         sortOrder,
     ]);
 
-    // If desktop and no selection, select the first program
+    // ---------------------------
+    // SELECTION
+    // ---------------------------
     if (!isMobile && !selectedId && sortedPrograms.length > 0) {
         setSelectedId(sortedPrograms[0].id);
     }
@@ -307,12 +334,14 @@ function CoursesPage() {
                 </div>
 
                 {/* Desktop sidebar - hidden on mobile */}
-                <div
-                    className="space-y-4 hidden lg:block pt-3 pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
-                    style={{ top: "auto" }}
-                >
-                    <ProgramSummary program={selectedProgram} />
-                </div>
+                {paginatedPrograms.length > 0 && (
+                    <div
+                        className="space-y-4 hidden overflow-hidden lg:block pt-3 h-auto pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 "
+                        style={{ top: "auto" }}
+                    >
+                        <ProgramSummary program={selectedProgram} />
+                    </div>
+                )}
             </div>
 
             {/* Mobile modal - only visible on screens < lg */}
@@ -482,14 +511,7 @@ function ProgramSummaryContent({
     program: CourseProgram | undefined;
 }) {
     if (!program) {
-        return (
-            <div className="space-y-4 py-4">
-                <p className="text-sm text-muted-foreground">
-                    Sélectionnez un cours pour afficher sa progression et ses
-                    statistiques.
-                </p>
-            </div>
-        );
+        return;
     }
 
     const progressValue = Math.round(
@@ -498,10 +520,9 @@ function ProgramSummaryContent({
     const completedText = `${program.completedHours} / ${program.totalHours} heures (${progressValue}%)`;
 
     const colorScheme = getColorFromText(program.subject);
-    console.log(colorScheme);
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 overflow-y-scroll ">
             <section>
                 <p className="font-medium pb-3">Progression actuelle</p>
                 <Progress
