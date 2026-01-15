@@ -19,7 +19,7 @@ import { parseRecordId } from "../utils/record-id";
 export const getAllSubjects = base.handler(
     async ({ context }): Promise<Subject[]> => {
         const userId = new RecordId("users", context.user_id);
-        const query = surql`SELECT * FROM subjects WHERE user_id = ${userId}`;
+        const query = surql`SELECT * FROM subjects WHERE user_id = ${userId} ORDER BY name ASC`;
 
         let subjectsModel: [SubjectModel[]];
         try {
