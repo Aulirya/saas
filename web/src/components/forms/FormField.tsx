@@ -92,6 +92,55 @@ export function TextField({
 }
 
 /**
+ * Reusable Date Input Field Component
+ */
+export function DateField({
+    field,
+    label,
+    required = false,
+    description,
+    onValueChange,
+}: BaseFieldProps<string> & {
+    onValueChange?: (value: string) => void;
+}) {
+    const isInvalid =
+        field.state.meta.isTouched && field.state.meta.errors.length > 0;
+
+    return (
+        <Field data-invalid={isInvalid}>
+            <FieldLabel htmlFor={field.name}>
+                {label}
+                {required && <span className="text-destructive"> *</span>}
+            </FieldLabel>
+            {description && (
+                <p className="text-sm text-muted-foreground">{description}</p>
+            )}
+            <Input
+                id={field.name}
+                type="date"
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => {
+                    const value = e.target.value;
+                    field.handleChange(value);
+                    onValueChange?.(value);
+                }}
+                onBlur={field.handleBlur}
+                aria-invalid={isInvalid}
+                required={required}
+            />
+            <FieldError>
+                {field.state.meta.errors?.map(
+                    (error: unknown, index: number) => (
+                        <span key={index}>{formatError(error)}</span>
+                    )
+                )}
+            </FieldError>
+        </Field>
+    );
+}
+
+/**
  * Reusable Textarea Field Component
  */
 export function TextareaField({
@@ -150,10 +199,12 @@ export function SelectField<T extends string>({
     placeholder,
     options,
     getLabel,
+    onValueChange,
 }: BaseFieldProps<T> & {
     placeholder?: string;
     options: readonly T[] | T[];
     getLabel: (value: T) => string;
+    onValueChange?: (value: T) => void;
 }) {
     const isInvalid =
         field.state.meta.isTouched && field.state.meta.errors.length > 0;
@@ -172,6 +223,7 @@ export function SelectField<T extends string>({
                 onValueChange={(value) => {
                     field.handleChange(value as T);
                     field.handleBlur();
+                    onValueChange?.(value as T);
                 }}
             >
                 <SelectTrigger id={field.name} aria-invalid={isInvalid}>

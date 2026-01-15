@@ -3,6 +3,7 @@
  */
 export {
     TextField,
+    DateField,
     TextareaField,
     SelectField,
     SelectFieldWithClear,
