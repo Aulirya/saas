@@ -72,8 +72,6 @@ function ClassesPage() {
         level: levelFilter !== "all" ? levelFilter : undefined,
     });
 
-    console.log("classes: ", classes);
-
     // WORK ON view pre-loading
     const { data: schools = [], isLoading: isLoadingSchools } = useSchools();
     const { data: levels = [], isLoading: isLoadingLevels } =

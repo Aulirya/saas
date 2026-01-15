@@ -41,7 +41,10 @@ export function CardInfoLayout({
                 </div>
             </CardHeader>
             <CardContent
-                className={cn("flex flex-col gap-6 flex-1", contentClassName)}
+                className={cn(
+                    "flex flex-col gap-6 flex-1 overflow-y-auto",
+                    contentClassName
+                )}
             >
                 {children}
             </CardContent>
