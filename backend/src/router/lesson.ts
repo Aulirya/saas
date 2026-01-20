@@ -243,9 +243,32 @@ export const reorderLesson = base
             });
         }
 
-        // Swap the orders
-        const lessonOrder = lesson.order;
-        const targetOrder = targetLesson.order;
+        // Swap the orders (ensure missing orders are assigned first)
+        let lessonOrder = lesson.order ?? null;
+        let targetOrder = targetLesson.order ?? null;
+
+        if (lessonOrder === null || targetOrder === null) {
+            const maxOrderQuery = surql`
+                SELECT math::max(order ?? 0) AS max_order
+                FROM lessons
+                WHERE user_id = ${userId}
+                AND subject_id = ${subjectId}
+                GROUP ALL
+            `;
+            const maxOrderResult = await context.db
+                .query<[Array<{ max_order: number }>]>(maxOrderQuery)
+                .collect();
+            let nextOrder = (maxOrderResult[0]?.[0]?.max_order ?? 0) + 1;
+
+            if (lessonOrder === null) {
+                lessonOrder = nextOrder;
+                nextOrder += 1;
+            }
+
+            if (targetOrder === null) {
+                targetOrder = nextOrder;
+            }
+        }
 
         try {
             // Update both lessons

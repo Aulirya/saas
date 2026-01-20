@@ -19,7 +19,7 @@ import { parseRecordId } from "../utils/record-id";
 export const getAllSubjects = base.handler(
     async ({ context }): Promise<Subject[]> => {
         const userId = new RecordId("users", context.user_id);
-        const query = surql`SELECT * FROM subjects WHERE user_id = ${userId} ORDER BY name ASC`;
+        const query = surql`SELECT * FROM subjects WHERE user_id = ${userId}`;
 
         let subjectsModel: [SubjectModel[]];
         try {
@@ -144,13 +144,32 @@ export const createSubject = base
 
         try {
             const subjectsTable = new Table("subjects");
+            if (input.category === undefined) {
+                throw new ORPCError("INVALID_REQUEST", {
+                    message: "Category is required",
+                });
+            }
+
+            if (
+                !SUBJECT_CATEGORIES.includes(
+                    input.category as (typeof SUBJECT_CATEGORIES)[number]
+                )
+            ) {
+                throw new ORPCError("INVALID_REQUEST", {
+                    message: `Invalid category: ${input.category}`,
+                });
+            }
+
+            const category =
+                input.category as (typeof SUBJECT_CATEGORIES)[number];
+
             const result = await context.db
                 .create<SubjectModel>(subjectsTable)
                 .content({
                     name: input.name,
                     description: input.description || "",
                     type: input.type || "",
-                    category: input.category,
+                    category,
                     user_id: userId,
                 });
 

@@ -9,24 +9,28 @@ Le système de suivi des cours permet aux professeurs de suivre la progression d
 ### 1. Schéma de base de données
 
 #### `course_progress` (complété)
-- ✅ Ajout de `user_id` : permet de lier le suivi à un professeur spécifique
-- ✅ Ajout de `status` : permet de suivre l'état général du cours (`not_started`, `in_progress`, `completed`, `on_hold`)
-- ✅ Ajout de `created_at` et `updated_at` : timestamps système
+
+-   ✅ Ajout de `user_id` : permet de lier le suivi à un professeur spécifique
+-   ✅ Ajout de `status` : permet de suivre l'état général du cours (`not_started`, `in_progress`, `completed`, `on_hold`)
+-   ✅ Ajout de `created_at` et `updated_at` : timestamps système
 
 #### `lesson_progress` (créé)
-- ✅ Table créée pour suivre chaque leçon individuellement pour chaque combinaison classe-matière
-- ✅ Champs principaux : `lesson_id`, `course_progress_id`, `status`, `scheduled_date`, `completed_at`
-- ✅ Système de commentaires : tableau de commentaires pour chaque leçon avec titre et description
-- ✅ Timestamps système
+
+-   ✅ Table créée pour suivre chaque leçon individuellement pour chaque combinaison classe-matière
+-   ✅ Champs principaux : `lesson_id`, `course_progress_id`, `status`, `scheduled_date`, `completed_at`
+-   ✅ Système de commentaires : tableau de commentaires pour chaque leçon avec titre et description
+-   ✅ Timestamps système
 
 ### 2. Router backend
-- ✅ Le router `course_progress.ts` existe déjà et est complet
-- ✅ Toutes les opérations CRUD sont implémentées
-- ✅ Router bien intégré dans `backend/src/router/index.ts`
+
+-   ✅ Le router `course_progress.ts` existe déjà et est complet
+-   ✅ Toutes les opérations CRUD sont implémentées
+-   ✅ Router bien intégré dans `backend/src/router/index.ts`
 
 ### 3. Hooks API frontend
-- ✅ Création de `useCourseProgress.ts` avec tous les hooks nécessaires
-- ✅ Création de `useLessonProgress.ts` pour gérer les progressions de leçons
+
+-   ✅ Création de `useCourseProgress.ts` avec tous les hooks nécessaires
+-   ✅ Création de `useLessonProgress.ts` pour gérer les progressions de leçons
 
 ## 🎯 Recommandations d'amélioration
 
@@ -73,51 +77,51 @@ DEFINE INDEX lesson_progress_lesson ON TABLE lesson_progress FIELDS lesson_id;
 **Problème actuel** : La page courses utilise des données demo et ne reflète pas la réalité.
 
 **Recommandations** :
+
 1. **Transformation des données** : Créer une fonction qui transforme les `course_progress` en format `CourseProgram` pour la page
-2. **Calcul automatique de la progression** : 
-   - Calculer `completedHours` en sommant les durées des leçons complétées
-   - Calculer `totalHours` en sommant les durées de toutes les leçons du sujet
-   - Calculer le pourcentage de progression
+2. **Calcul automatique de la progression** :
+    - Calculer `completedHours` en sommant les durées des leçons complétées
+    - Calculer `totalHours` en sommant les durées de toutes les leçons du sujet
+    - Calculer le pourcentage de progression
 3. **Prochaines leçons** : Extraire les `lesson_progress` avec status `scheduled` ou `not_started`, triés par `scheduled_date` ou `order`
 
 #### B. Vue détaillée d'un cours
 
 **Fonctionnalités recommandées** :
+
 1. **Liste des leçons avec statut** :
-   - Afficher toutes les leçons du sujet
-   - Afficher le statut de chaque leçon pour cette classe
-   - Permettre de cliquer sur une leçon pour voir/éditer son `lesson_progress`
-   
+    - Afficher toutes les leçons du sujet
+    - Afficher le statut de chaque leçon pour cette classe
+    - Permettre de cliquer sur une leçon pour voir/éditer son `lesson_progress`
 2. **Calendrier de progression** :
-   - Vue calendrier avec les leçons planifiées (`scheduled_date`)
-   - Vue timeline montrant la progression chronologique
-   
+    - Vue calendrier avec les leçons planifiées (`scheduled_date`)
+    - Vue timeline montrant la progression chronologique
 3. **Commentaires et notes** :
-   - Section dédiée pour ajouter des commentaires sur une leçon
-   - Historique des commentaires avec dates
-   - Recherche dans les commentaires
+
+    - Section dédiée pour ajouter des commentaires sur une leçon
+    - Historique des commentaires avec dates
+    - Recherche dans les commentaires
 
 4. **Statistiques avancées** :
-   - Graphique de progression dans le temps
-   - Temps moyen par leçon
-   - Comparaison avec les autres classes du même niveau
+    - Graphique de progression dans le temps
+    - Temps moyen par leçon
+    - Comparaison avec les autres classes du même niveau
 
 #### C. Actions rapides
 
 **Recommandations UX** :
+
 1. **Création rapide de course_progress** :
-   - Formulaire simple : Sélectionner classe + matière
-   - Auto-création si n'existe pas lors du clic sur "Voir le cours"
-   
+    - Formulaire simple : Sélectionner classe + matière
+    - Auto-création si n'existe pas lors du clic sur "Voir le cours"
 2. **Gestion des leçons** :
-   - Bouton "Marquer comme complétée" directement depuis la liste
-   - Drag & drop pour réorganiser l'ordre des leçons
-   - Planification rapide : clic pour définir `scheduled_date`
-   
+    - Bouton "Marquer comme complétée" directement depuis la liste
+    - Drag & drop pour réorganiser l'ordre des leçons
+    - Planification rapide : clic pour définir `scheduled_date`
 3. **Ajout de commentaires** :
-   - Overlay rapide pour ajouter un commentaire sans quitter la page
-   - Éditeur markdown pour les commentaires longs
-   - Tags/catégories pour les commentaires (ex: "Problème", "Remarque", "À revoir")
+    - Overlay rapide pour ajouter un commentaire sans quitter la page
+    - Éditeur markdown pour les commentaires longs
+    - Tags/catégories pour les commentaires (ex: "Problème", "Remarque", "À revoir")
 
 ### 3. Améliorations techniques
 
@@ -149,9 +153,10 @@ export const initializeCourseProgressLessons = base
 #### B. Amélioration des commentaires
 
 **Recommandation** : Ajouter un champ `comment_id` pour permettre :
-- Modification d'un commentaire spécifique sans réécrire tout le tableau
-- Suppression d'un commentaire
-- Réponses/threads de commentaires
+
+-   Modification d'un commentaire spécifique sans réécrire tout le tableau
+-   Suppression d'un commentaire
+-   Réponses/threads de commentaires
 
 ```typescript
 // Patch input amélioré pour les commentaires
@@ -169,75 +174,86 @@ export const lesson_progress_patch_comment_input = z.object({
 #### A. Navigation et organisation
 
 **Recommandations** :
+
 1. **Filtres améliorés** :
-   - Filtre par statut de progression (`not_started`, `in_progress`, `completed`)
-   - Filtre par classe (déjà présent)
-   - Filtre par matière (déjà présent)
-   - Filtre combiné : classe + matière (déjà présent via getByClassAndSubject)
+
+    - Filtre par statut de progression (`not_started`, `in_progress`, `completed`)
+    - Filtre par classe (déjà présent)
+    - Filtre par matière (déjà présent)
 
 2. **Vues multiples** :
-   - Vue liste (actuelle)
-   - Vue tableau avec colonnes : Classe, Matière, Progression, Statut, Actions
-   - Vue carte pour une visualisation plus visuelle
+
+    - Vue liste (actuelle)
+    - Vue tableau avec colonnes : Classe, Matière, Progression, Statut, Actions
+    - Vue carte pour une visualisation plus visuelle
 
 3. **Recherche** :
-   - Barre de recherche pour trouver rapidement une classe ou matière
-   - Recherche dans les commentaires de leçons
+    - Barre de recherche pour trouver rapidement une classe ou matière
+    - Recherche dans les commentaires de leçons
 
 #### B. Feedback visuel
 
 **Recommandations** :
+
 1. **Indicateurs de statut** :
-   - Couleurs cohérentes pour les statuts (vert = completed, bleu = in_progress, etc.)
-   - Badges avec icônes pour les statuts
-   - Barres de progression animées
+
+    - Couleurs cohérentes pour les statuts (vert = completed, bleu = in_progress, etc.)
+    - Badges avec icônes pour les statuts
+    - Barres de progression animées
 
 2. **Notifications** :
-   - Rappels pour les leçons planifiées (`scheduled_date` approchant)
-   - Alertes si une leçon est en retard par rapport à la planification
-   - Confirmation visuelle lors des actions (création, mise à jour, suppression)
+    - Rappels pour les leçons planifiées (`scheduled_date` approchant)
+    - Alertes si une leçon est en retard par rapport à la planification
+    - Confirmation visuelle lors des actions (création, mise à jour, suppression)
 
 #### C. Workflow optimisé
 
 **Scénario typique d'utilisation** :
 
 1. **Professeur ouvre la page courses**
-   - Voit tous ses cours (class-matière) en cours
-   - Peut filtrer par classe ou matière
+
+    - Voit tous ses cours (class-matière) en cours
+    - Peut filtrer par classe ou matière
 
 2. **Professeur clique sur un cours**
-   - Voit la progression globale
-   - Voit la liste des leçons avec leur statut
-   - Peut cliquer sur une leçon pour voir les détails
+
+    - Voit la progression globale
+    - Voit la liste des leçons avec leur statut
+    - Peut cliquer sur une leçon pour voir les détails
 
 3. **Professeur planifie une leçon**
-   - Clic sur "Planifier" → calendrier → sélection date
-   - La leçon passe en statut `scheduled`
+
+    - Clic sur "Planifier" → calendrier → sélection date
+    - La leçon passe en statut `scheduled`
 
 4. **Après avoir enseigné la leçon**
-   - Clic sur "Marquer comme complétée"
-   - Option d'ajouter un commentaire (ex: "Exercices supplémentaires donnés", "Difficultés rencontrées avec chapitre 3")
-   - Le `completed_at` est automatiquement défini
+
+    - Clic sur "Marquer comme complétée"
+    - Option d'ajouter un commentaire (ex: "Exercices supplémentaires donnés", "Difficultés rencontrées avec chapitre 3")
+    - Le `completed_at` est automatiquement défini
 
 5. **Consultation de la progression**
-   - Graphique de progression mis à jour automatiquement
-   - Statistiques calculées en temps réel
+    - Graphique de progression mis à jour automatiquement
+    - Statistiques calculées en temps réel
 
 ## 📝 Prochaines étapes recommandées
 
 ### Priorité 1 (Essentiel)
+
 1. ✅ Mettre à jour le schéma de base de données (fait)
 2. ⏳ Mettre à jour la page courses pour utiliser les vraies données API
 3. ⏳ Créer la fonction de transformation des données
 4. ⏳ Implémenter l'affichage des leçons avec leur statut
 
 ### Priorité 2 (Important)
+
 1. Ajouter les champs recommandés à `course_progress` (dates, heures)
 2. Créer les endpoints de statistiques
 3. Implémenter l'ajout/modification de commentaires depuis l'UI
 4. Ajouter les index pour les performances
 
 ### Priorité 3 (Amélioration)
+
 1. Vue calendrier pour les leçons planifiées
 2. Graphiques de progression
 3. Système de notifications/rappels
@@ -286,21 +302,22 @@ LessonProgress (lesson_progress)
 ### Flux de données recommandé
 
 1. **Affichage de la liste des cours** :
-   ```
-   listCourseProgress() → CourseProgress[]
-   → Transformer en CourseProgram[] pour l'UI
-   ```
+
+    ```
+    listCourseProgress() → CourseProgress[]
+    → Transformer en CourseProgram[] pour l'UI
+    ```
 
 2. **Affichage du détail d'un cours** :
-   ```
-   getCourseProgressWithLessons(id) → CourseProgressWithLessons
-   → Afficher progression + liste des leçons avec statuts
-   ```
+
+    ```
+    getCourseProgressWithLessons(id) → CourseProgressWithLessons
+    → Afficher progression + liste des leçons avec statuts
+    ```
 
 3. **Mise à jour d'une leçon** :
-   ```
-   patchLessonProgress({ id, status: 'completed', comments: [...] })
-   → Invalider les queries de courseProgress
-   → Recharger automatiquement la vue
-   ```
-
+    ```
+    patchLessonProgress({ id, status: 'completed', comments: [...] })
+    → Invalider les queries de courseProgress
+    → Recharger automatiquement la vue
+    ```

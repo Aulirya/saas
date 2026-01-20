@@ -233,6 +233,7 @@ export const createSchoolClass = base
                         .content({
                             class_id: classId,
                             subject_id: subjectRecordId,
+                            user_id: userId,
                         });
                 }
             }
@@ -257,7 +258,7 @@ export const createSchoolClass = base
 export const patchSchoolClass = base
     .input(school_class_patch_input)
     .handler(async ({ input, context }): Promise<SchoolClass> => {
-        console.log("start patch");
+        const userId = new RecordId("users", context.user_id);
         const classId = parseRecordId(input.id, "classes");
 
         const updateData: Partial<{
@@ -307,8 +308,8 @@ export const patchSchoolClass = base
 
                 // Normalize input subject IDs (handle both full and partial IDs)
                 const newSubjectIds = new Set(
-                    input.subjects.map((id) => {
-                        const parsed = parseRecordId(input.id, "classes");
+                    input.subjects.map((id: string) => {
+                        const parsed = parseRecordId(id, "subjects");
                         return parsed.toString();
                     })
                 );
@@ -320,8 +321,8 @@ export const patchSchoolClass = base
                 });
 
                 // Find subjects to add (in new but not in current)
-                const subjectsToAdd = input.subjects.filter((id) => {
-                    const parsed = parseRecordId(input.id, "classes");
+                const subjectsToAdd = input.subjects.filter((id: string) => {
+                    const parsed = parseRecordId(id, "subjects");
                     const subjectIdStr = parsed.toString();
                     return !currentSubjectIds.has(subjectIdStr);
                 });
@@ -344,6 +345,7 @@ export const patchSchoolClass = base
                         .content({
                             class_id: classId,
                             subject_id: subjectRecordId,
+                            user_id: userId,
                         });
                 }
             }
@@ -359,7 +361,6 @@ export const patchSchoolClass = base
             }
 
             const school_class = SchoolClassMapper.fromModel(result[0][0]);
-            console.log("end patch");
             return school_class;
         } catch (e) {
             console.log("error: ", e);

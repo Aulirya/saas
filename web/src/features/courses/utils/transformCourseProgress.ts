@@ -201,8 +201,8 @@ export function transformCourseProgressToProgram(
                 const date = lp.completed_at
                     ? new Date(lp.completed_at)
                     : lp.scheduled_date
-                      ? new Date(lp.scheduled_date)
-                      : new Date();
+                    ? new Date(lp.scheduled_date)
+                    : new Date();
 
                 return {
                     id: lp.id,
@@ -260,6 +260,23 @@ export function transformCourseProgressToProgram(
                 : 0,
     };
 
+    // Calculate weekly hours from recurring schedule
+    const calculateWeeklyHours = (
+        schedule: typeof courseProgress.recurring_schedule
+    ): number => {
+        if (!schedule || schedule.length === 0) {
+            return 0;
+        }
+
+        // Sum up all the hours from all schedule slots
+        return schedule.reduce((totalHours, slot) => {
+            const duration = slot.end_hour - slot.start_hour;
+            return totalHours + duration;
+        }, 0);
+    };
+
+    const weeklyHours = calculateWeeklyHours(courseProgress.recurring_schedule);
+
     // Map status
     const status = mapStatus(courseProgress.status);
     const statusLabel = getStatusLabel(status);
@@ -270,7 +287,7 @@ export function transformCourseProgressToProgram(
         icon,
         level: schoolClass.level,
         className: schoolClass.name,
-        weeklyHours: 0, // TODO: Calculate from subject.hours_per_week if available in schema
+        weeklyHours: Math.round(weeklyHours * 10) / 10, // Round to 1 decimal
         students: schoolClass.students_count,
         totalHours: Math.round(totalHours * 10) / 10, // Round to 1 decimal
         completedHours: Math.round(completedHours * 10) / 10,

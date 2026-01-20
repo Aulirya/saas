@@ -3,7 +3,7 @@ import { useState } from "react";
 import { WeeklySchedule } from "@/components/journal/weekly_schedule";
 import { useCalendar } from "../hooks/useCalendar";
 import { useCalendarEvents } from "../api/useCalendarEvents";
-import { LessonFormModal } from "./LessonFormModal";
+import { CalendarFormModal } from "./CalendarFormModal";
 import type { ScheduledCourse } from "../types";
 
 export function Calendar() {
@@ -55,11 +55,12 @@ export function Calendar() {
                     const found = courses.find((c) => c.id === id);
                     setSelectedCourse(found);
                     // Clear date/slot when editing to rely on selected course values
-
+                    setModalDate(undefined);
+                    setModalSlot(undefined);
                     setModalOpen(true);
                 }}
             />
-            <LessonFormModal
+            <CalendarFormModal
                 key={`${selectedCourse?.id ?? "new"}-${
                     modalDate?.toISOString() ?? ""
                 }-${modalSlot ?? ""}`}
@@ -68,8 +69,8 @@ export function Calendar() {
                 initialDate={modalDate}
                 initialSlotLabel={modalSlot}
                 initialCourse={selectedCourse}
-                onSubmit={async (course) => {
-                    console.log("new course", course);
+                onSubmit={async () => {
+                    // Form submission is handled in CalendarFormModal
                 }}
             />
         </>

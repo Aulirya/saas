@@ -32,7 +32,6 @@ import {
     listCourseProgress,
     patchCourseProgress,
     generateLessonProgressSchedule,
-    previewLessonProgressSchedule,
     checkScheduleConflictsOnly,
 } from "./course_progress";
 import {
@@ -83,7 +82,6 @@ export const router = base.router({
         patch: patchCourseProgress,
         delete: deleteCourseProgress,
         generateSchedule: generateLessonProgressSchedule,
-        previewSchedule: previewLessonProgressSchedule,
         checkScheduleConflictsOnly: checkScheduleConflictsOnly,
     },
     lessonProgress: {

@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
     AlertCircle,
+    Calendar,
     CheckCircle2,
     Download,
     Edit,
@@ -23,6 +24,8 @@ import { SummaryStat } from "@/components/ui/summary-stat";
 import { SkeletonPageDetail } from "@/components/ui/skeleton";
 import { DetailMetric } from "@/components/DetailMetric";
 import { useCourseProgram } from "@/features/courses/api/useCourseProgram";
+import { useCourseProgressById } from "@/features/courses/api/useCourseProgress";
+import { RecurringScheduleConfig } from "@/features/courses/components/RecurringScheduleConfig";
 import { cn } from "@/lib/utils";
 
 const numberFormatter = new Intl.NumberFormat("fr-FR", {
@@ -45,7 +48,10 @@ function CourseDetailPage() {
         error,
     } = useCourseProgram(courseId);
 
-    console.log("courseData", courseData);
+    // Fetch course progress for schedule configuration
+    const { data: courseProgress } = useCourseProgressById(courseId);
+    console.log("courseProgress", courseProgress);
+
     const headerSubtitle = useMemo(() => {
         if (!courseData) {
             return "";
@@ -143,6 +149,14 @@ function CourseDetailPage() {
                         label="Heures totales"
                         value={numberFormatter.format(courseData.totalHours)}
                     />
+                    <DetailMetric
+                        label="Heures par semaine"
+                        icon={Calendar}
+                        value={`${numberFormatter.format(
+                            courseData.weeklyHours
+                        )}`}
+                    />
+
                     <Card className="grow rounded-lg border border-border/60 bg-background px-4 py-3">
                         <div className="flex items-center gap-3">
                             <div
@@ -167,74 +181,11 @@ function CourseDetailPage() {
                     </Card>
                 </section>
 
-                <div className="grid grid-cols-5 gap-6">
-                    <div className="col-span-3 space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Chapitres terminés</CardTitle>
-                                <CardDescription>
-                                    {courseData.completedLessons.length}{" "}
-                                    {courseData.completedLessons.length === 1
-                                        ? "chapitre terminé"
-                                        : "chapitres terminés"}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {courseData.completedLessons.length === 0 ? (
-                                    <EmptyState
-                                        title="Aucun chapitre terminé"
-                                        description="Les chapitres terminés apparaîtront ici."
-                                    />
-                                ) : (
-                                    courseData.completedLessons
-                                        .slice(0, 10)
-                                        .map((chapter) => (
-                                            <div
-                                                key={chapter.id}
-                                                className="flex items-center justify-between rounded-lg border border-green-200/60 bg-green-50/50 px-4 py-3 text-sm transition-colors"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <CheckCircle2 className="size-5 text-green-600 shrink-0" />
-                                                    <div className="flex flex-col gap-1">
-                                                        <span className="font-medium text-foreground">
-                                                            {chapter.title}
-                                                        </span>
-                                                        {chapter.date && (
-                                                            <span className="text-xs text-muted-foreground">
-                                                                Terminé le{" "}
-                                                                {chapter.date.toLocaleDateString(
-                                                                    "fr-FR",
-                                                                    {
-                                                                        year: "numeric",
-                                                                        month: "long",
-                                                                        day: "numeric",
-                                                                    }
-                                                                )}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <span className="text-green-700 text-xs font-medium">
-                                                    {numberFormatter.format(
-                                                        chapter.plannedHours
-                                                    )}
-                                                    h
-                                                </span>
-                                            </div>
-                                        ))
-                                )}
-                            </CardContent>
-                        </Card>
-
+                <div className="flex gap-6">
+                    <div className="flex-1 min-w-0 space-y-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Prochains chapitres</CardTitle>
-                                <CardDescription>
-                                    {courseData.nextLessons.length}{" "}
-                                    {courseData.nextLessons.length === 1
-                                        ? "chapitre à venir"
-                                        : "chapitres à venir"}
-                                </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {courseData.nextLessons.length === 0 ? (
@@ -284,35 +235,112 @@ function CourseDetailPage() {
                                 )}
                             </CardContent>
                         </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Chapitres terminés</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {courseData.completedLessons.length === 0 ? (
+                                    <EmptyState
+                                        title="Aucun chapitre terminé"
+                                        description="Les chapitres terminés apparaîtront ici."
+                                    />
+                                ) : (
+                                    courseData.completedLessons
+                                        .slice(0, 10)
+                                        .map((chapter) => (
+                                            <div
+                                                key={chapter.id}
+                                                className="flex items-center justify-between rounded-lg border border-green-200/60 bg-green-50/50 px-4 py-3 text-sm transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <CheckCircle2 className="size-5 text-green-600 shrink-0" />
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="font-medium text-foreground">
+                                                            {chapter.title}
+                                                        </span>
+                                                        {chapter.date && (
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Terminé le{" "}
+                                                                {chapter.date.toLocaleDateString(
+                                                                    "fr-FR",
+                                                                    {
+                                                                        year: "numeric",
+                                                                        month: "long",
+                                                                        day: "numeric",
+                                                                    }
+                                                                )}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <span className="text-green-700 text-xs font-medium">
+                                                    {numberFormatter.format(
+                                                        chapter.plannedHours
+                                                    )}
+                                                    h
+                                                </span>
+                                            </div>
+                                        ))
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
-                    <Card className="col-span-2">
-                        <CardHeader>
-                            <CardTitle>Statistiques</CardTitle>
-                            <CardDescription>
-                                Indicateurs de suivi du cours.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                <SummaryStat
-                                    label="Supports uploadés"
-                                    value={numberFormatter.format(
-                                        courseData.stats.uploads
-                                    )}
-                                />
-                                <SummaryStat
-                                    label="Évaluations"
-                                    value={numberFormatter.format(
-                                        courseData.stats.evaluations
-                                    )}
-                                />
-                                <SummaryStat
-                                    label="Durée moyenne des cours"
-                                    value={`${courseData.stats.averageLessonMinutes} min`}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div className="shrink-0 w-80 space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Calendar className="size-5" />
+                                    Créneaux horaires
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {courseProgress ? (
+                                    <RecurringScheduleConfig
+                                        courseId={courseId}
+                                        initialSlots={
+                                            courseProgress.recurring_schedule ||
+                                            []
+                                        }
+                                    />
+                                ) : (
+                                    <div className="text-center py-4 text-muted-foreground">
+                                        Chargement des informations de
+                                        planification...
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                        <Card className="hidden">
+                            <CardHeader>
+                                <CardTitle>Statistiques</CardTitle>
+                                <CardDescription>
+                                    Indicateurs de suivi du cours.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <SummaryStat
+                                        label="Supports uploadés"
+                                        value={numberFormatter.format(
+                                            courseData.stats.uploads
+                                        )}
+                                    />
+                                    <SummaryStat
+                                        label="Évaluations"
+                                        value={numberFormatter.format(
+                                            courseData.stats.evaluations
+                                        )}
+                                    />
+                                    <SummaryStat
+                                        label="Durée moyenne des cours"
+                                        value={`${courseData.stats.averageLessonMinutes} min`}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
             </div>
         </div>

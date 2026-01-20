@@ -1,4 +1,4 @@
-import { DateTime, RecordId, surql, Surreal, Table } from "surrealdb";
+import { DateTime, surql, Table } from "surrealdb";
 import { base } from "./base";
 import type { LessonProgressModel } from "../repository/model/course_progress";
 import { LessonProgressMapper } from "../repository/mapper/course_progress";
@@ -11,11 +11,10 @@ import {
 } from "@saas/shared";
 import { ORPCError } from "@orpc/server";
 import type { LessonModel } from "../repository/model/lessons";
-import { verifyCourseProgressOwnership } from "./course_progress";
-
-// ------- HELPERS -------
-const getUserRecordId = (userId: string): RecordId =>
-    new RecordId("users", userId);
+import {
+    getUserRecordId,
+    verifyCourseProgressOwnership,
+} from "../utils/course_progress";
 
 // ------- LESSON PROGRESS ENDPOINTS -------
 

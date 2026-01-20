@@ -5,21 +5,15 @@ import { orpc } from "@/orpc/client";
 
 import { FormSheet } from "@/components/ui/form-sheet";
 import { Button } from "@/components/ui/button";
-import {
-    Field,
-    FieldGroup,
-    FieldLabel,
-    FieldError,
-} from "@/components/ui/field";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { FieldGroup } from "@/components/ui/field";
+
+import { SelectField } from "@/components/forms";
+
 import { SheetClose } from "@/components/ui/sheet";
 import { z } from "zod";
+import { CourseProgressCreateInput } from "@saas/shared";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 
 const formSchema = z.object({
     class_id: z.string().min(1, "La classe est requise"),
@@ -33,6 +27,7 @@ interface CourseFormModalProps {
 
 export function CourseFormModal({ open, onOpenChange }: CourseFormModalProps) {
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Fetch classes and subjects for dropdowns
@@ -43,6 +38,28 @@ export function CourseFormModal({ open, onOpenChange }: CourseFormModalProps) {
         orpc.subject.list.queryOptions({})
     );
 
+    // ---------- Mutation ----------
+    const { mutate: createCourseProgress } = useMutation({
+        mutationFn: async (data: CourseProgressCreateInput) => {
+            return await orpc.courseProgress.create.call({
+                class_id: data.class_id,
+                subject_id: data.subject_id,
+            });
+        },
+
+        onSuccess: (createdCourseProgress) => {
+            handleSuccess("Cours créé avec succès", createdCourseProgress.id);
+        },
+        onError: (error) => {
+            console.error("Error creating course:", error);
+            handleError(error, "Error creating course:", error.message);
+        },
+        onSettled: () => {
+            setIsSubmitting(false);
+        },
+    });
+
+    // ---------- Form ----------
     const form = useForm({
         defaultValues: {
             class_id: "",
@@ -53,44 +70,44 @@ export function CourseFormModal({ open, onOpenChange }: CourseFormModalProps) {
         },
         onSubmit: async ({ value }) => {
             setIsSubmitting(true);
-            // createCourse({
-            //     input: {
-            //         class_id: value.class_id,
-            //         subject_id: value.subject_id,
-            //     },
-            // });
+            createCourseProgress({
+                class_id: value.class_id,
+                subject_id: value.subject_id,
+                status: "not_started",
+            });
         },
     });
 
-    const { mutate: createCourse } = useMutation({
-        mutationFn: orpc.course.create.call,
-        onSuccess: () => {
-            // Invalidate queries so lists will refetch and show fresh data
-            queryClient.invalidateQueries({ queryKey: ["courses"] });
-            // Reset form UI state
-            form.reset();
-            // Close modal upon success
-            onOpenChange(false);
-        },
-        onError: (error) => {
-            // Log error for devs
-            console.error("Error creating course:", error);
-            // Allow resubmission in UI
-            setIsSubmitting(false);
-            // (UI feedback e.g. toast could go here)
-        },
-        onSettled: () => {
-            // Always re-enable submission button at the end
-            setIsSubmitting(false);
-        },
-    });
-
+    // ---------- Handlers ----------
     const handleClose = (shouldClose: boolean) => {
         if (shouldClose && !isSubmitting) {
             form.reset();
         }
         onOpenChange(shouldClose);
     };
+
+    function handleSuccess(message: string, courseProgressId: string) {
+        // Invalidate queries
+        queryClient.invalidateQueries({
+            queryKey: orpc.courseProgress.list.queryKey({
+                input: {},
+            }),
+        });
+
+        toast.success(message);
+        form.reset();
+        onOpenChange(false);
+        // Redirect to the detail page
+        navigate({
+            to: "/courses/$courseId",
+            params: { courseId: courseProgressId },
+        });
+    }
+
+    function handleError(error: any, contextMsg: string, toastMsg: string) {
+        console.error(contextMsg, error);
+        toast.error(toastMsg);
+    }
 
     return (
         <FormSheet
@@ -110,102 +127,43 @@ export function CourseFormModal({ open, onOpenChange }: CourseFormModalProps) {
                         {/* Class Selection */}
                         <form.Field
                             name="class_id"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Classe
-                                        </FieldLabel>
-                                        <Select
-                                            value={field.state.value}
-                                            onValueChange={(value) =>
-                                                field.handleChange(value)
-                                            }
-                                            onOpenChange={(open) => {
-                                                if (!open) {
-                                                    field.handleBlur();
-                                                }
-                                            }}
-                                        >
-                                            <SelectTrigger
-                                                id={field.name}
-                                                className="w-full"
-                                                aria-invalid={isInvalid}
-                                            >
-                                                <SelectValue placeholder="Sélectionner une classe" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {classes.map((classItem) => (
-                                                    <SelectItem
-                                                        key={classItem.id}
-                                                        value={classItem.id}
-                                                    >
-                                                        {classItem.name} -{" "}
-                                                        {classItem.level}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FieldError>
-                                            {field.state.meta.errors}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
+                            children={(field) => (
+                                <SelectField
+                                    field={field}
+                                    label="Classe"
+                                    placeholder="Sélectionner une classe"
+                                    required
+                                    options={classes.map((c) => c.id)}
+                                    getLabel={(id) => {
+                                        const classItem = classes.find(
+                                            (c) => c.id === id
+                                        );
+                                        return classItem
+                                            ? `${classItem.name} - ${classItem.level}`
+                                            : "";
+                                    }}
+                                />
+                            )}
                         />
 
                         {/* Subject Selection */}
                         <form.Field
                             name="subject_id"
-                            children={(field) => {
-                                const isInvalid =
-                                    field.state.meta.isTouched &&
-                                    !field.state.meta.isValid;
-
-                                return (
-                                    <Field data-invalid={isInvalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Matière
-                                        </FieldLabel>
-                                        <Select
-                                            value={field.state.value}
-                                            onValueChange={(value) =>
-                                                field.handleChange(value)
-                                            }
-                                            onOpenChange={(open) => {
-                                                if (!open) {
-                                                    field.handleBlur();
-                                                }
-                                            }}
-                                        >
-                                            <SelectTrigger
-                                                id={field.name}
-                                                className="w-full"
-                                                aria-invalid={isInvalid}
-                                            >
-                                                <SelectValue placeholder="Sélectionner une matière" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {subjects.map((subject) => (
-                                                    <SelectItem
-                                                        key={subject.id}
-                                                        value={subject.id}
-                                                    >
-                                                        {subject.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FieldError>
-                                            {field.state.meta.errors}
-                                        </FieldError>
-                                    </Field>
-                                );
-                            }}
+                            children={(field) => (
+                                <SelectField
+                                    field={field}
+                                    label="Matière"
+                                    placeholder="Sélectionner une matière"
+                                    required
+                                    options={subjects.map((s) => s.id)}
+                                    getLabel={(id) => {
+                                        const subject = subjects.find(
+                                            (s) => s.id === id
+                                        );
+                                        return subject?.name || "";
+                                    }}
+                                />
+                            )}
                         />
                     </FieldGroup>
                 </form>
@@ -224,7 +182,6 @@ export function CourseFormModal({ open, onOpenChange }: CourseFormModalProps) {
                                         variant="outline"
                                         type="reset"
                                         onClick={(e) => {
-                                            // Avoid unexpected resets of form elements (especially <select> elements)
                                             handleClose(false);
                                             e.preventDefault();
                                             form.reset();

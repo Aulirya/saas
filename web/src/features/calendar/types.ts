@@ -8,6 +8,10 @@ export type ScheduledCourse = {
     // use a lib or create a type to handle dates
     date: string; // ISO date (yyyy-MM-dd)
     slot: string; // e.g. "8h-10h"
+    // Optional fields for editing
+    lessonProgressId?: string;
+    courseProgressId?: string;
+    lessonId?: string;
 };
 
 export type CalendarView = "week" | "month" | "day";

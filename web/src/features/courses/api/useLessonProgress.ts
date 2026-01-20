@@ -72,7 +72,7 @@ export function useDeleteLessonProgress() {
 
     return useMutation({
         mutationFn: (input: { id: string }) =>
-            orpc.lessonProgress.delete.call({ input }),
+            orpc.lessonProgress.delete.call({ id: input.id }),
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: ["lessonProgress"],
@@ -83,4 +83,3 @@ export function useDeleteLessonProgress() {
         },
     });
 }
-
