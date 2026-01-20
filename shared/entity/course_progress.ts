@@ -1,4 +1,6 @@
 import z from "zod";
+import { school_class } from "./school_class";
+import { subject } from "./subject";
 
 // Status for course progress tracking
 export const COURSE_PROGRESS_STATUSES = [

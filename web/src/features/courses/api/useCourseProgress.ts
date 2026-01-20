@@ -18,9 +18,6 @@ export function useCourseProgress(classId?: string, subjectId?: string) {
     });
 }
 
-/**
- * Hook to get a single course progress by ID
- */
 export function useCourseProgressById(id: string | undefined) {
     return useQuery({
         ...orpc.courseProgress.get.queryOptions({
@@ -31,9 +28,6 @@ export function useCourseProgressById(id: string | undefined) {
     });
 }
 
-/**
- * Hook to get course progress with all lesson progress included
- */
 export function useCourseProgressWithLessons(id: string | undefined) {
     return useQuery({
         ...orpc.courseProgress.getWithLessons.queryOptions({
@@ -44,9 +38,13 @@ export function useCourseProgressWithLessons(id: string | undefined) {
     });
 }
 
-/**
- * Hook to delete course progress
- */
+export function useAllLessonsForCalendar() {
+    return useQuery({
+        queryKey: ["allLessonsForCalendar"],
+        queryFn: () => orpc.courseProgress.getAllLessonsForCalendar.call({}),
+    });
+}
+
 export function useDeleteCourseProgress() {
     const queryClient = useQueryClient();
 

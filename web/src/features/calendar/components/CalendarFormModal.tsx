@@ -81,8 +81,6 @@ export function CalendarFormModal({
     const { data: allSubjects = [] } = useSubjects();
     const { data: allClasses = [] } = useSchoolClasses();
 
-    console.log("allCourseProgress", allCourseProgress);
-
     // Get initial lesson progress if editing
     const { data: initialLessonProgress } = useLessonProgress(
         initialCourse?.lessonProgressId
@@ -124,8 +122,6 @@ export function CalendarFormModal({
         selectedCourseProgress?.subject_id || "",
         { enabled: !!selectedCourseProgress?.subject_id }
     );
-
-    console.log("subjectWithLessons", subjectWithLessons);
 
     // ---------- Mutations ----------
     const { mutate: createLessonProgress } = useMutation({
@@ -305,7 +301,6 @@ export function CalendarFormModal({
         const subjectsMap = new Map(allSubjects.map((s) => [s.id, s]));
         const classesMap = new Map(allClasses.map((c) => [c.id, c]));
 
-        console.log("allCourseProgress", allCourseProgress);
         const courseProgressOptions = allCourseProgress
             .map((cp) => {
                 const subject = subjectsMap.get(cp.subject_id);

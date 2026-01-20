@@ -29,10 +29,10 @@ import {
     deleteCourseProgress,
     getCourseProgress,
     getCourseProgressWithLessons,
-    listCourseProgress,
     patchCourseProgress,
     generateLessonProgressSchedule,
     checkScheduleConflictsOnly,
+    getAllLessonsForCalendar,
 } from "./course_progress";
 import {
     createLessonProgress,
@@ -75,7 +75,6 @@ export const router = base.router({
         delete: deleteLesson,
     },
     courseProgress: {
-        list: listCourseProgress,
         get: getCourseProgress,
         getWithLessons: getCourseProgressWithLessons,
         create: createCourseProgress,
@@ -83,6 +82,7 @@ export const router = base.router({
         delete: deleteCourseProgress,
         generateSchedule: generateLessonProgressSchedule,
         checkScheduleConflictsOnly: checkScheduleConflictsOnly,
+        getAllLessonsForCalendar: getAllLessonsForCalendar,
     },
     lessonProgress: {
         get: getLessonProgress,

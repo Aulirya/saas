@@ -4,6 +4,7 @@ import { parseRecordId } from "../utils/record-id";
 import {
     course_progress_create_input,
     course_progress_patch_input,
+    LessonProgress,
     type CourseProgress,
     type CourseProgressWithLessons,
 } from "@saas/shared";
@@ -13,35 +14,11 @@ import {
     deleteCourseProgress as deleteCourseProgressService,
     getCourseProgress as getCourseProgressService,
     getCourseProgressWithLessons as getCourseProgressWithLessonsService,
-    listCourseProgress as listCourseProgressService,
     patchCourseProgress as patchCourseProgressService,
+    getAllLessonsForCalendar as getAllLessonsForCalendarService,
 } from "../services/courseProgress.service";
 import { checkScheduleConflictsForInput } from "../services/scheduleConflicts.service";
 import { generateLessonProgressSchedule as generateLessonProgressScheduleService } from "../services/lessonSchedule.service";
-
-export const listCourseProgress = base
-    .input(
-        z.object({
-            class_id: z.string().optional(),
-            subject_id: z.string().optional(),
-        })
-    )
-    .handler(async ({ input, context }): Promise<CourseProgress[]> => {
-        const userId = getUserRecordId(context.user_id);
-        const classId = input.class_id
-            ? parseRecordId(input.class_id, "classes")
-            : undefined;
-        const subjectId = input.subject_id
-            ? parseRecordId(input.subject_id, "subjects")
-            : undefined;
-
-        return listCourseProgressService({
-            db: context.db,
-            userId,
-            classId,
-            subjectId,
-        });
-    });
 
 export const getCourseProgress = base
     .input(z.object({ id: z.string() }))
@@ -68,6 +45,16 @@ export const getCourseProgressWithLessons = base
             courseProgressId,
         });
     });
+
+export const getAllLessonsForCalendar = base.handler(
+    async ({ context }): Promise<LessonProgress[]> => {
+        const userId = getUserRecordId(context.user_id);
+        return getAllLessonsForCalendarService({
+            db: context.db,
+            userId,
+        });
+    }
+);
 
 export const createCourseProgress = base
     .input(course_progress_create_input)

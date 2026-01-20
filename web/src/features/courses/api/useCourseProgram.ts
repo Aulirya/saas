@@ -4,13 +4,11 @@ import { useCourseProgressWithLessons } from "./useCourseProgress";
 import { useSubjects } from "@/features/subjects/api/useSubjects";
 import { useSchoolClasses } from "@/features/classes/api/useSchoolClasses";
 import { transformCourseProgressToProgram } from "../utils/transformCourseProgress";
-import type { CourseProgram } from "../types";
 import { orpc } from "@/orpc/client";
-import type { Lesson } from "@saas/shared";
 
 /**
  * Hook to fetch a single course progress by ID and transform it to CourseProgram format
- * 
+ *
  * This hook:
  * 1. Fetches the course progress with lessons for the given ID
  * 2. Fetches all subjects and classes for lookup
