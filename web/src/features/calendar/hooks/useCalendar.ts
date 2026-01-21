@@ -3,6 +3,8 @@ import {
     addDays,
     endOfWeek,
     format,
+    getHours,
+    getMinutes,
     isSameDay,
     parseISO,
     startOfWeek,
@@ -52,20 +54,20 @@ export function useCalendar(initial?: { date?: Date }) {
 
         const hourlySlots: string[] = Array.from(
             { length: Math.max(0, DAY_END_HOUR - DAY_START_HOUR) },
-            (_, i) => `${DAY_START_HOUR + i}h-${DAY_START_HOUR + i + 1}h`
+            (_, i) => `${DAY_START_HOUR + i}:00`
         );
 
-        const slotToRange = (
-            slot: string
+        const courseToRange = (
+            startDateTime: string,
+            endDateTime: string
         ): { startHour: number; endHour: number } => {
-            const match = slot.match(/^(\d+)h\s*-\s*(\d+)h$/);
-            if (!match) {
-                const start = parseInt(slot, 10);
-                const safeStart = isNaN(start) ? DAY_START_HOUR : start;
-                return { startHour: safeStart, endHour: safeStart + 1 };
+            const start = parseISO(startDateTime);
+            const end = parseISO(endDateTime);
+            const startHour = getHours(start) + getMinutes(start) / 60;
+            let endHour = getHours(end) + getMinutes(end) / 60;
+            if (endHour <= startHour) {
+                endHour = startHour + 1;
             }
-            const startHour = parseInt(match[1], 10);
-            const endHour = parseInt(match[2], 10);
             return { startHour, endHour };
         };
 
@@ -90,16 +92,14 @@ export function useCalendar(initial?: { date?: Date }) {
         };
 
         const timeSlots = hourlySlots.map((slot) => {
-            const startHour = parseInt(
-                slot.split("h-")[0] || String(DAY_START_HOUR),
-                10
-            );
+            const startHour = parseInt(slot, 10);
             const coursesByDay: any = {};
 
             for (const day of weekDays) {
                 const courseForDay = filtered.find((c) => {
-                    if (!isSameDay(parseISO(c.date), day)) return false;
-                    const r = slotToRange(c.slot);
+                    if (!isSameDay(parseISO(c.startDateTime), day))
+                        return false;
+                    const r = courseToRange(c.startDateTime, c.endDateTime);
                     return startHour >= r.startHour && startHour < r.endHour;
                 });
                 if (courseForDay) {
@@ -111,6 +111,8 @@ export function useCalendar(initial?: { date?: Date }) {
                         class_name: courseForDay.class_name,
                         class_level: courseForDay.class_level,
                         lesson_label: courseForDay.lesson_label,
+                        startDateTime: courseForDay.startDateTime,
+                        endDateTime: courseForDay.endDateTime,
                     } as const;
                 }
             }

@@ -1,22 +1,7 @@
-import { parseISO, getHours } from "date-fns";
+import { addMinutes, parseISO } from "date-fns";
 import type { ScheduledCourse } from "../types";
 import { useMemo } from "react";
 import { useAllLessonsForCalendar } from "@/features/courses/api/useCourseProgress";
-
-/**
- * Format scheduled_date to a slot string
- */
-function formatSlotFromDate(dateString: string | null | undefined): string {
-    if (!dateString) return "8h-9h";
-    try {
-        const date = parseISO(dateString);
-        const hour = getHours(date);
-        const nextHour = hour + 1;
-        return `${hour}h-${nextHour}h`;
-    } catch {
-        return "8h-9h";
-    }
-}
 
 export function useCalendarEvents(params: {
     startISO: string;
@@ -37,6 +22,17 @@ export function useCalendarEvents(params: {
             })
             .map((lp) => {
                 const scheduledDate = lp.scheduled_date?.split("T")[0] || "";
+                const startDateTime = lp.scheduled_date || "";
+                const durationMinutes =
+                    typeof lp.lesson_duration === "number"
+                        ? lp.lesson_duration
+                        : 60;
+                const endDateTime = lp.scheduled_date
+                    ? addMinutes(
+                          parseISO(lp.scheduled_date),
+                          durationMinutes
+                      ).toISOString()
+                    : "";
                 return {
                     id: lp.id,
                     subject_name: lp.subject_name,
@@ -45,7 +41,8 @@ export function useCalendarEvents(params: {
                     class_level: lp.class_level,
                     lesson_label: lp.lesson_label,
                     date: scheduledDate,
-                    slot: formatSlotFromDate(lp.scheduled_date),
+                    startDateTime,
+                    endDateTime,
                 } satisfies ScheduledCourse;
             });
     }, [allLessonsForCalendar, params.startISO, params.endISO]);

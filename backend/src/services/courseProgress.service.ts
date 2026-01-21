@@ -127,6 +127,7 @@ export async function getAllLessonsForCalendar(params: {
             lesson_label?: string;
             class_level?: string;
             subject_category?: string;
+            lesson_duration?: number;
         }
     >
 > {
@@ -139,7 +140,8 @@ export async function getAllLessonsForCalendar(params: {
             course_progress_id.subject_id.category AS subject_category,
             course_progress_id.class_id.name AS class_name,
             course_progress_id.class_id.level AS class_level,
-            lesson_id.label AS lesson_label
+            lesson_id.label AS lesson_label,
+            lesson_id.duration AS lesson_duration
         FROM lesson_progress
     `;
 
@@ -153,6 +155,7 @@ export async function getAllLessonsForCalendar(params: {
                         subject_category?: string;
                         class_level?: string;
                         lesson_label?: string;
+                        lesson_duration?: number;
                     }
                 >
             ]

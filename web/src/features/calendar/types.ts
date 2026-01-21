@@ -8,7 +8,8 @@ export type ScheduledCourse = {
     class_level: string;
     lesson_label: string;
     date: string;
-    slot: string;
+    startDateTime: string;
+    endDateTime: string;
 };
 
 export type CalendarView = "week" | "month" | "day";
