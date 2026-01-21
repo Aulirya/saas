@@ -1,5 +1,5 @@
 import React from "react";
-import { format, getHours, getMinutes, parseISO } from "date-fns";
+import { format, getHours, getMinutes, isSameDay, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -60,7 +60,7 @@ const weekdays = [
     { label: "Jeu", key: "thursday" as const },
     { label: "Ven", key: "friday" as const },
 ];
-const ROW_HEIGHT_PX = 80;
+const ROW_HEIGHT_PX = 100;
 
 export function WeeklySchedule({
     weekLabel,
@@ -96,7 +96,7 @@ export function WeeklySchedule({
             <CardHeader className="border-b">
                 <CardTitle>Planning de la semaine</CardTitle>
                 <CardAction>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 pb-4">
                         <Button
                             variant="outline"
                             size="sm"
@@ -122,22 +122,40 @@ export function WeeklySchedule({
                 </CardAction>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto pt-4">
                     <div className="min-w-[600px]">
                         <div className="grid grid-cols-[3rem_repeat(5,1fr)] gap-2">
                             {/* Header Row */}
                             <div className="sticky left-0 z-10 w-12 min-w-12 bg-card px-2 py-3 text-sm font-medium text-muted-foreground "></div>
-                            {weekdays.map((day) => (
-                                <div
-                                    key={day.key}
-                                    className="px-2 py-3 text-center text-sm font-medium text-muted-foreground "
-                                >
-                                    {day.label}.{" "}
-                                    {dateFormatter.format(
-                                        weekDatesByKey?.[day.key] || new Date()
-                                    )}
-                                </div>
-                            ))}
+                            {weekdays.map((day) => {
+                                const date = weekDatesByKey?.[day.key];
+                                const isToday =
+                                    date && isSameDay(date, new Date());
+
+                                return (
+                                    <div
+                                        key={day.key}
+                                        className={cn(
+                                            "px-2 py-3 text-center text-sm font-medium text-muted-foreground"
+                                        )}
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            {day.label}.{" "}
+                                            <span
+                                                className={cn(
+                                                    isToday
+                                                        ? "bg-primary/10 rounded px-1 font-semibold text-primary"
+                                                        : undefined
+                                                )}
+                                            >
+                                                {dateFormatter.format(
+                                                    date || new Date()
+                                                )}
+                                            </span>
+                                        </span>
+                                    </div>
+                                );
+                            })}
 
                             {/* Time Slot Rows */}
                             {timeSlots.map((slot) => (
@@ -157,7 +175,7 @@ export function WeeklySchedule({
                                         return (
                                             <div
                                                 key={`${slot.time}-${day.key}`}
-                                                className="relative min-h-[80px] px-2"
+                                                className="relative min-h-[100px] px-2"
                                             >
                                                 {course ? (
                                                     (() => {
@@ -202,16 +220,27 @@ export function WeeklySchedule({
                                                                 32,
                                                                 (endHour -
                                                                     startHour) *
-                                                                    ROW_HEIGHT_PX
+                                                                    ROW_HEIGHT_PX +
+                                                                    (endHour -
+                                                                        startHour >
+                                                                    1
+                                                                        ? 5 *
+                                                                          (endHour -
+                                                                              startHour)
+                                                                        : 0)
                                                             );
 
                                                         return (
                                                             <div
                                                                 className={cn(
-                                                                    "absolute left-2 right-2 z-10 rounded-lg px-3 py-2 text-sm font-medium shadow-sm transition-all hover:shadow-md",
+                                                                    "absolute left-2 right-2 z-10 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-all hover:shadow-md",
                                                                     getCategoryConfig(
                                                                         course.subject_category
-                                                                    ).color
+                                                                    ).color,
+                                                                    getCategoryConfig(
+                                                                        course.subject_category
+                                                                    )
+                                                                        .borderColor
                                                                 )}
                                                                 style={{
                                                                     top: `${offsetPx}px`,
@@ -225,12 +254,30 @@ export function WeeklySchedule({
                                                                     )
                                                                 }
                                                             >
-                                                                <div className="text-xs font-normal opacity-90">
-                                                                    {formatCourseTime(
-                                                                        course
-                                                                    )}
+                                                                <div className="flex items-center justify-between gap-2 text-xs font-normal opacity-90">
+                                                                    <span>
+                                                                        {formatCourseTime(
+                                                                            course
+                                                                        )}
+                                                                    </span>
+                                                                    {(() => {
+                                                                        const config =
+                                                                            getCategoryConfig(
+                                                                                course.subject_category
+                                                                            );
+                                                                        const Icon =
+                                                                            config.icon;
+                                                                        return (
+                                                                            <Icon
+                                                                                className={cn(
+                                                                                    "h-3.5 w-3.5",
+                                                                                    config.iconColor
+                                                                                )}
+                                                                            />
+                                                                        );
+                                                                    })()}
                                                                 </div>
-                                                                <div className="font-semibold">
+                                                                <div className="font-semibold ">
                                                                     {
                                                                         course.subject_name
                                                                     }{" "}
