@@ -223,12 +223,6 @@ function CourseDetailPage() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="text-primary text-xs font-medium">
-                                                    {numberFormatter.format(
-                                                        chapter.plannedHours
-                                                    )}
-                                                    h
-                                                </span>
                                             </div>
                                         )
                                     )

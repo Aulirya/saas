@@ -74,14 +74,29 @@ export async function generateLessonProgressSchedule(params: {
         SELECT * FROM lesson_progress
         WHERE course_progress_id = ${courseProgressId}
     `;
+
     const existingLessonProgress = await db
         .query<[LessonProgressModel[]]>(existingLessonProgressQuery)
         .collect();
 
-    const existingByLessonId = new Map(
-        existingLessonProgress[0]?.map((lp) => [lp.lesson_id.toString(), lp]) ||
-            []
-    );
+    const shouldRegenerate = options?.regenerate_existing === true;
+    if (shouldRegenerate) {
+        const deleteScheduledQuery = surql`
+            DELETE lesson_progress
+            WHERE course_progress_id = ${courseProgressId}
+            AND status = "scheduled"
+        `;
+        await db.query(deleteScheduledQuery).collect();
+    }
+
+    const existingByLessonId = shouldRegenerate
+        ? new Map<string, LessonProgressModel>()
+        : new Map(
+              existingLessonProgress[0]?.map((lp) => [
+                  lp.lesson_id.toString(),
+                  lp,
+              ]) || []
+          );
 
     const warnings: Array<{ lesson_id: string; message: string }> = [];
     let generated = 0;
@@ -107,11 +122,12 @@ export async function generateLessonProgressSchedule(params: {
             const lesson = lessons[lessonIndex];
             const lessonId = lesson.id;
             const remainingHours = lessonRemainingHours[lessonIndex];
+            const slotOffsetHours = slotDuration - slotRemainingHours;
 
             const existingProgress = existingByLessonId.get(
                 lessonId.toString()
             );
-            if (existingProgress && !options?.regenerate_existing) {
+            if (existingProgress && !shouldRegenerate) {
                 if (existingProgress.scheduled_date) {
                     const scheduledDate = new Date(
                         existingProgress.scheduled_date.toString()
@@ -125,13 +141,23 @@ export async function generateLessonProgressSchedule(params: {
 
             if (remainingHours <= slotRemainingHours) {
                 const scheduledDate = new Date(currentSlot.date);
-                scheduledDate.setHours(currentSlot.startHour, 0, 0, 0);
+                const scheduledMinutes = Math.round((slotOffsetHours % 1) * 60);
+                scheduledDate.setHours(
+                    currentSlot.startHour + Math.floor(slotOffsetHours),
+                    scheduledMinutes,
+                    0,
+                    0
+                );
+                const scheduledDurationMinutes = Math.round(
+                    remainingHours * 60
+                );
 
-                if (existingProgress && options?.regenerate_existing) {
+                if (existingProgress && !shouldRegenerate) {
                     await db
                         .update<LessonProgressModel>(existingProgress.id)
                         .merge({
                             scheduled_date: new DateTime(scheduledDate),
+                            scheduled_duration: scheduledDurationMinutes,
                             status: "scheduled",
                             updated_at: new DateTime(),
                         });
@@ -144,6 +170,7 @@ export async function generateLessonProgressSchedule(params: {
                             course_progress_id: courseProgressId,
                             status: "scheduled",
                             scheduled_date: new DateTime(scheduledDate),
+                            scheduled_duration: scheduledDurationMinutes,
                             comments: [],
                         });
                 }
@@ -160,13 +187,25 @@ export async function generateLessonProgressSchedule(params: {
                     });
 
                     const scheduledDate = new Date(currentSlot.date);
-                    scheduledDate.setHours(currentSlot.startHour, 0, 0, 0);
+                    const scheduledMinutes = Math.round(
+                        (slotOffsetHours % 1) * 60
+                    );
+                    scheduledDate.setHours(
+                        currentSlot.startHour + Math.floor(slotOffsetHours),
+                        scheduledMinutes,
+                        0,
+                        0
+                    );
+                    const scheduledDurationMinutes = Math.round(
+                        slotRemainingHours * 60
+                    );
 
-                    if (existingProgress && options?.regenerate_existing) {
+                    if (existingProgress && !shouldRegenerate) {
                         await db
                             .update<LessonProgressModel>(existingProgress.id)
                             .merge({
                                 scheduled_date: new DateTime(scheduledDate),
+                                scheduled_duration: scheduledDurationMinutes,
                                 status: "scheduled",
                                 updated_at: new DateTime(),
                             });
@@ -181,6 +220,7 @@ export async function generateLessonProgressSchedule(params: {
                                 course_progress_id: courseProgressId,
                                 status: "scheduled",
                                 scheduled_date: new DateTime(scheduledDate),
+                                scheduled_duration: scheduledDurationMinutes,
                                 comments: [],
                             });
                     }
@@ -192,13 +232,25 @@ export async function generateLessonProgressSchedule(params: {
                 } else {
                     const hoursToSchedule = slotRemainingHours;
                     const scheduledDate = new Date(currentSlot.date);
-                    scheduledDate.setHours(currentSlot.startHour, 0, 0, 0);
+                    const scheduledMinutes = Math.round(
+                        (slotOffsetHours % 1) * 60
+                    );
+                    scheduledDate.setHours(
+                        currentSlot.startHour + Math.floor(slotOffsetHours),
+                        scheduledMinutes,
+                        0,
+                        0
+                    );
+                    const scheduledDurationMinutes = Math.round(
+                        hoursToSchedule * 60
+                    );
 
-                    if (existingProgress && options?.regenerate_existing) {
+                    if (existingProgress && !shouldRegenerate) {
                         await db
                             .update<LessonProgressModel>(existingProgress.id)
                             .merge({
                                 scheduled_date: new DateTime(scheduledDate),
+                                scheduled_duration: scheduledDurationMinutes,
                                 status: "scheduled",
                                 updated_at: new DateTime(),
                             });
@@ -213,6 +265,7 @@ export async function generateLessonProgressSchedule(params: {
                                 course_progress_id: courseProgressId,
                                 status: "scheduled",
                                 scheduled_date: new DateTime(scheduledDate),
+                                scheduled_duration: scheduledDurationMinutes,
                                 comments: [],
                             });
                     }
@@ -251,6 +304,7 @@ export async function generateLessonProgressSchedule(params: {
         updated_at: new DateTime(),
     });
 
+    console.log("generated", generated);
     return {
         success: true,
         generated,

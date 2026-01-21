@@ -41,6 +41,7 @@ export namespace LessonProgressMapper {
             status: model.status as LessonProgress["status"],
             completed_at: model.completed_at?.toISOString() ?? null,
             scheduled_date: model.scheduled_date?.toISOString() ?? null,
+            scheduled_duration: model.scheduled_duration ?? null,
             comments: model.comments?.map(commentFromModel) ?? [],
             created_at: model.created_at.toISOString(),
             updated_at: model.updated_at.toISOString(),

@@ -128,6 +128,7 @@ export async function getAllLessonsForCalendar(params: {
             class_level?: string;
             subject_category?: string;
             lesson_duration?: number;
+            scheduled_duration?: number | null;
         }
     >
 > {

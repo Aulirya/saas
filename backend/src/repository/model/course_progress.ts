@@ -15,6 +15,7 @@ const lessonProgressModel = z.object({
     status: z.string(),
     completed_at: z.custom<DateTime>().nullable().optional(),
     scheduled_date: z.custom<DateTime>().nullable().optional(),
+    scheduled_duration: z.number().int().nullable().optional(),
     comments: z.array(lessonProgressCommentModel).optional().default([]),
     created_at: z.custom<DateTime>(),
     updated_at: z.custom<DateTime>(),

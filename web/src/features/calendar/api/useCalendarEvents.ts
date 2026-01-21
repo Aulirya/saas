@@ -20,11 +20,14 @@ export function useCalendarEvents(params: {
                     scheduledDate <= params.endISO
                 );
             })
+
             .map((lp) => {
                 const scheduledDate = lp.scheduled_date?.split("T")[0] || "";
                 const startDateTime = lp.scheduled_date || "";
                 const durationMinutes =
-                    typeof lp.lesson_duration === "number"
+                    typeof lp.scheduled_duration === "number"
+                        ? lp.scheduled_duration
+                        : typeof lp.lesson_duration === "number"
                         ? lp.lesson_duration
                         : 60;
                 const endDateTime = lp.scheduled_date

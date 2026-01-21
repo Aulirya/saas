@@ -41,6 +41,7 @@ export const lesson_progress = z.object({
     status: z.enum(LESSON_PROGRESS_STATUSES),
     completed_at: z.string().nullable().optional(),
     scheduled_date: z.string().nullable().optional(),
+    scheduled_duration: z.number().nullable().optional(),
     comments: z.array(lesson_progress_comment).optional().default([]),
     created_at: z.string(),
     updated_at: z.string(),
