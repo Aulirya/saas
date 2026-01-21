@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { startOfWeek } from "date-fns";
 import { useState } from "react";
 import { StatisticsCard } from "@/components/journal/statistics_card";
 import { Calendar } from "@/features/calendar/components/Calendar";
@@ -39,7 +40,13 @@ function LoadingStatCard() {
 }
 
 function DashboardPage() {
-    const { data: statistics, isLoading } = useDashboardStatistics();
+    const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(() =>
+        startOfWeek(new Date(), { weekStartsOn: 1 })
+    );
+
+    const { data: statistics, isLoading } = useDashboardStatistics({
+        weekStartDate: selectedWeekStart,
+    });
     const [activeModal, setActiveModal] = useState<"resources" | "ai" | null>(
         null
     );
@@ -117,7 +124,10 @@ function DashboardPage() {
             </div>
             <div className="grid grid-cols-1  gap-6 w-full">
                 <div className="relative md:col-span-2" aria-busy={isLoading}>
-                    <Calendar />
+                    <Calendar
+                        initialDate={selectedWeekStart}
+                        onWeekChange={setSelectedWeekStart}
+                    />
                 </div>
                 <div className="hidden md:col-span-1 md:flex md:flex-col bg-white rounded-xl border shadow-xs p-6">
                     {/* Sidebar 1/3 content */}

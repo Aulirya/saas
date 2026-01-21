@@ -15,7 +15,7 @@ interface DashboardStatistics {
 /**
  * Hook to get dashboard statistics
  */
-export function useDashboardStatistics() {
+export function useDashboardStatistics(options?: { weekStartDate?: Date }) {
     // Fetch all lesson progress in one call (calendar endpoint).
     const { data: allLessonsForCalendar = [], isLoading: isLoadingCalendar } =
         useAllLessonsForCalendar();
@@ -30,9 +30,9 @@ export function useDashboardStatistics() {
 
     const data = useMemo<DashboardStatistics>(() => {
         // Get current week boundaries
-        const now = new Date();
-        const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-        const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
+        const referenceDate = options?.weekStartDate ?? new Date();
+        const weekStart = startOfWeek(referenceDate, { weekStartsOn: 1 }); // Monday
+        const weekEnd = endOfWeek(referenceDate, { weekStartsOn: 1 }); // Sunday
 
         // Filter lesson progress for this week
         const lessonsThisWeek = allLessonsForCalendar.filter((lp) => {
@@ -72,7 +72,7 @@ export function useDashboardStatistics() {
             availableResources,
             aiSuggestions,
         };
-    }, [allLessonsForCalendar, allLessons]);
+    }, [allLessonsForCalendar, allLessons, options?.weekStartDate]);
 
     return { data, isLoading };
 }

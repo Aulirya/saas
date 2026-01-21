@@ -1,5 +1,5 @@
 import { addDays, format } from "date-fns";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WeeklySchedule } from "@/components/journal/weekly_schedule";
 import { useCalendar } from "../hooks/useCalendar";
 import { useCalendarEvents } from "../api/useCalendarEvents";
@@ -7,7 +7,12 @@ import { CalendarFormModal } from "./CalendarFormModal";
 import type { ScheduledCourse } from "../types";
 import { Card } from "@/components/ui/card";
 
-export function Calendar() {
+type CalendarProps = {
+    initialDate?: Date;
+    onWeekChange?: (weekStartDate: Date) => void;
+};
+
+export function Calendar({ initialDate, onWeekChange }: CalendarProps) {
     const {
         weekStartDate,
         displayedWeek,
@@ -15,7 +20,11 @@ export function Calendar() {
         goNextWeek,
         goPreviousWeek,
         weekDays,
-    } = useCalendar();
+    } = useCalendar({ date: initialDate });
+
+    useEffect(() => {
+        onWeekChange?.(weekStartDate);
+    }, [onWeekChange, weekStartDate]);
 
     const startISO = format(weekStartDate, "yyyy-MM-dd");
     const endISO = format(addDays(weekStartDate, 6), "yyyy-MM-dd");
