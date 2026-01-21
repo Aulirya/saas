@@ -46,6 +46,9 @@ export function useCalendarEvents(params: {
                     date: scheduledDate,
                     startDateTime,
                     endDateTime,
+                    courseProgressId: lp.course_progress_id,
+                    lessonProgressId: lp.id,
+                    lessonId: lp.lesson_id,
                 } satisfies ScheduledCourse;
             });
     }, [allLessonsForCalendar, params.startISO, params.endISO]);

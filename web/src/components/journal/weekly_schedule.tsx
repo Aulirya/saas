@@ -228,7 +228,7 @@ const WeeklyCourseBlockCard = React.memo(function WeeklyCourseBlockCard({
     return (
         <div
             className={cn(
-                "absolute left-2 right-2 z-10 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-all hover:shadow-md",
+                "absolute left-2 right-2 z-10 rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-all hover:shadow-md min-h-[100px]",
                 config.color,
                 config.borderColor
             )}
@@ -367,7 +367,7 @@ export function WeeklySchedule({
                 </CardAction>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto pt-4">
+                <div className=" pt-4">
                     <div className="min-w-[600px]">
                         <div className="grid grid-cols-[3rem_repeat(5,1fr)] gap-2">
                             {/* Header Row */}
@@ -525,7 +525,7 @@ export function MonthlySchedule({
                 </CardAction>
             </CardHeader>
             <CardContent>
-                <div className="overflow-x-auto pt-4">
+                <div className="pt-4">
                     <div className="min-w-[700px]">
                         <div className="grid grid-cols-7 gap-2 text-sm font-medium text-muted-foreground">
                             {weekdaysHeader.map((day) => (

@@ -10,6 +10,9 @@ export type ScheduledCourse = {
     date: string;
     startDateTime: string;
     endDateTime: string;
+    courseProgressId?: string;
+    lessonProgressId?: string;
+    lessonId?: string;
 };
 
 export type CalendarView = "week" | "month" | "day";
