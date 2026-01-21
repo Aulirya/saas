@@ -13,6 +13,23 @@ export const Route = createFileRoute("/dashboard")({
     component: DashboardPage,
 });
 
+function LoadingStatCard() {
+    return (
+        <div
+            data-slot="card"
+            className="bg-white border rounded-xl shadow-xs p-6 animate-pulse"
+        >
+            <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-gray-200" />
+                <div className="flex flex-col gap-2 w-full">
+                    <div className="h-4 w-2/3 rounded bg-gray-200" />
+                    <div className="h-6 w-1/3 rounded bg-gray-200" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function DashboardPage() {
     const { data: statistics, isLoading } = useDashboardStatistics();
 
@@ -32,57 +49,53 @@ function DashboardPage() {
                 <div className="@container/main flex flex-1 flex-col gap-2">
                     <div className="flex flex-col gap-4 ">
                         <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4  *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs  @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-                            <StatisticsCard
-                                description="Cours cette semaine"
-                                data={
-                                    isLoading
-                                        ? "..."
-                                        : statistics?.lessonsThisWeek ?? 0
-                                }
-                                icon={BookOpenCheck}
-                            />
-                            <StatisticsCard
-                                description="Temps planifié"
-                                data={
-                                    isLoading
-                                        ? "..."
-                                        : formatPlannedTime(
-                                              statistics?.plannedTimeMinutes ??
-                                                  0
-                                          )
-                                }
-                                icon={ClockIcon}
-                                iconBg="bg-green-100"
-                                iconColor="text-green-600"
-                            />
-                            <StatisticsCard
-                                description="Supports disponibles"
-                                data={
-                                    isLoading
-                                        ? "..."
-                                        : statistics?.availableResources ?? 0
-                                }
-                                icon={FileUpIcon}
-                                iconBg="bg-purple-100"
-                                iconColor="text-purple-600"
-                            />
-                            <StatisticsCard
-                                description="Suggestions IA"
-                                data={
-                                    isLoading
-                                        ? "..."
-                                        : statistics?.aiSuggestions ?? 0
-                                }
-                                icon={SparklesIcon}
-                                iconBg="bg-yellow-100"
-                                iconColor="text-yellow-600"
-                            />
+                            {isLoading ? (
+                                <>
+                                    <LoadingStatCard />
+                                    <LoadingStatCard />
+                                    <LoadingStatCard />
+                                    <LoadingStatCard />
+                                </>
+                            ) : (
+                                <>
+                                    <StatisticsCard
+                                        description="Cours cette semaine"
+                                        data={statistics?.lessonsThisWeek ?? 0}
+                                        icon={BookOpenCheck}
+                                    />
+                                    <StatisticsCard
+                                        description="Temps planifié"
+                                        data={formatPlannedTime(
+                                            statistics?.plannedTimeMinutes ?? 0
+                                        )}
+                                        icon={ClockIcon}
+                                        iconBg="bg-green-100"
+                                        iconColor="text-green-600"
+                                    />
+                                    <StatisticsCard
+                                        description="Supports disponibles"
+                                        data={
+                                            statistics?.availableResources ?? 0
+                                        }
+                                        icon={FileUpIcon}
+                                        iconBg="bg-purple-100"
+                                        iconColor="text-purple-600"
+                                    />
+                                    <StatisticsCard
+                                        description="Suggestions IA"
+                                        data={statistics?.aiSuggestions ?? 0}
+                                        icon={SparklesIcon}
+                                        iconBg="bg-yellow-100"
+                                        iconColor="text-yellow-600"
+                                    />
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
             <div className="grid grid-cols-1  gap-6 w-full">
-                <div className="md:col-span-2">
+                <div className="relative md:col-span-2" aria-busy={isLoading}>
                     <Calendar />
                 </div>
                 <div className="hidden md:col-span-1 bg-white rounded-xl border shadow-xs p-6 flex flex-col">
