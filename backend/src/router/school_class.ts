@@ -131,7 +131,7 @@ export const getSchoolClassWithSubjects = base
                             SELECT *
                             FROM lessons
                             WHERE subject_id = $parent.subject_id
-                            ORDER BY start_at ASC
+                            ORDER BY order ASC
                             LIMIT 1
                         ) AS lessons
                     FROM course_progress 

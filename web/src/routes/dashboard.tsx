@@ -129,15 +129,6 @@ function DashboardPage() {
                         onWeekChange={setSelectedWeekStart}
                     />
                 </div>
-                <div className="hidden md:col-span-1 md:flex md:flex-col bg-white rounded-xl border shadow-xs p-6">
-                    {/* Sidebar 1/3 content */}
-                    <span className="font-semibold text-lg text-gray-700">
-                        Sidebar (1/3 sur desktop)
-                    </span>
-                    <div className="mt-4 text-gray-500">
-                        Ajoutez ici un résumé, profil ou autre.
-                    </div>
-                </div>
             </div>
         </>
     );

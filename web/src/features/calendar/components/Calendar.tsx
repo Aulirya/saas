@@ -1,6 +1,9 @@
-import { addDays, format } from "date-fns";
-import { useEffect, useState } from "react";
-import { WeeklySchedule } from "@/components/journal/weekly_schedule";
+import { addDays, addMonths, endOfMonth, format, startOfMonth } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import {
+    MonthlySchedule,
+    WeeklySchedule,
+} from "@/components/journal/weekly_schedule";
 import { useCalendar } from "../hooks/useCalendar";
 import { useCalendarEvents } from "../api/useCalendarEvents";
 import { CalendarFormModal } from "./CalendarFormModal";
@@ -14,20 +17,32 @@ type CalendarProps = {
 
 export function Calendar({ initialDate, onWeekChange }: CalendarProps) {
     const {
+        currentDate,
         weekStartDate,
         displayedWeek,
         computeTimeSlotsForWeek,
         goNextWeek,
         goPreviousWeek,
+        goToDate,
+        goToToday,
         weekDays,
     } = useCalendar({ date: initialDate });
+
+    const [view, setView] = useState<"week" | "month">("week");
 
     useEffect(() => {
         onWeekChange?.(weekStartDate);
     }, [onWeekChange, weekStartDate]);
 
-    const startISO = format(weekStartDate, "yyyy-MM-dd");
-    const endISO = format(addDays(weekStartDate, 6), "yyyy-MM-dd");
+    const [rangeStartDate, rangeEndDate] = useMemo(() => {
+        if (view === "month") {
+            return [startOfMonth(currentDate), endOfMonth(currentDate)];
+        }
+        return [weekStartDate, addDays(weekStartDate, 6)];
+    }, [currentDate, view, weekStartDate]);
+
+    const startISO = format(rangeStartDate, "yyyy-MM-dd");
+    const endISO = format(rangeEndDate, "yyyy-MM-dd");
     const { data: courses = [], isLoading: isLoadingCourses } =
         useCalendarEvents({ startISO, endISO });
 
@@ -47,6 +62,15 @@ export function Calendar({ initialDate, onWeekChange }: CalendarProps) {
         thursday: weekDays[3],
         friday: weekDays[4],
     } as const;
+
+    const monthLabel = useMemo(
+        () =>
+            new Intl.DateTimeFormat("fr-FR", {
+                month: "long",
+                year: "numeric",
+            }).format(currentDate),
+        [currentDate]
+    );
 
     function CalendarLoadingOverlay() {
         return (
@@ -95,27 +119,54 @@ export function Calendar({ initialDate, onWeekChange }: CalendarProps) {
                 <CalendarLoadingOverlay />
             ) : (
                 <>
-                    <WeeklySchedule
-                        weekLabel={displayedWeek}
-                        onPreviousWeek={goPreviousWeek}
-                        onNextWeek={goNextWeek}
-                        timeSlots={timeSlots}
-                        weekDatesByKey={weekDatesByKey}
-                        onEmptySlotClick={({ date, slotLabel }) => {
-                            setSelectedCourse(undefined);
-                            setModalDate(date);
-                            setModalSlot(slotLabel);
-                            setModalOpen(true);
-                        }}
-                        onCourseClick={({ id }) => {
-                            const found = courses.find((c) => c.id === id);
-                            setSelectedCourse(found);
-                            // Clear date/slot when editing to rely on selected course values
-                            setModalDate(undefined);
-                            setModalSlot(undefined);
-                            setModalOpen(true);
-                        }}
-                    />
+                    {view === "week" ? (
+                        <WeeklySchedule
+                            weekLabel={displayedWeek}
+                            view={view}
+                            onViewChange={setView}
+                            onTodayClick={goToToday}
+                            onPreviousWeek={goPreviousWeek}
+                            onNextWeek={goNextWeek}
+                            timeSlots={timeSlots}
+                            weekDatesByKey={weekDatesByKey}
+                            onEmptySlotClick={({ date, slotLabel }) => {
+                                setSelectedCourse(undefined);
+                                setModalDate(date);
+                                setModalSlot(slotLabel);
+                                setModalOpen(true);
+                            }}
+                            onCourseClick={({ id }) => {
+                                const found = courses.find((c) => c.id === id);
+                                setSelectedCourse(found);
+                                // Clear date/slot when editing to rely on selected course values
+                                setModalDate(undefined);
+                                setModalSlot(undefined);
+                                setModalOpen(true);
+                            }}
+                        />
+                    ) : (
+                        <MonthlySchedule
+                            monthLabel={monthLabel}
+                            monthStartDate={currentDate}
+                            courses={courses}
+                            view={view}
+                            onViewChange={setView}
+                            onTodayClick={goToToday}
+                            onPreviousMonth={() =>
+                                goToDate(addMonths(currentDate, -1))
+                            }
+                            onNextMonth={() =>
+                                goToDate(addMonths(currentDate, 1))
+                            }
+                            onCourseClick={({ id }) => {
+                                const found = courses.find((c) => c.id === id);
+                                setSelectedCourse(found);
+                                setModalDate(undefined);
+                                setModalSlot(undefined);
+                                setModalOpen(true);
+                            }}
+                        />
+                    )}
                     <CalendarFormModal
                         key={`${selectedCourse?.id ?? "new"}-${
                             modalDate?.toISOString() ?? ""

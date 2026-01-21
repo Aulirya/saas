@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     addDays,
     endOfWeek,
@@ -9,6 +9,7 @@ import {
     parseISO,
     startOfWeek,
 } from "date-fns";
+import { fr } from "date-fns/locale";
 import type { ScheduledCourse } from "../types";
 
 const DAY_START_HOUR = 8;
@@ -21,27 +22,49 @@ function getWeekdays(date: Date) {
 
 export function useCalendar(initial?: { date?: Date }) {
     const today = new Date();
-    const [weekStartDate, setWeekStartDate] = useState<Date>(
-        startOfWeek(initial?.date ?? today, { weekStartsOn: 1 })
+    const [currentDate, setCurrentDate] = useState<Date>(
+        initial?.date ?? today
+    );
+    useEffect(() => {
+        if (!initial?.date) return;
+        const nextDate = initial.date;
+        setCurrentDate((prev) => (isSameDay(prev, nextDate) ? prev : nextDate));
+    }, [initial?.date]);
+    const weekStartDate = useMemo(
+        () => startOfWeek(currentDate, { weekStartsOn: 1 }),
+        [currentDate]
     );
 
     const displayedWeek = useMemo(() => {
         const weekdays = getWeekdays(weekStartDate);
         const start = weekdays[0];
         const end = weekdays[4];
-        const startDay = format(start, "d");
-        const endDay = format(end, "d");
-        const sameMonth = format(start, "MMM yyyy") === format(end, "MMM yyyy");
-        const startMonth = format(start, "MMM");
-        const endMonth = format(end, "MMM");
-        const year = format(end, "yyyy");
-        return sameMonth
-            ? `${startDay}-${endDay} ${endMonth} ${year}`
-            : `${startDay} ${startMonth} - ${endDay} ${endMonth} ${year}`;
+        const sameMonth =
+            format(start, "MMMM yyyy", { locale: fr }) ===
+            format(end, "MMMM yyyy", { locale: fr });
+        const sameYear =
+            format(start, "yyyy", { locale: fr }) ===
+            format(end, "yyyy", { locale: fr });
+        const startMonth = format(start, "MMMM", { locale: fr });
+        const endMonth = format(end, "MMMM", { locale: fr });
+        const startYear = format(start, "yyyy", { locale: fr });
+        const endYear = format(end, "yyyy", { locale: fr });
+
+        if (sameMonth) {
+            return `${endMonth} ${endYear}`;
+        }
+
+        if (sameYear) {
+            return `${startMonth} - ${endMonth} ${endYear}`;
+        }
+
+        return `${startMonth} ${startYear} - ${endMonth} ${endYear}`;
     }, [weekStartDate]);
 
-    const goPreviousWeek = () => setWeekStartDate((prev) => addDays(prev, -7));
-    const goNextWeek = () => setWeekStartDate((prev) => addDays(prev, 7));
+    const goPreviousWeek = () => setCurrentDate((prev) => addDays(prev, -7));
+    const goNextWeek = () => setCurrentDate((prev) => addDays(prev, 7));
+    const goToDate = (date: Date) => setCurrentDate(date);
+    const goToToday = () => setCurrentDate(new Date());
 
     function computeTimeSlotsForWeek(courses: ScheduledCourse[]) {
         const weekEnd = endOfWeek(weekStartDate, { weekStartsOn: 1 });
@@ -124,11 +147,14 @@ export function useCalendar(initial?: { date?: Date }) {
     }
 
     return {
+        currentDate,
         weekStartDate,
         displayedWeek,
         weekDays: getWeekdays(weekStartDate),
         goPreviousWeek,
         goNextWeek,
+        goToDate,
+        goToToday,
         computeTimeSlotsForWeek,
     } as const;
 }

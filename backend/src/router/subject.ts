@@ -58,7 +58,7 @@ export const getSubjectWithLessons = base
             (SELECT *
             FROM lessons
             WHERE subject_id = $parent.id
-            ORDER BY start_at ASC
+            ORDER BY order ASC
             ) AS lessons
         FROM subjects
         WHERE user_id = ${userId} AND id = ${subjectId}
