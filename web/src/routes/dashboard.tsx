@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { StatisticsCard } from "@/components/journal/statistics_card";
 import { Calendar } from "@/features/calendar/components/Calendar";
 import {
@@ -8,6 +9,13 @@ import {
     SparklesIcon,
 } from "lucide-react";
 import { useDashboardStatistics } from "@/features/courses/api/useDashboardStatistics";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/dashboard")({
     component: DashboardPage,
@@ -32,6 +40,9 @@ function LoadingStatCard() {
 
 function DashboardPage() {
     const { data: statistics, isLoading } = useDashboardStatistics();
+    const [activeModal, setActiveModal] = useState<"resources" | "ai" | null>(
+        null
+    );
 
     // Format planned time as hours and minutes
     const formatPlannedTime = (minutes: number): string => {
@@ -45,6 +56,12 @@ function DashboardPage() {
 
     return (
         <>
+            <DashboardInsightsDialog
+                activeModal={activeModal}
+                onOpenChange={(open) => {
+                    if (!open) setActiveModal(null);
+                }}
+            />
             <div className="flex flex-1 flex-col">
                 <div className="@container/main flex flex-1 flex-col gap-2">
                     <div className="flex flex-col gap-4 ">
@@ -80,6 +97,9 @@ function DashboardPage() {
                                         icon={FileUpIcon}
                                         iconBg="bg-purple-100"
                                         iconColor="text-purple-600"
+                                        onClick={() =>
+                                            setActiveModal("resources")
+                                        }
                                     />
                                     <StatisticsCard
                                         description="Suggestions IA"
@@ -87,6 +107,7 @@ function DashboardPage() {
                                         icon={SparklesIcon}
                                         iconBg="bg-yellow-100"
                                         iconColor="text-yellow-600"
+                                        onClick={() => setActiveModal("ai")}
                                     />
                                 </>
                             )}
@@ -98,7 +119,7 @@ function DashboardPage() {
                 <div className="relative md:col-span-2" aria-busy={isLoading}>
                     <Calendar />
                 </div>
-                <div className="hidden md:col-span-1 bg-white rounded-xl border shadow-xs p-6 flex flex-col">
+                <div className="hidden md:col-span-1 md:flex md:flex-col bg-white rounded-xl border shadow-xs p-6">
                     {/* Sidebar 1/3 content */}
                     <span className="font-semibold text-lg text-gray-700">
                         Sidebar (1/3 sur desktop)
@@ -109,5 +130,39 @@ function DashboardPage() {
                 </div>
             </div>
         </>
+    );
+}
+
+function DashboardInsightsDialog({
+    activeModal,
+    onOpenChange,
+}: {
+    activeModal: "resources" | "ai" | null;
+    onOpenChange: (open: boolean) => void;
+}) {
+    const isResources = activeModal === "resources";
+
+    return (
+        <Dialog open={!!activeModal} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>
+                        {isResources
+                            ? "Supports disponibles"
+                            : "Suggestions IA"}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {isResources
+                            ? "Accès rapide aux supports de la semaine."
+                            : "Analyse des leçons de la semaine et recommandations."}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="rounded-lg border border-dashed border-muted p-4 text-sm text-muted-foreground">
+                    {isResources
+                        ? "Bientôt disponible : documents, supports et liens pour chaque leçon de la semaine, avec options de visualisation et impression."
+                        : "Bientôt disponible : synthèse des leçons de la semaine et recommandations IA personnalisées."}
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
