@@ -1,5 +1,6 @@
 import { base } from "./base";
 import { addTodo, listTodos } from "./todos";
+import { uploadFile, getLastFile } from "./file";
 import {
     createSchoolClass,
     getSchoolClass,
@@ -91,6 +92,10 @@ export const router = base.router({
         create: createLessonProgress,
         patch: patchLessonProgress,
         delete: deleteLessonProgress,
+    },
+    file: {
+        upload: uploadFile,
+        getLastFile: getLastFile,
     },
 });
 
