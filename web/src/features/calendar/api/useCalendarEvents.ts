@@ -39,14 +39,13 @@ export function useCalendarEvents(params: {
                 const scheduledDate = lp.scheduled_date?.split("T")[0] || "";
                 return {
                     id: lp.id,
-                    subject: lp.subject_name,
-                    level: lp.class_name,
-                    color: "blue",
+                    subject_name: lp.subject_name,
+                    subject_category: lp.subject_category,
+                    class_name: lp.class_name,
+                    class_level: lp.class_level,
+                    lesson_label: lp.lesson_label,
                     date: scheduledDate,
                     slot: formatSlotFromDate(lp.scheduled_date),
-                    lessonProgressId: lp.id,
-                    courseProgressId: lp.course_progress_id,
-                    lessonId: lp.lesson_id,
                 } satisfies ScheduledCourse;
             });
     }, [allLessonsForCalendar, params.startISO, params.endISO]);

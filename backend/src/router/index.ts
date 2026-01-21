@@ -26,6 +26,7 @@ import {
 } from "./subject";
 import {
     createCourseProgress,
+    listCourseProgress,
     deleteCourseProgress,
     getCourseProgress,
     getCourseProgressWithLessons,
@@ -75,6 +76,7 @@ export const router = base.router({
         delete: deleteLesson,
     },
     courseProgress: {
+        list: listCourseProgress,
         get: getCourseProgress,
         getWithLessons: getCourseProgressWithLessons,
         create: createCourseProgress,

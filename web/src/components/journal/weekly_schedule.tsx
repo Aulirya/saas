@@ -10,10 +10,15 @@ import {
     CardAction,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getCategoryConfig } from "@/lib/subject-utils";
 
 type CourseBlock = {
     id: string;
-    subject: string;
+    subject_name: string;
+    subject_category: string;
+    class_name: string;
+    class_level: string;
+    lesson_label: string;
     level: string;
     color: "blue" | "purple" | "green";
 };
@@ -43,12 +48,6 @@ type WeeklyScheduleProps = {
     };
     onEmptySlotClick?: (args: { date: Date; slotLabel: string }) => void;
     onCourseClick?: (args: { id: string }) => void;
-};
-
-const colorClasses = {
-    blue: "bg-blue-500 text-white",
-    purple: "bg-purple-500 text-white",
-    green: "bg-green-500 text-white",
 };
 
 const weekdays = [
@@ -125,6 +124,7 @@ export function WeeklySchedule({
                                     {/* Course Blocks */}
                                     {weekdays.map((day) => {
                                         const course = slot.courses[day.key];
+
                                         return (
                                             <div
                                                 key={`${slot.time}-${day.key}`}
@@ -134,9 +134,9 @@ export function WeeklySchedule({
                                                     <div
                                                         className={cn(
                                                             "rounded-lg px-3 py-2 text-sm font-medium shadow-sm transition-all hover:shadow-md",
-                                                            colorClasses[
-                                                                course.color
-                                                            ]
+                                                            getCategoryConfig(
+                                                                course.subject_category
+                                                            ).color
                                                         )}
                                                         onClick={() =>
                                                             onCourseClick?.({
@@ -145,10 +145,17 @@ export function WeeklySchedule({
                                                         }
                                                     >
                                                         <div className="font-semibold">
-                                                            {course.subject}
+                                                            {
+                                                                course.subject_name
+                                                            }{" "}
+                                                        </div>
+                                                        <div className="">
+                                                            {
+                                                                course.lesson_label
+                                                            }{" "}
                                                         </div>
                                                         <div className="mt-1 text-xs opacity-90">
-                                                            {course.level}
+                                                            {course.class_level}
                                                         </div>
                                                     </div>
                                                 ) : (

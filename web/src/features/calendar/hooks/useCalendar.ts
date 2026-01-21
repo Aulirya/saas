@@ -106,9 +106,11 @@ export function useCalendar(initial?: { date?: Date }) {
                     const key = weekdayKey(day);
                     coursesByDay[key] = {
                         id: courseForDay.id,
-                        subject: courseForDay.subject,
-                        level: courseForDay.level,
-                        color: courseForDay.color,
+                        subject_name: courseForDay.subject_name,
+                        subject_category: courseForDay.subject_category,
+                        class_name: courseForDay.class_name,
+                        class_level: courseForDay.class_level,
+                        lesson_label: courseForDay.lesson_label,
                     } as const;
                 }
             }

@@ -2,16 +2,13 @@ export type CourseColor = "blue" | "purple" | "green";
 
 export type ScheduledCourse = {
     id: string;
-    subject: string;
-    level: string;
-    color: CourseColor;
-    // use a lib or create a type to handle dates
-    date: string; // ISO date (yyyy-MM-dd)
-    slot: string; // e.g. "8h-10h"
-    // Optional fields for editing
-    lessonProgressId?: string;
-    courseProgressId?: string;
-    lessonId?: string;
+    subject_name: string;
+    subject_category: string;
+    class_name: string;
+    class_level: string;
+    lesson_label: string;
+    date: string;
+    slot: string;
 };
 
 export type CalendarView = "week" | "month" | "day";

@@ -22,8 +22,8 @@ export function StatisticsCard({
     iconColor = "text-blue-600",
 }: StatisticsCardProps) {
     return (
-        <Card className="@container/card flex flex-row items-center justify-between">
-            <CardHeader>
+        <Card className="@container/card flex flex-row items-center justify-between py-2">
+            <CardHeader className="grow">
                 <CardDescription>{description}</CardDescription>
                 <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
                     {data}

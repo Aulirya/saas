@@ -180,8 +180,12 @@ export function getCategoryIcon(category: SubjectCategory): LucideIcon {
     return CATEGORY_CONFIG[category]?.icon ?? BookOpen;
 }
 
-export function getCategoryConfig(category: SubjectCategory): CategoryConfig {
-    return CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG.Other;
+export function getCategoryConfig(
+    category: SubjectCategory | string
+): CategoryConfig {
+    return (
+        CATEGORY_CONFIG[category as SubjectCategory] ?? CATEGORY_CONFIG.Other
+    );
 }
 
 // ----- TYPE UTILS -----

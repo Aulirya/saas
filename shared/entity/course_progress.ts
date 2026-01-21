@@ -81,3 +81,16 @@ export const course_progress_with_lessons = course_progress.extend({
 export type CourseProgressWithLessons = z.infer<
     typeof course_progress_with_lessons
 >;
+
+export const course_progress_with_relations = course_progress.extend({
+    class: school_class.nullable().optional(),
+    subject_name: z.string().nullable().optional(),
+    subject_category: z.string().nullable().optional(),
+    class_name: z.string().nullable().optional(),
+    class_level: z.string().nullable().optional(),
+    lesson_label: z.string().nullable().optional(),
+});
+
+export type CourseProgressWithRelations = z.infer<
+    typeof course_progress_with_relations
+>;

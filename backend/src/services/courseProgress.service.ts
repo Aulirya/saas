@@ -14,9 +14,42 @@ import type {
     CourseProgress,
     CourseProgressWithLessons,
     RecurringScheduleSlot,
+    SubjectCategory,
 } from "@saas/shared";
 import { verifyCourseProgressOwnership } from "../utils/course_progress";
 import type { RecurringScheduleSlotWithDateTime } from "../utils/schedule";
+
+export async function listCourseProgress(params: {
+    db: Surreal;
+    userId: RecordId;
+    classId?: RecordId | null;
+    subjectId?: RecordId | null;
+}): Promise<CourseProgress[]> {
+    const { db, userId, classId, subjectId } = params;
+    try {
+        let query: ReturnType<typeof surql>;
+        if (classId && subjectId) {
+            query = surql`SELECT * FROM course_progress WHERE user_id = ${userId} AND class_id = ${classId} AND subject_id = ${subjectId}`;
+        } else if (classId) {
+            query = surql`SELECT * FROM course_progress WHERE user_id = ${userId} AND class_id = ${classId}`;
+        } else if (subjectId) {
+            query = surql`SELECT * FROM course_progress WHERE user_id = ${userId} AND subject_id = ${subjectId}`;
+        } else {
+            query = surql`SELECT * FROM course_progress WHERE user_id = ${userId}`;
+        }
+
+        const result = await db.query<[CourseProgressModel[]]>(query).collect();
+        return result[0].map(CourseProgressMapper.fromModel);
+    } catch (error) {
+        console.error("Error in listCourseProgress:", error);
+        throw new ORPCError("INTERNAL_ERROR", {
+            message:
+                error instanceof Error
+                    ? error.message
+                    : "Une erreur est survenue lors du listage des progressions de cours",
+        });
+    }
+}
 
 export async function getCourseProgress(params: {
     db: Surreal;
@@ -91,6 +124,9 @@ export async function getAllLessonsForCalendar(params: {
         LessonProgressModel & {
             subject_name?: string;
             class_name?: string;
+            lesson_label?: string;
+            class_level?: string;
+            subject_category?: string;
         }
     >
 > {
@@ -100,7 +136,10 @@ export async function getAllLessonsForCalendar(params: {
     const lessonsQuery = surql`
         SELECT *,
             course_progress_id.subject_id.name AS subject_name,
-            course_progress_id.class_id.name AS class_name
+            course_progress_id.subject_id.category AS subject_category,
+            course_progress_id.class_id.name AS class_name,
+            course_progress_id.class_id.level AS class_level,
+            lesson_id.label AS lesson_label
         FROM lesson_progress
     `;
 
@@ -111,6 +150,9 @@ export async function getAllLessonsForCalendar(params: {
                     LessonProgressModel & {
                         subject_name?: string;
                         class_name?: string;
+                        subject_category?: string;
+                        class_level?: string;
+                        lesson_label?: string;
                     }
                 >
             ]

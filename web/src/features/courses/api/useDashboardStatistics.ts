@@ -89,7 +89,7 @@ export function useDashboardStatistics() {
             }, 0);
 
             // Count available resources (all lessons)
-            const availableResources = allLessons.length;
+            const availableResources = 0;
 
             // AI suggestions (placeholder - could be implemented later)
             const aiSuggestions = 0;
