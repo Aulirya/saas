@@ -1,5 +1,5 @@
 # Backend Dockerfile for Development (Monorepo)
-FROM oven/bun:1
+FROM oven/bun:1.3.1
 
 WORKDIR /app
 

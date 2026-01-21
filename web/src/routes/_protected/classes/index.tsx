@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { CardInfoLayout } from "@/components/ui/card-info-layout";
 import { ViewDetailButton } from "@/components/ui/view-detail-button";
 import { FormSheet } from "@/components/ui/form-sheet";
+
 import { SchoolClassWithSubjectsAndLessons } from "@saas/shared";
 import { formatLessonDateTime } from "@/lib/date";
 import type { LessonWithSubject } from "@/types/class.types";
@@ -62,7 +63,7 @@ function ClassesPage() {
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(5); // Items per page
+    const [pageSize] = useState(20); // Items per page
     const [sortBy, setSortBy] = useState<"name" | "updated_at">("name");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -244,10 +245,10 @@ function ClassesPage() {
                     </>
                 }
             >
-                <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                    <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col overflow-hidden">
-                        {/* Scrollable classes list */}
-                        <div className="flex-1 overflow-y-auto pr-3 pt-3 pl-3">
+                <div className="grid grid-cols-7 gap-6 m-0 grow">
+                    <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col">
+                        {/* Classes list */}
+                        <div className="pr-3 pt-3 pl-3">
                             <div className="space-y-5">
                                 {isLoading ? (
                                     <SkeletonCard />
@@ -282,10 +283,7 @@ function ClassesPage() {
                         )}
                     </div>
                     {/* Desktop sidebar - hidden on mobile */}
-                    <div
-                        className="space-y-4 hidden lg:block pt-3 pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
-                        style={{ top: "auto" }}
-                    >
+                    <div className="space-y-4 hidden lg:block pt-3 pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit self-start">
                         <ClassSummarySidebar
                             classData={
                                 selectedClassWithDetails ?? selectedClass
@@ -343,10 +341,10 @@ function ClassCard({
             className={cn(
                 "group cursor-pointer border-border/70 transition-all duration-200",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                "hover:shadow-md hover:scale-[1.01]",
+                "hover:shadow-sm hover:border-muted-foreground/50",
                 isSelected
-                    ? `${classConfig.ringColor} shadow-md ring-2 `
-                    : `${classConfig.ringHoverColor} `
+                    ? "border-muted-foreground/80 shadow-sm bg-muted/20"
+                    : "hover:shadow-sm"
             )}
         >
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -429,7 +427,6 @@ function ClassSummarySidebar({
         <CardInfoLayout
             title={`${classData.name}`}
             description={`${classData.school} - ${classData.level}`}
-            className={classConfig.ringColor}
             footer={
                 <ViewDetailButton
                     to={ClassDetailRoute.to}

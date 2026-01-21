@@ -28,8 +28,9 @@ import { SkeletonCard } from "@/components/ui/skeleton";
 
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
 import type { CourseProgram } from "@/features/courses/types";
-import { cn, getColorFromText } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { CourseFormModal } from "@/features/courses/components/CourseFormModal";
+import { getCategoryConfig } from "@/lib/subject-utils";
 
 type LevelFilterValue = string;
 type SubjectFilterValue = string;
@@ -62,7 +63,7 @@ function CoursesPage() {
     // Pagination State
     // ---------------------------
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(5);
+    const [pageSize] = useState(20);
 
     // ---------------------------
     // Sorting State
@@ -295,10 +296,10 @@ function CoursesPage() {
                 </>
             }
         >
-            <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col overflow-hidden">
-                    {/* Scrollable programs list */}
-                    <div className="flex-1 overflow-y-auto pr-3 pt-3 pl-3">
+            <div className="grid grid-cols-7 gap-6 m-0 grow">
+                <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col">
+                    {/* Programs list */}
+                    <div className="pr-3 pt-3 pl-3">
                         <div className="space-y-5">
                             {isLoading ? (
                                 <SkeletonCard />
@@ -335,10 +336,7 @@ function CoursesPage() {
 
                 {/* Desktop sidebar - hidden on mobile */}
                 {paginatedPrograms.length > 0 && (
-                    <div
-                        className="space-y-4 hidden overflow-hidden lg:block pt-3 h-auto pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 "
-                        style={{ top: "auto" }}
-                    >
+                    <div className="space-y-4 hidden lg:block pt-3 h-auto pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 self-start">
                         <ProgramSummary program={selectedProgram} />
                     </div>
                 )}
@@ -374,10 +372,8 @@ function ProgramCard({
     isSelected: boolean;
     onSelect: (id: string) => void;
 }) {
-    const Icon = program.icon;
-
-    // Get color scheme based on subject text
-    const colorScheme = getColorFromText(program.subject);
+    const categoryConfig = getCategoryConfig(program.subjectCategory);
+    const Icon = categoryConfig.icon;
 
     return (
         <Card
@@ -393,7 +389,7 @@ function ProgramCard({
             className={cn(
                 "group cursor-pointer border-border/70 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 isSelected
-                    ? "border-muted-foreground/80 shadow-sm"
+                    ? "border-muted-foreground/80 shadow-sm bg-muted/20"
                     : "hover:border-muted-foreground/50 hover:shadow-sm"
             )}
         >
@@ -402,8 +398,8 @@ function ProgramCard({
                     <div
                         className={cn(
                             "flex size-12 items-center justify-center rounded-xl",
-                            colorScheme.bgLight,
-                            colorScheme.text
+                            categoryConfig.color,
+                            categoryConfig.iconColor
                         )}
                     >
                         <Icon className="size-6" aria-hidden />
@@ -426,7 +422,11 @@ function ProgramCard({
                     <Button
                         asChild
                         aria-label="Voir le cours"
-                        className={cn("shrink-0", colorScheme.button)}
+                        className={cn(
+                            "shrink-0 text-white",
+                            categoryConfig.buttonColor,
+                            categoryConfig.buttonHoverColor
+                        )}
                     >
                         <Link
                             to={CourseDetailRoute.to}
@@ -519,7 +519,7 @@ function ProgramSummaryContent({
     );
     const completedText = `${program.completedHours} / ${program.totalHours} heures (${progressValue}%)`;
 
-    const colorScheme = getColorFromText(program.subject);
+    const categoryConfig = getCategoryConfig(program.subjectCategory);
 
     return (
         <div className="flex flex-col gap-6 overflow-y-scroll ">
@@ -527,7 +527,7 @@ function ProgramSummaryContent({
                 <p className="font-medium pb-3">Progression actuelle</p>
                 <Progress
                     value={progressValue}
-                    indicatorClassName={colorScheme.bg}
+                    indicatorClassName={categoryConfig.buttonColor}
                 />
                 <p className="text-xs text-muted-foreground pt-1">
                     {completedText}
