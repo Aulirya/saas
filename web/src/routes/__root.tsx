@@ -2,17 +2,18 @@ import {
     HeadContent,
     Scripts,
     createRootRouteWithContext,
+    useRouterState,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import { createContext, useContext, useState } from "react";
+
+import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
 
 import Header from "../components/Header";
+import DemoBanner from "../components/DemoBanner";
 import Sidebar from "../components/Sidebar";
 import ClerkProvider from "../integrations/clerk/provider";
 import { Toaster } from "../components/ui/sonner";
-
-import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import { disableDemoMode } from "../utils/demo";
 
 import appCss from "../styles.css?url";
 
@@ -64,6 +65,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const isLanding = useRouterState({
+        select: (state) => state.location.pathname === "/",
+    });
 
     return (
         <html lang="en">
@@ -72,38 +76,48 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             </head>
             <body className="bg-gray-100">
                 <ClerkProvider>
+                    <DemoModeSync />
+                    {!isLanding && <DemoBanner />}
                     <SidebarContext.Provider
                         value={{
                             isOpen: isSidebarOpen,
                             setIsOpen: setIsSidebarOpen,
                         }}
                     >
-                        <Header />
-                        <div className="flex">
-                            <Sidebar />
-                            <main
-                                className={`px-8 pt-4 max-h-[calc(100vh-4rem)] flex flex-col gap-4  grow transition-all duration-300 ease-in-out overflow-scroll max-w-screen-2xl mx-auto `}
-                            >
+                        {isLanding ? (
+                            <main className="min-h-screen w-full">
                                 {children}
                             </main>
-                        </div>
+                        ) : (
+                            <>
+                                <Header />
+                                <div className="flex">
+                                    <Sidebar />
+                                    <main
+                                        className={`px-8 pt-4 max-h-[calc(100vh-4rem)] flex flex-col gap-4  grow transition-all duration-300 ease-in-out overflow-scroll max-w-screen-2xl mx-auto `}
+                                    >
+                                        {children}
+                                    </main>
+                                </div>
+                            </>
+                        )}
                     </SidebarContext.Provider>
                     <Toaster />
-                    {/* <TanStackDevtools
-                        config={{
-                            position: "bottom-right",
-                        }}
-                        plugins={[
-                            {
-                                name: "Tanstack Router",
-                                render: <TanStackRouterDevtoolsPanel />,
-                            },
-                            TanStackQueryDevtools,
-                        ]}
-                    /> */}
                 </ClerkProvider>
                 <Scripts />
             </body>
         </html>
     );
+}
+
+function DemoModeSync() {
+    const { isSignedIn } = useAuth();
+
+    useEffect(() => {
+        if (isSignedIn) {
+            disableDemoMode();
+        }
+    }, [isSignedIn]);
+
+    return null;
 }

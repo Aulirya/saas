@@ -1,15 +1,20 @@
-import { RedirectToSignIn, useAuth } from "@clerk/clerk-react";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { useAuth } from "@clerk/clerk-react";
+import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
+import { isDemoEnabled } from "../utils/demo";
 
 export const Route = createFileRoute("/_protected")({
-  component: RouteComponent,
+    component: RouteComponent,
 });
 
 function RouteComponent() {
-  const user = useAuth();
+    const user = useAuth();
 
-  if (!user.isSignedIn) {
-    return <RedirectToSignIn />;
-  }
-  return <Outlet />;
+    if (isDemoEnabled()) {
+        return <Outlet />;
+    }
+
+    if (!user.isSignedIn) {
+        return <Navigate to="/" replace />;
+    }
+    return <Outlet />;
 }

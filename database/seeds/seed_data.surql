@@ -1,8 +1,8 @@
 -- Seed data for SurrealDB - Belgian School System
--- Only 2 users with comprehensive dataset
+-- 3 users with comprehensive + demo dataset
 
 -- ============================================================================
--- USERS (2 teachers only)
+-- USERS (2 teachers + demo)
 -- ============================================================================
 
 CREATE users:user_353UyKo0yGYVRwzFjWRZzg8DaYr SET
@@ -22,6 +22,16 @@ CREATE users:user_353ScLkTjg7WIPeEfUZ7xC76M23 SET
     role = 'teacher',
     country = 'BE',
     schools = ['Collège Saint-Michel', 'École Européenne de Bruxelles', 'Athénée Royal de Liège'],
+    created_at = time::now(),
+    updated_at = time::now();
+
+CREATE users:demo_user SET
+    email = 'demo@aulirya.app',
+    first_name = 'Demo',
+    last_name = 'User',
+    role = 'teacher',
+    country = 'FR',
+    schools = ['Demo Academy'],
     created_at = time::now(),
     updated_at = time::now();
 
@@ -336,64 +346,59 @@ CREATE course_progress:progress_064 SET class_id = classes:class_030, subject_id
 
 -- Sophie's scheduled lessons for this week
 -- Monday, January 13, 2026
-CREATE lesson_progress:lp_001 SET lesson_id = lessons:lesson_001, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-13T08:00:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_002 SET lesson_id = lessons:lesson_002, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-13T10:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_003 SET lesson_id = lessons:lesson_004, course_progress_id = course_progress:progress_004, status = 'scheduled', scheduled_date = d'2026-01-13T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_004 SET lesson_id = lessons:lesson_019, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-13T15:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_001 SET lesson_id = lessons:lesson_001, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-13T08:00:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_002 SET lesson_id = lessons:lesson_002, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-13T10:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_003 SET lesson_id = lessons:lesson_004, course_progress_id = course_progress:progress_004, status = 'scheduled', scheduled_date = d'2026-01-13T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_004 SET lesson_id = lessons:lesson_019, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-13T15:15:00Z', created_at = time::now(), updated_at = time::now();
 
 -- Tuesday, January 14, 2026
-CREATE lesson_progress:lp_005 SET lesson_id = lessons:lesson_003, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-14T08:00:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_006 SET lesson_id = lessons:lesson_020, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-14T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_007 SET lesson_id = lessons:lesson_036, course_progress_id = course_progress:progress_006, status = 'scheduled', scheduled_date = d'2026-01-14T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_008 SET lesson_id = lessons:lesson_041, course_progress_id = course_progress:progress_008, status = 'scheduled', scheduled_date = d'2026-01-14T15:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_005 SET lesson_id = lessons:lesson_003, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-14T08:00:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_006 SET lesson_id = lessons:lesson_020, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-14T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_007 SET lesson_id = lessons:lesson_036, course_progress_id = course_progress:progress_006, status = 'scheduled', scheduled_date = d'2026-01-14T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_008 SET lesson_id = lessons:lesson_041, course_progress_id = course_progress:progress_008, status = 'scheduled', scheduled_date = d'2026-01-14T15:15:00Z', created_at = time::now(), updated_at = time::now();
 
 -- Wednesday, January 15, 2026
-CREATE lesson_progress:lp_009 SET lesson_id = lessons:lesson_005, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-15T08:00:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_010 SET lesson_id = lessons:lesson_021, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-15T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_011 SET lesson_id = lessons:lesson_037, course_progress_id = course_progress:progress_006, status = 'scheduled', scheduled_date = d'2026-01-15T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_012 SET lesson_id = lessons:lesson_047, course_progress_id = course_progress:progress_025, status = 'scheduled', scheduled_date = d'2026-01-15T08:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_009 SET lesson_id = lessons:lesson_005, course_progress_id = course_progress:progress_001, status = 'scheduled', scheduled_date = d'2026-01-15T08:00:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_010 SET lesson_id = lessons:lesson_021, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-15T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_011 SET lesson_id = lessons:lesson_037, course_progress_id = course_progress:progress_006, status = 'scheduled', scheduled_date = d'2026-01-15T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_012 SET lesson_id = lessons:lesson_047, course_progress_id = course_progress:progress_025, status = 'scheduled', scheduled_date = d'2026-01-15T08:30:00Z', created_at = time::now(), updated_at = time::now();
 
 -- Thursday, January 16, 2026
-CREATE lesson_progress:lp_013 SET lesson_id = lessons:lesson_016, course_progress_id = course_progress:progress_002, status = 'scheduled', scheduled_date = d'2026-01-16T10:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_014 SET lesson_id = lessons:lesson_022, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-16T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_015 SET lesson_id = lessons:lesson_038, course_progress_id = course_progress:progress_006, status = 'scheduled', scheduled_date = d'2026-01-16T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_016 SET lesson_id = lessons:lesson_042, course_progress_id = course_progress:progress_008, status = 'scheduled', scheduled_date = d'2026-01-16T15:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_017 SET lesson_id = lessons:lesson_054, course_progress_id = course_progress:progress_013, status = 'scheduled', scheduled_date = d'2026-01-16T15:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_013 SET lesson_id = lessons:lesson_016, course_progress_id = course_progress:progress_002, status = 'scheduled', scheduled_date = d'2026-01-16T10:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_014 SET lesson_id = lessons:lesson_022, course_progress_id = course_progress:progress_005, status = 'scheduled', scheduled_date = d'2026-01-16T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_015 SET lesson_id = lessons:lesson_038, course_progress_id = course_progress:progress_006, status = 'scheduled', scheduled_date = d'2026-01-16T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_016 SET lesson_id = lessons:lesson_042, course_progress_id = course_progress:progress_008, status = 'scheduled', scheduled_date = d'2026-01-16T15:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_017 SET lesson_id = lessons:lesson_054, course_progress_id = course_progress:progress_013, status = 'scheduled', scheduled_date = d'2026-01-16T15:15:00Z', created_at = time::now(), updated_at = time::now();
 
 -- Friday, January 17, 2026
-CREATE lesson_progress:lp_018 SET lesson_id = lessons:lesson_017, course_progress_id = course_progress:progress_002, status = 'scheduled', scheduled_date = d'2026-01-17T10:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_019 SET lesson_id = lessons:lesson_023, course_progress_id = course_progress:progress_010, status = 'scheduled', scheduled_date = d'2026-01-17T15:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_020 SET lesson_id = lessons:lesson_039, course_progress_id = course_progress:progress_011, status = 'scheduled', scheduled_date = d'2026-01-17T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_021 SET lesson_id = lessons:lesson_043, course_progress_id = course_progress:progress_008, status = 'scheduled', scheduled_date = d'2026-01-17T15:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_022 SET lesson_id = lessons:lesson_056, course_progress_id = course_progress:progress_003, status = 'scheduled', scheduled_date = d'2026-01-17T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_018 SET lesson_id = lessons:lesson_017, course_progress_id = course_progress:progress_002, status = 'scheduled', scheduled_date = d'2026-01-17T10:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_019 SET lesson_id = lessons:lesson_023, course_progress_id = course_progress:progress_010, status = 'scheduled', scheduled_date = d'2026-01-17T15:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_020 SET lesson_id = lessons:lesson_039, course_progress_id = course_progress:progress_011, status = 'scheduled', scheduled_date = d'2026-01-17T13:30:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_021 SET lesson_id = lessons:lesson_043, course_progress_id = course_progress:progress_008, status = 'scheduled', scheduled_date = d'2026-01-17T15:15:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:lp_022 SET lesson_id = lessons:lesson_056, course_progress_id = course_progress:progress_003, status = 'scheduled', scheduled_date = d'2026-01-17T13:30:00Z', created_at = time::now(), updated_at = time::now();
 
--- Vincent's scheduled lessons for this week
--- Monday, January 13, 2026
-CREATE lesson_progress:lp_023 SET lesson_id = lessons:lesson_066, course_progress_id = course_progress:progress_039, status = 'scheduled', scheduled_date = d'2026-01-13T08:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_024 SET lesson_id = lessons:lesson_091, course_progress_id = course_progress:progress_040, status = 'scheduled', scheduled_date = d'2026-01-13T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_025 SET lesson_id = lessons:lesson_116, course_progress_id = course_progress:progress_052, status = 'scheduled', scheduled_date = d'2026-01-13T08:30:00Z', created_at = time::now(), updated_at = time::now();
 
--- Tuesday, January 14, 2026
-CREATE lesson_progress:lp_026 SET lesson_id = lessons:lesson_067, course_progress_id = course_progress:progress_039, status = 'scheduled', scheduled_date = d'2026-01-14T08:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_027 SET lesson_id = lessons:lesson_092, course_progress_id = course_progress:progress_040, status = 'scheduled', scheduled_date = d'2026-01-14T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_028 SET lesson_id = lessons:lesson_068, course_progress_id = course_progress:progress_041, status = 'scheduled', scheduled_date = d'2026-01-14T08:30:00Z', created_at = time::now(), updated_at = time::now();
+-- ============================================================================
+-- DEMO USER DATA (minimal dataset for demo mode)
+-- ============================================================================
 
--- Wednesday, January 15, 2026
-CREATE lesson_progress:lp_029 SET lesson_id = lessons:lesson_068, course_progress_id = course_progress:progress_039, status = 'scheduled', scheduled_date = d'2026-01-15T08:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_030 SET lesson_id = lessons:lesson_093, course_progress_id = course_progress:progress_040, status = 'scheduled', scheduled_date = d'2026-01-15T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_031 SET lesson_id = lessons:lesson_095, course_progress_id = course_progress:progress_042, status = 'scheduled', scheduled_date = d'2026-01-15T15:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_032 SET lesson_id = lessons:lesson_069, course_progress_id = course_progress:progress_041, status = 'scheduled', scheduled_date = d'2026-01-15T08:30:00Z', created_at = time::now(), updated_at = time::now();
+-- Demo Classes
+CREATE classes:demo_class_001 SET name = '1ère Démo', level = '1ère secondaire', school = 'Demo Academy', students_count = 22, user_id = users:demo_user, created_at = time::now(), updated_at = time::now();
+CREATE classes:demo_class_002 SET name = '2ème Démo', level = '2ème secondaire', school = 'Demo Academy', students_count = 24, user_id = users:demo_user, created_at = time::now(), updated_at = time::now();
 
--- Thursday, January 16, 2026
-CREATE lesson_progress:lp_033 SET lesson_id = lessons:lesson_069, course_progress_id = course_progress:progress_039, status = 'scheduled', scheduled_date = d'2026-01-16T08:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_034 SET lesson_id = lessons:lesson_094, course_progress_id = course_progress:progress_040, status = 'scheduled', scheduled_date = d'2026-01-16T13:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_035 SET lesson_id = lessons:lesson_096, course_progress_id = course_progress:progress_042, status = 'scheduled', scheduled_date = d'2026-01-16T15:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_036 SET lesson_id = lessons:lesson_070, course_progress_id = course_progress:progress_041, status = 'scheduled', scheduled_date = d'2026-01-16T08:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_037 SET lesson_id = lessons:lesson_117, course_progress_id = course_progress:progress_052, status = 'scheduled', scheduled_date = d'2026-01-16T08:30:00Z', created_at = time::now(), updated_at = time::now();
+-- Demo Subjects
+CREATE subjects:demo_subject_001 SET name = 'Français Démo', description = 'Lecture et expression écrite', type = 'Core', category = 'Language', user_id = users:demo_user, created_at = time::now(), updated_at = time::now();
+CREATE subjects:demo_subject_002 SET name = 'Sciences Démo', description = 'Physique et chimie', type = 'Core', category = 'Science', user_id = users:demo_user, created_at = time::now(), updated_at = time::now();
 
--- Friday, January 17, 2026
-CREATE lesson_progress:lp_038 SET lesson_id = lessons:lesson_070, course_progress_id = course_progress:progress_039, status = 'scheduled', scheduled_date = d'2026-01-17T08:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_039 SET lesson_id = lessons:lesson_097, course_progress_id = course_progress:progress_042, status = 'scheduled', scheduled_date = d'2026-01-17T15:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_040 SET lesson_id = lessons:lesson_071, course_progress_id = course_progress:progress_041, status = 'scheduled', scheduled_date = d'2026-01-17T08:30:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_041 SET lesson_id = lessons:lesson_073, course_progress_id = course_progress:progress_045, status = 'scheduled', scheduled_date = d'2026-01-17T10:15:00Z', created_at = time::now(), updated_at = time::now();
-CREATE lesson_progress:lp_042 SET lesson_id = lessons:lesson_100, course_progress_id = course_progress:progress_044, status = 'scheduled', scheduled_date = d'2026-01-17T10:15:00Z', created_at = time::now(), updated_at = time::now();
+-- Demo Lessons
+CREATE lessons:demo_lesson_001 SET subject_id = subjects:demo_subject_001, user_id = users:demo_user, description = 'Lecture guidée: récit court', label = 'Lecture', duration = 60, status = 'done', scope = 'core', order = 1, comments = [], created_at = time::now(), updated_at = time::now();
+CREATE lessons:demo_lesson_002 SET subject_id = subjects:demo_subject_001, user_id = users:demo_user, description = 'Expression écrite: résumé', label = 'Rédaction', duration = 60, status = 'in_progress', scope = 'core', order = 2, comments = [], created_at = time::now(), updated_at = time::now();
+CREATE lessons:demo_lesson_003 SET subject_id = subjects:demo_subject_002, user_id = users:demo_user, description = 'Expérience: densité des liquides', label = 'TP', duration = 60, status = 'to_do', scope = 'core', order = 1, comments = [], created_at = time::now(), updated_at = time::now();
+
+-- Demo Course Progress
+CREATE course_progress:demo_progress_001 SET class_id = classes:demo_class_001, subject_id = subjects:demo_subject_001, user_id = users:demo_user, status = 'in_progress', created_at = time::now(), updated_at = time::now();
+CREATE course_progress:demo_progress_002 SET class_id = classes:demo_class_002, subject_id = subjects:demo_subject_002, user_id = users:demo_user, status = 'not_started', created_at = time::now(), updated_at = time::now();
+
+-- Demo Lesson Progress
+UPSERT lesson_progress:demo_lp_001 SET lesson_id = lessons:demo_lesson_001, course_progress_id = course_progress:demo_progress_001, status = 'scheduled', scheduled_date = d'2026-01-16T08:00:00Z', created_at = time::now(), updated_at = time::now();
+UPSERT lesson_progress:demo_lp_002 SET lesson_id = lessons:demo_lesson_003, course_progress_id = course_progress:demo_progress_002, status = 'scheduled', scheduled_date = d'2026-01-17T10:00:00Z', created_at = time::now(), updated_at = time::now();

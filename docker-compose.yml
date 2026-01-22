@@ -6,8 +6,8 @@ services:
         ports:
             - "8000:8000"
         environment:
-          - SURREAL_CAPS_ALLOW_EXPERIMENTAL=files
-          - SURREAL_BUCKET_FOLDER_ALLOWLIST=/pdf_upload
+            - SURREAL_CAPS_ALLOW_EXPERIMENTAL=files
+            - SURREAL_BUCKET_FOLDER_ALLOWLIST=/pdf_upload
         command:
             - start
             - --user
@@ -79,6 +79,7 @@ services:
             - "3000:3000"
         environment:
             - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY}}
+            - VITE_DEMO_MODE=${VITE_DEMO_MODE:-false}
             - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
         volumes:
             # Bind mount source for hot reload
@@ -119,6 +120,8 @@ services:
             - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
             - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
             - CLERK_WEBHOOK_SIGNING_SECRET=${CLERK_WEBHOOK_SIGNING_SECRET}
+            - DEMO_MODE=${DEMO_MODE:-false}
+            - DEMO_USER_ID=${DEMO_USER_ID:-demo_user}
             - SURREALDB_URL=${SURREALDB_URL:-http://surrealdb:8000}
             - SURREALDB_USER=${SURREALDB_USER:-root}
             - SURREALDB_PASS=${SURREALDB_PASS:-root}
