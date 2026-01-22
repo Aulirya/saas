@@ -7,7 +7,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { PageLayout } from "@/components/PageLayout";
+import { MasterDetailPageLayout } from "@/components/MasterDetailPageLayout";
 
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -227,7 +227,7 @@ function CoursesPage() {
     };
 
     return (
-        <PageLayout
+        <MasterDetailPageLayout
             header={
                 <>
                     <PageHeader
@@ -290,71 +290,60 @@ function CoursesPage() {
                     />
                 </>
             }
-        >
-            <div className="grid grid-cols-7 gap-6 m-0 grow">
-                <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col">
-                    {/* Programs list */}
-                    <div className="">
-                        <div className="space-y-5">
-                            {isLoading ? (
-                                <SkeletonCard />
-                            ) : paginatedPrograms.length > 0 ? (
-                                paginatedPrograms.map((program) => (
-                                    <ProgramCard
-                                        key={program.id}
-                                        program={program}
-                                        isSelected={program.id === selectedId}
-                                        onSelect={handleProgramSelect}
-                                    />
-                                ))
-                            ) : (
-                                <EmptyStateCard
-                                    title="Aucun cours trouvé"
-                                    description="Créez votre premier programme pour commencer à planifier vos cours."
-                                    buttonText="Nouveau cours"
-                                    onButtonClick={() =>
-                                        setIsCreateModalOpen(true)
-                                    }
-                                />
-                            )}
-                        </div>
-                    </div>
-                    {/* Fixed Pagination */}
-                    {!isLoading && filteredPrograms.length > 0 && (
-                        <PaginationControls
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
+            list={
+                <>
+                    {isLoading ? (
+                        <SkeletonCard />
+                    ) : paginatedPrograms.length > 0 ? (
+                        paginatedPrograms.map((program) => (
+                            <ProgramCard
+                                key={program.id}
+                                program={program}
+                                isSelected={program.id === selectedId}
+                                onSelect={handleProgramSelect}
+                            />
+                        ))
+                    ) : (
+                        <EmptyStateCard
+                            title="Aucun cours trouvé"
+                            description="Créez votre premier programme pour commencer à planifier vos cours."
+                            buttonText="Nouveau cours"
+                            onButtonClick={() => setIsCreateModalOpen(true)}
                         />
                     )}
-                </div>
+                </>
+            }
+            pagination={
+                !isLoading && filteredPrograms.length > 0 ? (
+                    <PaginationControls
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                ) : null
+            }
+            desktopSummary={<ProgramSummary program={selectedProgram} />}
+            showDesktopSummary={paginatedPrograms.length > 0}
+            afterContent={
+                <>
+                    <ProgramSummaryModal
+                        open={isModalOpen}
+                        onOpenChange={(isOpen) => {
+                            setIsModalOpen(isOpen);
+                            if (!isOpen && isMobile) {
+                                setSelectedId(null);
+                            }
+                        }}
+                        program={selectedProgram}
+                    />
 
-                {/* Desktop sidebar - hidden on mobile */}
-                {paginatedPrograms.length > 0 && (
-                    <div className="space-y-4 hidden lg:block h-auto pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 self-start">
-                        <ProgramSummary program={selectedProgram} />
-                    </div>
-                )}
-            </div>
-
-            {/* Mobile modal - only visible on screens < lg */}
-            <ProgramSummaryModal
-                open={isModalOpen}
-                onOpenChange={(isOpen) => {
-                    setIsModalOpen(isOpen);
-                    if (!isOpen && isMobile) {
-                        setSelectedId(null);
-                    }
-                }}
-                program={selectedProgram}
-            />
-
-            {/* Create Course Modal */}
-            <CourseFormModal
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-            />
-        </PageLayout>
+                    <CourseFormModal
+                        open={isCreateModalOpen}
+                        onOpenChange={setIsCreateModalOpen}
+                    />
+                </>
+            }
+        />
     );
 }
 

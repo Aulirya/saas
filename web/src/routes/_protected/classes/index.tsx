@@ -7,7 +7,7 @@ import { Route as ClassDetailRoute } from "./$classId";
 import { Plus, Eye, GraduationCap } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { PageLayout } from "@/components/PageLayout";
+import { MasterDetailPageLayout } from "@/components/MasterDetailPageLayout";
 import {
     Card,
     CardDescription,
@@ -181,137 +181,122 @@ function ClassesPage() {
     };
 
     return (
-        <>
-            <PageLayout
-                header={
-                    <>
-                        <PageHeader
-                            title="Mes classes"
-                            primaryAction={{
-                                label: "Nouvelle classe",
-                                icon: Plus,
-                                onClick: () => {
-                                    setIsCreateModalOpen(true);
-                                },
-                            }}
-                        />
+        <MasterDetailPageLayout
+            header={
+                <>
+                    <PageHeader
+                        title="Mes classes"
+                        primaryAction={{
+                            label: "Nouvelle classe",
+                            icon: Plus,
+                            onClick: () => {
+                                setIsCreateModalOpen(true);
+                            },
+                        }}
+                    />
 
-                        <FilterBar
-                            searchId="class-search"
-                            searchPlaceholder="Rechercher une classe..."
-                            searchValue={searchQuery}
-                            onSearchChange={setSearchQuery}
-                            filters={[
-                                {
-                                    id: "class-school-filter",
-                                    label: "École",
-                                    value: schoolFilter,
-                                    options: schoolFilterOptions,
-                                    onValueChange: (value: string) =>
-                                        setSchoolFilter(
-                                            value as SchoolFilterValue
-                                        ),
-                                    placeholder: "Toutes les écoles",
-                                    isLoading: isLoadingSchools,
-                                },
-                                {
-                                    id: "class-level-filter",
-                                    label: "Niveau",
-                                    value: levelFilter,
-                                    options: levelFilterOptions,
-                                    onValueChange: (value: string) =>
-                                        setLevelFilter(
-                                            value as LevelFilterValue
-                                        ),
-                                    placeholder: "Tous les niveaux",
-                                    isLoading: isLoadingLevels,
-                                },
-                            ]}
-                            sortBy={sortBy}
-                            sortOptions={[
-                                { value: "name", label: "Nom" },
-                                {
-                                    value: "updated_at",
-                                    label: "Date de modification",
-                                },
-                            ]}
-                            onSortByChange={(value: string) =>
-                                setSortBy(value as "name" | "updated_at")
-                            }
-                            sortOrder={sortOrder}
-                            onSortOrderChange={setSortOrder}
-                        />
-                    </>
-                }
-            >
-                <div className="grid grid-cols-7 gap-6 m-0 grow">
-                    <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col">
-                        {/* Classes list */}
-                        <div className="">
-                            <div className="space-y-5">
-                                {isLoading ? (
-                                    <SkeletonCard />
-                                ) : paginatedClasses.length > 0 ? (
-                                    paginatedClasses.map((cls) => (
-                                        <ClassCard
-                                            key={cls.id}
-                                            classData={cls}
-                                            isSelected={cls.id === selectedId}
-                                            onSelect={handleClassSelect}
-                                        />
-                                    ))
-                                ) : (
-                                    <EmptyStateCard
-                                        title="Aucune classe trouvée"
-                                        description="Créez votre première classe pour commencer à suivre vos élèves."
-                                        buttonText="Nouvelle classe"
-                                        onButtonClick={() =>
-                                            setIsCreateModalOpen(true)
-                                        }
-                                    />
-                                )}
-                            </div>
-                        </div>
-                        {/* Fixed Pagination */}
-                        {!isLoading && filteredClasses.length > 0 && (
-                            <PaginationControls
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                onPageChange={setCurrentPage}
-                            />
-                        )}
-                    </div>
-                    {/* Desktop sidebar - hidden on mobile */}
-                    <div className="space-y-4 hidden lg:block pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit self-start">
-                        <ClassSummarySidebar
-                            classData={
-                                selectedClassWithDetails ?? selectedClass
-                            }
-                            isLoading={isLoadingClassDetails}
-                        />
-                    </div>
-                </div>
-
-                {/* Mobile modal - only visible on screens < lg */}
-                <ClassSummaryModal
-                    open={isModalOpen}
-                    onOpenChange={(isOpen) => {
-                        setIsModalOpen(isOpen);
-                        if (!isOpen && isMobile) {
-                            setSelectedId(null);
+                    <FilterBar
+                        searchId="class-search"
+                        searchPlaceholder="Rechercher une classe..."
+                        searchValue={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        filters={[
+                            {
+                                id: "class-school-filter",
+                                label: "École",
+                                value: schoolFilter,
+                                options: schoolFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setSchoolFilter(value as SchoolFilterValue),
+                                placeholder: "Toutes les écoles",
+                                isLoading: isLoadingSchools,
+                            },
+                            {
+                                id: "class-level-filter",
+                                label: "Niveau",
+                                value: levelFilter,
+                                options: levelFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setLevelFilter(value as LevelFilterValue),
+                                placeholder: "Tous les niveaux",
+                                isLoading: isLoadingLevels,
+                            },
+                        ]}
+                        sortBy={sortBy}
+                        sortOptions={[
+                            { value: "name", label: "Nom" },
+                            {
+                                value: "updated_at",
+                                label: "Date de modification",
+                            },
+                        ]}
+                        onSortByChange={(value: string) =>
+                            setSortBy(value as "name" | "updated_at")
                         }
-                    }}
+                        sortOrder={sortOrder}
+                        onSortOrderChange={setSortOrder}
+                    />
+                </>
+            }
+            list={
+                <>
+                    {isLoading ? (
+                        <SkeletonCard />
+                    ) : paginatedClasses.length > 0 ? (
+                        paginatedClasses.map((cls) => (
+                            <ClassCard
+                                key={cls.id}
+                                classData={cls}
+                                isSelected={cls.id === selectedId}
+                                onSelect={handleClassSelect}
+                            />
+                        ))
+                    ) : (
+                        <EmptyStateCard
+                            title="Aucune classe trouvée"
+                            description="Créez votre première classe pour commencer à suivre vos élèves."
+                            buttonText="Nouvelle classe"
+                            onButtonClick={() => setIsCreateModalOpen(true)}
+                        />
+                    )}
+                </>
+            }
+            pagination={
+                !isLoading && filteredClasses.length > 0 ? (
+                    <PaginationControls
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                ) : null
+            }
+            desktopSummary={
+                <ClassSummarySidebar
                     classData={selectedClassWithDetails ?? selectedClass}
                     isLoading={isLoadingClassDetails}
                 />
+            }
+            afterContent={
+                <>
+                    <ClassSummaryModal
+                        open={isModalOpen}
+                        onOpenChange={(isOpen) => {
+                            setIsModalOpen(isOpen);
+                            if (!isOpen && isMobile) {
+                                setSelectedId(null);
+                            }
+                        }}
+                        classData={selectedClassWithDetails ?? selectedClass}
+                        isLoading={isLoadingClassDetails}
+                    />
 
-                {/* Create Class Modal */}
-                <ClassFormModal
-                    open={isCreateModalOpen}
-                    onOpenChange={setIsCreateModalOpen}
-                />
-            </PageLayout>
-        </>
+                    <ClassFormModal
+                        open={isCreateModalOpen}
+                        onOpenChange={setIsCreateModalOpen}
+                    />
+                </>
+            }
+        />
     );
 }
 
