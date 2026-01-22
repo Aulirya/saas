@@ -19,7 +19,7 @@ export function PageLayout({
     headerClassName,
 }: PageLayoutProps) {
     return (
-        <div id="main" className={cn("h-full flex flex-col px-2", className)}>
+        <div id="main" className={cn("h-full flex flex-col ", className)}>
             {header && (
                 <div className={cn("space-y-6 lg:space-y-6", headerClassName)}>
                     {header}
