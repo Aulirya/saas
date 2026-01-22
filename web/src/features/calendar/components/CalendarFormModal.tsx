@@ -12,7 +12,6 @@ import {
     parseISO,
     setHours,
     setMinutes,
-    getHours,
     getDay,
 } from "date-fns";
 import type { ScheduledCourse } from "../types";
@@ -61,33 +60,53 @@ export type CalendarFormModalProps = {
  * Parse slot string (e.g., "8h-10h") to get start hour
  */
 function parseSlotToHour(slot: string): number {
-    const match = slot.match(/(\d+)h/);
-    return match ? parseInt(match[1], 10) : 8;
+    const match = slot.match(/(\d{1,2})(?::(\d{2}))?/);
+    if (!match) return 8;
+    const hours = parseInt(match[1], 10);
+    const minutes = match[2] ? parseInt(match[2], 10) : 0;
+    return hours + minutes / 60;
 }
 
 function parseSlotToRange(slot: string): {
     startHour: number;
     endHour: number;
 } {
-    const match = slot.match(/(\d+)h\s*-\s*(\d+)h/);
+    const match = slot.match(
+        /(\d{1,2})(?::(\d{2}))?\s*(?:h)?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(?:h)?/
+    );
     if (match) {
+        const startHour =
+            parseInt(match[1], 10) +
+            (match[2] ? parseInt(match[2], 10) / 60 : 0);
+        const endHour =
+            parseInt(match[3], 10) +
+            (match[4] ? parseInt(match[4], 10) / 60 : 0);
         return {
-            startHour: parseInt(match[1], 10),
-            endHour: parseInt(match[2], 10),
+            startHour,
+            endHour,
         };
     }
     const startHour = parseSlotToHour(slot);
     return { startHour, endHour: startHour + 1 };
 }
 
-function normalizeSlotLabel(slotLabel: string) {
-    if (!slotLabel.includes("-")) {
-        const startHour = parseSlotToHour(slotLabel);
-        return `${startHour}h-${startHour + 1}h`;
-    }
-    return slotLabel;
+function formatSlotLabel(startHour: number, endHour: number) {
+    const formatHour = (value: number) => {
+        const hours = Math.floor(value);
+        const minutes = Math.round((value - hours) * 60);
+        return (
+            String(hours).padStart(2, "0") +
+            ":" +
+            String(minutes).padStart(2, "0")
+        );
+    };
+    return formatHour(startHour) + "-" + formatHour(endHour);
 }
 
+function normalizeSlotLabel(slotLabel: string) {
+    const { startHour, endHour } = parseSlotToRange(slotLabel);
+    return formatSlotLabel(startHour, endHour);
+}
 function buildRecurringSlot(
     dateStr: string,
     slot: string
@@ -233,24 +252,22 @@ export function CalendarFormModal({
     // Get initial slot from scheduled_date if editing
     const initialSlotStr = useMemo(() => {
         if (initialLessonProgress?.scheduled_date) {
-            const hour = getHours(
-                parseISO(initialLessonProgress.scheduled_date)
-            );
+            const hour = parseISO(initialLessonProgress.scheduled_date).getUTCHours();
             const nextHour = hour + 1;
-            return `${hour}h-${nextHour}h`;
+            return formatSlotLabel(hour, nextHour);
         }
         if (initialCourse?.startDateTime && initialCourse?.endDateTime) {
-            const startHour = getHours(parseISO(initialCourse.startDateTime));
-            let endHour = getHours(parseISO(initialCourse.endDateTime));
+            const startHour = parseISO(initialCourse.startDateTime).getUTCHours();
+            let endHour = parseISO(initialCourse.endDateTime).getUTCHours();
             if (endHour <= startHour) {
                 endHour = startHour + 1;
             }
-            return `${startHour}h-${endHour}h`;
+            return formatSlotLabel(startHour, endHour);
         }
         if (initialSlotLabel) {
             return normalizeSlotLabel(initialSlotLabel);
         }
-        return "8h-9h";
+        return formatSlotLabel(8, 9);
     }, [initialLessonProgress, initialCourse, initialSlotLabel]);
 
     // ---------- Form ----------
@@ -415,7 +432,7 @@ export function CalendarFormModal({
         return Array.from({ length: 10 }, (_, i) => {
             const hour = 8 + i;
             const nextHour = hour + 1;
-            return `${hour}h-${nextHour}h`;
+            return formatSlotLabel(hour, nextHour);
         });
     }, []);
 
