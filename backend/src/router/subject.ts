@@ -52,12 +52,21 @@ export const getSubjectWithLessons = base
     .handler(async ({ input, context }): Promise<SubjectWithLessons> => {
         const userId = new RecordId("users", context.user_id);
         const subjectId = parseRecordId(input.id, "subjects");
+        const subjectCheckQuery = surql`SELECT id FROM subjects WHERE id = ${subjectId} AND user_id = ${userId}`;
+        const subjectCheck = await context.db
+            .query<[SubjectModel[]]>(subjectCheckQuery)
+            .collect();
+        if (!subjectCheck[0] || subjectCheck[0].length === 0) {
+            throw new ORPCError("NOT_FOUND", {
+                message: "Matière non trouvée",
+            });
+        }
 
         const query = surql`
         SELECT * ,
             (SELECT *
             FROM lessons
-            WHERE subject_id = $parent.id
+            WHERE subject_id = $parent.id AND user_id = ${userId}
             ORDER BY order ASC
             ) AS lessons
         FROM subjects
@@ -192,8 +201,18 @@ export const createSubject = base
 export const patchSubject = base
     .input(subject_patch_input)
     .handler(async ({ input, context }): Promise<Subject> => {
+        const userId = new RecordId("users", context.user_id);
         try {
             const subjectId = parseRecordId(input.id, "subjects");
+            const subjectCheckQuery = surql`SELECT id FROM subjects WHERE id = ${subjectId} AND user_id = ${userId}`;
+            const subjectCheck = await context.db
+                .query<[SubjectModel[]]>(subjectCheckQuery)
+                .collect();
+            if (!subjectCheck[0] || subjectCheck[0].length === 0) {
+                throw new ORPCError("NOT_FOUND", {
+                    message: "Matière non trouvée",
+                });
+            }
             const updateData: Partial<
                 Pick<SubjectModel, "name" | "description" | "type" | "category">
             > = {};

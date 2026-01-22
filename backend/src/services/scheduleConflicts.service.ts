@@ -124,6 +124,7 @@ export async function checkScheduleConflicts(
                 const subjectQuery = surql`
                     SELECT id, name FROM subjects
                     WHERE id = ${subjectId}
+                    AND user_id = ${userId}
                 `;
                 const subjectResult = await db
                     .query<

@@ -38,10 +38,12 @@ export async function generateLessonProgressSchedule(params: {
         SELECT *,
             (SELECT * FROM lessons
             WHERE subject_id = ${courseProgress.subject_id}
+            AND user_id = ${userId}
             ORDER BY order ASC
             ) AS lessons
         FROM subjects
         WHERE id = ${courseProgress.subject_id}
+        AND user_id = ${userId}
     `;
 
     const subjectResult = await db

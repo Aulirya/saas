@@ -132,7 +132,7 @@ export async function getAllLessonsForCalendar(params: {
         }
     >
 > {
-    const { db } = params;
+    const { db, userId } = params;
 
     // Now get the lessons with subject and class names via links
     const lessonsQuery = surql`
@@ -144,6 +144,7 @@ export async function getAllLessonsForCalendar(params: {
             lesson_id.label AS lesson_label,
             lesson_id.duration AS lesson_duration
         FROM lesson_progress
+        WHERE course_progress_id.user_id = ${userId}
     `;
 
     const result = await db

@@ -3,6 +3,7 @@ import type { SchoolClassModel } from "../repository/model/school_class";
 import { base } from "./base";
 import * as z from "zod";
 import { surql, RecordId, Table } from "surrealdb";
+import { ORPCError } from "@orpc/server";
 import {
     school_class_create_input,
     school_class_patch_input,
@@ -94,6 +95,16 @@ export const getSchoolClass = base
     .handler(async ({ input, context }): Promise<SchoolClass> => {
         const userId = new RecordId("users", context.user_id);
         const classId = parseRecordId(input.id, "classes");
+
+        const classCheckQuery = surql`SELECT id FROM classes WHERE id = ${classId} AND user_id = ${userId}`;
+        const classCheckResult = await context.db
+            .query<[SchoolClassModel[]]>(classCheckQuery)
+            .collect();
+        if (!classCheckResult[0] || classCheckResult[0].length === 0) {
+            throw new ORPCError("NOT_FOUND", {
+                message: "Classe non trouvée",
+            });
+        }
         const query = surql`SELECT * FROM classes WHERE user_id = ${userId} AND id = ${classId}`;
 
         const classesModel = await context.db
@@ -130,12 +141,12 @@ export const getSchoolClassWithSubjects = base
                         (
                             SELECT *
                             FROM lessons
-                            WHERE subject_id = $parent.subject_id
+                            WHERE subject_id = $parent.subject_id AND user_id = ${userId}
                             ORDER BY order ASC
                             LIMIT 1
                         ) AS lessons
-                    FROM course_progress 
-                    WHERE class_id = $parent.id
+                    FROM course_progress
+                    WHERE class_id = $parent.id AND user_id = ${userId}
                 ) AS subjects
                 FROM classes
                 WHERE
@@ -261,6 +272,16 @@ export const patchSchoolClass = base
         const userId = new RecordId("users", context.user_id);
         const classId = parseRecordId(input.id, "classes");
 
+        const classCheckQuery = surql`SELECT id FROM classes WHERE id = ${classId} AND user_id = ${userId}`;
+        const classCheckResult = await context.db
+            .query<[SchoolClassModel[]]>(classCheckQuery)
+            .collect();
+        if (!classCheckResult[0] || classCheckResult[0].length === 0) {
+            throw new ORPCError("NOT_FOUND", {
+                message: "Classe non trouvée",
+            });
+        }
+
         const updateData: Partial<{
             name: string;
             level: string;
@@ -295,7 +316,7 @@ export const patchSchoolClass = base
 
                 // Get current course_progress entries for this class
                 const currentProgressQuery = surql`
-                    SELECT subject_id FROM course_progress WHERE class_id = ${classId}
+                    SELECT subject_id FROM course_progress WHERE class_id = ${classId} AND user_id = ${userId}
                 `;
                 const currentProgress = await context.db
                     .query<[{ subject_id: RecordId }[]]>(currentProgressQuery)
@@ -330,7 +351,7 @@ export const patchSchoolClass = base
                 // Delete only removed subjects
                 for (const progress of subjectsToDelete) {
                     await context.db.query(
-                        surql`DELETE FROM course_progress WHERE class_id = ${classId} AND subject_id = ${progress.subject_id}`
+                        surql`DELETE FROM course_progress WHERE class_id = ${classId} AND subject_id = ${progress.subject_id} AND user_id = ${userId}`
                     );
                 }
 
@@ -351,7 +372,7 @@ export const patchSchoolClass = base
             }
 
             // Fetch updated class
-            const query = surql`SELECT * FROM classes WHERE id = ${classId}`;
+            const query = surql`SELECT * FROM classes WHERE id = ${classId} AND user_id = ${userId}`;
             const result = await context.db
                 .query<[SchoolClassModel[]]>(query)
                 .collect();
