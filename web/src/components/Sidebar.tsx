@@ -8,7 +8,8 @@ import {
     Folder,
     ChevronLeft,
     ChevronRight,
-    UsersRound,
+    GraduationCap,
+    LibraryBig,
 } from "lucide-react";
 import { useSidebar } from "../routes/__root";
 
@@ -48,6 +49,7 @@ export default function Sidebar() {
                     <Link
                         to="/dashboard"
                         onClick={() => setIsOpen(false)}
+                        title="Dashboard"
                         className={`flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
@@ -66,6 +68,7 @@ export default function Sidebar() {
                     <Link
                         to="/courses"
                         onClick={() => setIsOpen(false)}
+                        title="Mes cours"
                         className={`flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
@@ -84,6 +87,7 @@ export default function Sidebar() {
                     <Link
                         to="/classes"
                         onClick={() => setIsOpen(false)}
+                        title="Mes classes"
                         className={`flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
@@ -93,7 +97,7 @@ export default function Sidebar() {
                             }`,
                         }}
                     >
-                        <UsersRound size={20} />
+                        <GraduationCap size={20} />
                         {isOpen && (
                             <span className="font-medium">Mes classes</span>
                         )}
@@ -102,6 +106,7 @@ export default function Sidebar() {
                     <Link
                         to="/subjects"
                         onClick={() => setIsOpen(false)}
+                        title="Mes matières"
                         className={`flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
@@ -111,7 +116,7 @@ export default function Sidebar() {
                             }`,
                         }}
                     >
-                        <BookOpen size={20} />
+                        <LibraryBig size={20} />
                         {isOpen && (
                             <span className="font-medium">Mes matières</span>
                         )}
@@ -121,6 +126,7 @@ export default function Sidebar() {
                         to="/analytics"
                         disabled={true}
                         onClick={() => setIsOpen(false)}
+                        title="Analyses IA - Bientôt"
                         className={`flex items-center gap-3 p-3 rounded-lg transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
@@ -144,6 +150,7 @@ export default function Sidebar() {
                     <Link
                         to="/community"
                         disabled={true}
+                        title="Communauté - Bientôt"
                         className={`flex items-center gap-3 p-3 rounded-lg  transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
@@ -167,6 +174,7 @@ export default function Sidebar() {
                     <Link
                         to="/resources"
                         disabled={true}
+                        title="Ressources - Bientôt"
                         className={`flex items-center gap-3 p-3 rounded-lg transition-colors mb-2 text-slate-700 ${
                             !isOpen ? "justify-center" : ""
                         }`}
