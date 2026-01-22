@@ -181,11 +181,11 @@ export const CATEGORY_CONFIG: Record<SubjectCategory, CategoryConfig> = {
     Other: {
         label: "Autre",
         icon: FolderOpen,
-        color: "bg-gray-100 dark:bg-gray-900/30",
-        borderColor: "border-gray-300 dark:border-gray-700/60",
-        iconColor: "text-gray-600 dark:text-gray-400",
-        buttonColor: "bg-gray-600 dark:bg-gray-500",
-        buttonHoverColor: "hover:bg-gray-700 dark:hover:bg-gray-600",
+        color: "bg-yellow-100 dark:bg-yellow-900/30",
+        borderColor: "border-yellow-300 dark:border-yellow-700/60",
+        iconColor: "text-yellow-600 dark:text-yellow-400",
+        buttonColor: "bg-yellow-600 dark:bg-yellow-500",
+        buttonHoverColor: "hover:bg-yellow-700 dark:hover:bg-yellow-600",
     },
 };
 

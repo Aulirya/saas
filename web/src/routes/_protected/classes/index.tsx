@@ -4,14 +4,12 @@ import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as ClassDetailRoute } from "./$classId";
-import { Plus, Eye } from "lucide-react";
-import { getClassConfig } from "@/lib/class-utils";
+import { Plus, Eye, GraduationCap } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
 import { PageLayout } from "@/components/PageLayout";
 import {
     Card,
-    CardAction,
     CardDescription,
     CardHeader,
     CardTitle,
@@ -34,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { CardInfoLayout } from "@/components/ui/card-info-layout";
 import { ViewDetailButton } from "@/components/ui/view-detail-button";
 import { FormSheet } from "@/components/ui/form-sheet";
+import { SelectableCard } from "@/components/SelectableCard";
 
 import { SchoolClassWithSubjectsAndLessons } from "@saas/shared";
 import { formatLessonDateTime } from "@/lib/date";
@@ -248,7 +247,7 @@ function ClassesPage() {
                 <div className="grid grid-cols-7 gap-6 m-0 grow">
                     <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col">
                         {/* Classes list */}
-                        <div className="pr-3 pt-3 pl-3">
+                        <div className="">
                             <div className="space-y-5">
                                 {isLoading ? (
                                     <SkeletonCard />
@@ -283,7 +282,7 @@ function ClassesPage() {
                         )}
                     </div>
                     {/* Desktop sidebar - hidden on mobile */}
-                    <div className="space-y-4 hidden lg:block pt-3 pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit self-start">
+                    <div className="space-y-4 hidden lg:block pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit self-start">
                         <ClassSummarySidebar
                             classData={
                                 selectedClassWithDetails ?? selectedClass
@@ -325,79 +324,43 @@ function ClassCard({
     isSelected: boolean;
     onSelect: (id: string) => void;
 }) {
-    const classConfig = getClassConfig(classData.level);
-
     return (
-        <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(classData.id)}
-            onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(classData.id);
-                }
-            }}
-            className={cn(
-                "group cursor-pointer border-border/70 transition-all duration-200",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                "hover:shadow-sm hover:border-muted-foreground/50",
-                isSelected
-                    ? "border-muted-foreground/80 shadow-sm bg-muted/20"
-                    : "hover:shadow-sm"
-            )}
-        >
-            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4 flex-1">
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                        <CardTitle className="text-lg font-semibold">
-                            {classData.name}
-                        </CardTitle>
-                        <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
-                            <span className="font-medium text-foreground/80">
-                                {classData.school}
-                            </span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{classData.level}</span>
-                            {classData.students_count !== undefined && (
-                                <>
-                                    <span className="text-muted-foreground">
-                                        •
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {classData.students_count} élève
-                                        {classData.students_count > 1
-                                            ? "s"
-                                            : ""}
-                                    </span>
-                                </>
-                            )}
-                        </CardDescription>
-                    </div>
-                </div>
-
-                <CardAction>
-                    <Button
-                        asChild
-                        className={cn(
-                            "shrink-0 text-white transition-all",
-                            classConfig.buttonColor,
-                            classConfig.buttonHoverColor,
-                            "group-hover:shadow-sm"
-                        )}
-                        aria-label="Voir la classe"
+        <SelectableCard
+            isSelected={isSelected}
+            onSelect={() => onSelect(classData.id)}
+            icon={<GraduationCap className="size-6 text-primary" aria-hidden />}
+            iconContainerClassName="bg-primary/10"
+            title={classData.name}
+            description={
+                <span>
+                    {classData.school} • {classData.level} selected:{" "}
+                    {isSelected}
+                    {classData.students_count !== undefined &&
+                        ` • ${classData.students_count} élève${
+                            classData.students_count > 1 ? "s" : ""
+                        }`}
+                </span>
+            }
+            action={
+                <Button
+                    asChild
+                    className={cn(
+                        "shrink-0 text-white transition-all",
+                        "bg-primary hover:bg-primary/90",
+                        "group-hover:shadow-sm"
+                    )}
+                    aria-label="Voir la classe"
+                >
+                    <Link
+                        to={ClassDetailRoute.to}
+                        params={{ classId: classData.id }}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <Link
-                            to={ClassDetailRoute.to}
-                            params={{ classId: classData.id }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <Eye className="size-4" /> Voir la classe
-                        </Link>
-                    </Button>
-                </CardAction>
-            </CardHeader>
-        </Card>
+                        <Eye className="size-4" /> Voir la classe
+                    </Link>
+                </Button>
+            }
+        />
     );
 }
 
@@ -408,7 +371,6 @@ function ClassSummarySidebar({
     classData: SchoolClassWithSubjectsAndLessons | SchoolClass | undefined;
     isLoading?: boolean;
 }) {
-    const classConfig = getClassConfig(classData?.level ?? "");
     if (!classData) {
         return (
             <Card className="border-dashed">

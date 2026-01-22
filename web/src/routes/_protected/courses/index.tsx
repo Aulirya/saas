@@ -9,13 +9,7 @@ import { Eye, Plus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { PageLayout } from "@/components/PageLayout";
 
-import {
-    Card,
-    CardAction,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { FormSheet } from "@/components/ui/form-sheet";
@@ -25,6 +19,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { SkeletonCard } from "@/components/ui/skeleton";
+import { SelectableCard } from "@/components/SelectableCard";
 
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
 import type { CourseProgram } from "@/features/courses/types";
@@ -299,7 +294,7 @@ function CoursesPage() {
             <div className="grid grid-cols-7 gap-6 m-0 grow">
                 <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col">
                     {/* Programs list */}
-                    <div className="pr-3 pt-3 pl-3">
+                    <div className="">
                         <div className="space-y-5">
                             {isLoading ? (
                                 <SkeletonCard />
@@ -336,7 +331,7 @@ function CoursesPage() {
 
                 {/* Desktop sidebar - hidden on mobile */}
                 {paginatedPrograms.length > 0 && (
-                    <div className="space-y-4 hidden lg:block pt-3 h-auto pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 self-start">
+                    <div className="space-y-4 hidden lg:block h-auto pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 self-start">
                         <ProgramSummary program={selectedProgram} />
                     </div>
                 )}
@@ -376,68 +371,41 @@ function ProgramCard({
     const Icon = categoryConfig.icon;
 
     return (
-        <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(program.id)}
-            onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(program.id);
-                }
-            }}
-            className={cn(
-                "group cursor-pointer border-border/70 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                isSelected
-                    ? "border-muted-foreground/80 shadow-sm bg-muted/20"
-                    : "hover:border-muted-foreground/50 hover:shadow-sm"
+        <SelectableCard
+            isSelected={isSelected}
+            onSelect={() => onSelect(program.id)}
+            icon={<Icon className="size-6" aria-hidden />}
+            iconContainerClassName={cn(
+                categoryConfig.color,
+                categoryConfig.iconColor
             )}
-        >
-            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                    <div
-                        className={cn(
-                            "flex size-12 items-center justify-center rounded-xl",
-                            categoryConfig.color,
-                            categoryConfig.iconColor
-                        )}
+            title={`${program.subject} • ${program.className}`}
+            description={
+                <span>
+                    {program.level} • {program.weeklyHours}h/semaine •{" "}
+                    {program.students} élève
+                    {program.students > 1 ? "s" : ""}
+                </span>
+            }
+            action={
+                <Button
+                    asChild
+                    aria-label="Voir le cours"
+                    className={cn(
+                        "shrink-0 text-white",
+                        categoryConfig.buttonColor,
+                        categoryConfig.buttonHoverColor
+                    )}
+                >
+                    <Link
+                        to={CourseDetailRoute.to}
+                        params={{ courseId: program.id }}
                     >
-                        <Icon className="size-6" aria-hidden />
-                    </div>
-                    <div className="space-y-1">
-                        <CardTitle className="text-xl sm:text-2xl">
-                            {program.subject} • {program.className}
-                        </CardTitle>
-                        <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
-                            <span>{program.level}</span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{program.weeklyHours}h/semaine</span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{program.students} élèves</span>
-                        </CardDescription>
-                    </div>
-                </div>
-
-                <CardAction>
-                    <Button
-                        asChild
-                        aria-label="Voir le cours"
-                        className={cn(
-                            "shrink-0 text-white",
-                            categoryConfig.buttonColor,
-                            categoryConfig.buttonHoverColor
-                        )}
-                    >
-                        <Link
-                            to={CourseDetailRoute.to}
-                            params={{ courseId: program.id }}
-                        >
-                            <Eye className="size-4" /> Voir le cours
-                        </Link>
-                    </Button>
-                </CardAction>
-            </CardHeader>
-        </Card>
+                        <Eye className="size-4" /> Voir le cours
+                    </Link>
+                </Button>
+            }
+        />
     );
 }
 
