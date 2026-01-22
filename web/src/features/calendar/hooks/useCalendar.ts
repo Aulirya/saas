@@ -3,8 +3,6 @@ import {
     addDays,
     endOfWeek,
     format,
-    getHours,
-    getMinutes,
     isSameDay,
     parseISO,
     startOfWeek,
@@ -86,8 +84,9 @@ export function useCalendar(initial?: { date?: Date }) {
         ): { startHour: number; endHour: number } => {
             const start = parseISO(startDateTime);
             const end = parseISO(endDateTime);
-            const startHour = getHours(start) + getMinutes(start) / 60;
-            let endHour = getHours(end) + getMinutes(end) / 60;
+            const startHour =
+                start.getUTCHours() + start.getUTCMinutes() / 60;
+            let endHour = end.getUTCHours() + end.getUTCMinutes() / 60;
             if (endHour <= startHour) {
                 endHour = startHour + 1;
             }

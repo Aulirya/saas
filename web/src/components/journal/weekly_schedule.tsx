@@ -4,8 +4,6 @@ import {
     endOfMonth,
     endOfWeek,
     format,
-    getHours,
-    getMinutes,
     isSameDay,
     isSameMonth,
     parseISO,
@@ -96,7 +94,9 @@ const formatCourseTime = (course: CourseBlock) => {
     try {
         const start = parseISO(course.startDateTime);
         const end = parseISO(course.endDateTime);
-        return `${format(start, "HH:mm")} - ${format(end, "HH:mm")}`;
+        const formatUtc = (date: Date) =>
+            `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+        return `${formatUtc(start)} - ${formatUtc(end)}`;
     } catch {
         return "";
     }
@@ -104,7 +104,7 @@ const formatCourseTime = (course: CourseBlock) => {
 
 const getHourFraction = (dateTime: string) => {
     const date = parseISO(dateTime);
-    return getHours(date) + getMinutes(date) / 60;
+    return date.getUTCHours() + date.getUTCMinutes() / 60;
 };
 
 type CalendarHeaderProps = {
