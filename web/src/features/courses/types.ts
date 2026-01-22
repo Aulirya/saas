@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { SubjectCategory } from "@saas/shared";
 
 export type CourseProgramStatus = "defined" | "partial" | "draft";
 
@@ -18,7 +18,7 @@ export type CourseProgramStats = {
 export type CourseProgram = {
     id: string;
     subject: string;
-    icon: LucideIcon;
+    subjectCategory: SubjectCategory;
     level: string;
     className: string;
     weeklyHours: number;

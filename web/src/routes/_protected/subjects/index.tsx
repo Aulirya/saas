@@ -41,7 +41,7 @@ function SubjectsPage() {
         useState<CategoryFilterValue>("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(5);
+    const [pageSize] = useState(20);
     const [sortBy, setSortBy] = useState<"name" | "updated_at">("name");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -205,10 +205,10 @@ function SubjectsPage() {
                     </>
                 }
             >
-                <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                    <div className="col-span-7 flex flex-col overflow-hidden">
-                        {/* Scrollable subjects list */}
-                        <div className="flex-1 overflow-y-auto pr-3">
+                <div className="grid grid-cols-7 gap-6 m-0 grow">
+                    <div className="col-span-7 flex flex-col">
+                        {/* Subjects list */}
+                        <div className="pr-3">
                             <div className="space-y-5">
                                 {isLoading ? (
                                     <SkeletonCard />

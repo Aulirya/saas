@@ -7,15 +7,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Eye, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { PageLayout } from "@/components/PageLayout";
+import { MasterDetailPageLayout } from "@/components/MasterDetailPageLayout";
 
-import {
-    Card,
-    CardAction,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { FormSheet } from "@/components/ui/form-sheet";
@@ -25,11 +19,13 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { EmptyStateCard } from "@/components/ui/empty-state-card";
 import { SkeletonCard } from "@/components/ui/skeleton";
+import { SelectableCard } from "@/components/SelectableCard";
 
 import { useCoursePrograms } from "@/features/courses/api/useCoursePrograms";
 import type { CourseProgram } from "@/features/courses/types";
-import { cn, getColorFromText } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { CourseFormModal } from "@/features/courses/components/CourseFormModal";
+import { getCategoryConfig } from "@/lib/subject-utils";
 
 type LevelFilterValue = string;
 type SubjectFilterValue = string;
@@ -62,7 +58,7 @@ function CoursesPage() {
     // Pagination State
     // ---------------------------
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(5);
+    const [pageSize] = useState(20);
 
     // ---------------------------
     // Sorting State
@@ -231,7 +227,7 @@ function CoursesPage() {
     };
 
     return (
-        <PageLayout
+        <MasterDetailPageLayout
             header={
                 <>
                     <PageHeader
@@ -294,74 +290,60 @@ function CoursesPage() {
                     />
                 </>
             }
-        >
-            <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col overflow-hidden">
-                    {/* Scrollable programs list */}
-                    <div className="flex-1 overflow-y-auto pr-3 pt-3 pl-3">
-                        <div className="space-y-5">
-                            {isLoading ? (
-                                <SkeletonCard />
-                            ) : paginatedPrograms.length > 0 ? (
-                                paginatedPrograms.map((program) => (
-                                    <ProgramCard
-                                        key={program.id}
-                                        program={program}
-                                        isSelected={program.id === selectedId}
-                                        onSelect={handleProgramSelect}
-                                    />
-                                ))
-                            ) : (
-                                <EmptyStateCard
-                                    title="Aucun cours trouvé"
-                                    description="Créez votre premier programme pour commencer à planifier vos cours."
-                                    buttonText="Nouveau cours"
-                                    onButtonClick={() =>
-                                        setIsCreateModalOpen(true)
-                                    }
-                                />
-                            )}
-                        </div>
-                    </div>
-                    {/* Fixed Pagination */}
-                    {!isLoading && filteredPrograms.length > 0 && (
-                        <PaginationControls
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
+            list={
+                <>
+                    {isLoading ? (
+                        <SkeletonCard />
+                    ) : paginatedPrograms.length > 0 ? (
+                        paginatedPrograms.map((program) => (
+                            <ProgramCard
+                                key={program.id}
+                                program={program}
+                                isSelected={program.id === selectedId}
+                                onSelect={handleProgramSelect}
+                            />
+                        ))
+                    ) : (
+                        <EmptyStateCard
+                            title="Aucun cours trouvé"
+                            description="Créez votre premier programme pour commencer à planifier vos cours."
+                            buttonText="Nouveau cours"
+                            onButtonClick={() => setIsCreateModalOpen(true)}
                         />
                     )}
-                </div>
+                </>
+            }
+            pagination={
+                !isLoading && filteredPrograms.length > 0 ? (
+                    <PaginationControls
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                ) : null
+            }
+            desktopSummary={<ProgramSummary program={selectedProgram} />}
+            showDesktopSummary={paginatedPrograms.length > 0}
+            afterContent={
+                <>
+                    <ProgramSummaryModal
+                        open={isModalOpen}
+                        onOpenChange={(isOpen) => {
+                            setIsModalOpen(isOpen);
+                            if (!isOpen && isMobile) {
+                                setSelectedId(null);
+                            }
+                        }}
+                        program={selectedProgram}
+                    />
 
-                {/* Desktop sidebar - hidden on mobile */}
-                {paginatedPrograms.length > 0 && (
-                    <div
-                        className="space-y-4 hidden overflow-hidden lg:block pt-3 h-auto pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 "
-                        style={{ top: "auto" }}
-                    >
-                        <ProgramSummary program={selectedProgram} />
-                    </div>
-                )}
-            </div>
-
-            {/* Mobile modal - only visible on screens < lg */}
-            <ProgramSummaryModal
-                open={isModalOpen}
-                onOpenChange={(isOpen) => {
-                    setIsModalOpen(isOpen);
-                    if (!isOpen && isMobile) {
-                        setSelectedId(null);
-                    }
-                }}
-                program={selectedProgram}
-            />
-
-            {/* Create Course Modal */}
-            <CourseFormModal
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-            />
-        </PageLayout>
+                    <CourseFormModal
+                        open={isCreateModalOpen}
+                        onOpenChange={setIsCreateModalOpen}
+                    />
+                </>
+            }
+        />
     );
 }
 
@@ -374,70 +356,45 @@ function ProgramCard({
     isSelected: boolean;
     onSelect: (id: string) => void;
 }) {
-    const Icon = program.icon;
-
-    // Get color scheme based on subject text
-    const colorScheme = getColorFromText(program.subject);
+    const categoryConfig = getCategoryConfig(program.subjectCategory);
+    const Icon = categoryConfig.icon;
 
     return (
-        <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(program.id)}
-            onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(program.id);
-                }
-            }}
-            className={cn(
-                "group cursor-pointer border-border/70 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                isSelected
-                    ? "border-muted-foreground/80 shadow-sm"
-                    : "hover:border-muted-foreground/50 hover:shadow-sm"
+        <SelectableCard
+            isSelected={isSelected}
+            onSelect={() => onSelect(program.id)}
+            icon={<Icon className="size-6" aria-hidden />}
+            iconContainerClassName={cn(
+                categoryConfig.color,
+                categoryConfig.iconColor
             )}
-        >
-            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                    <div
-                        className={cn(
-                            "flex size-12 items-center justify-center rounded-xl",
-                            colorScheme.bgLight,
-                            colorScheme.text
-                        )}
+            title={`${program.subject} • ${program.className}`}
+            description={
+                <span>
+                    {program.level} • {program.weeklyHours}h/semaine •{" "}
+                    {program.students} élève
+                    {program.students > 1 ? "s" : ""}
+                </span>
+            }
+            action={
+                <Button
+                    asChild
+                    aria-label="Voir le cours"
+                    className={cn(
+                        "shrink-0 text-white",
+                        categoryConfig.buttonColor,
+                        categoryConfig.buttonHoverColor
+                    )}
+                >
+                    <Link
+                        to={CourseDetailRoute.to}
+                        params={{ courseId: program.id }}
                     >
-                        <Icon className="size-6" aria-hidden />
-                    </div>
-                    <div className="space-y-1">
-                        <CardTitle className="text-xl sm:text-2xl">
-                            {program.subject} • {program.className}
-                        </CardTitle>
-                        <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
-                            <span>{program.level}</span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{program.weeklyHours}h/semaine</span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{program.students} élèves</span>
-                        </CardDescription>
-                    </div>
-                </div>
-
-                <CardAction>
-                    <Button
-                        asChild
-                        aria-label="Voir le cours"
-                        className={cn("shrink-0", colorScheme.button)}
-                    >
-                        <Link
-                            to={CourseDetailRoute.to}
-                            params={{ courseId: program.id }}
-                        >
-                            <Eye className="size-4" /> Voir le cours
-                        </Link>
-                    </Button>
-                </CardAction>
-            </CardHeader>
-        </Card>
+                        <Eye className="size-4" /> Voir le cours
+                    </Link>
+                </Button>
+            }
+        />
     );
 }
 
@@ -519,7 +476,7 @@ function ProgramSummaryContent({
     );
     const completedText = `${program.completedHours} / ${program.totalHours} heures (${progressValue}%)`;
 
-    const colorScheme = getColorFromText(program.subject);
+    const categoryConfig = getCategoryConfig(program.subjectCategory);
 
     return (
         <div className="flex flex-col gap-6 overflow-y-scroll ">
@@ -527,7 +484,7 @@ function ProgramSummaryContent({
                 <p className="font-medium pb-3">Progression actuelle</p>
                 <Progress
                     value={progressValue}
-                    indicatorClassName={colorScheme.bg}
+                    indicatorClassName={categoryConfig.buttonColor}
                 />
                 <p className="text-xs text-muted-foreground pt-1">
                     {completedText}

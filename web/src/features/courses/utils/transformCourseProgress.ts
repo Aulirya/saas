@@ -1,53 +1,8 @@
-import type { LucideIcon } from "lucide-react";
-import {
-    Calculator,
-    Atom,
-    BookOpen,
-    Languages,
-    History,
-    Globe,
-    Lightbulb,
-    Heart,
-    Music,
-    Palette,
-    Laptop,
-    TrendingUp,
-    GraduationCap,
-    BookMarked,
-    Users,
-} from "lucide-react";
-
 import type { CourseProgressWithLessons } from "@saas/shared";
 import type { Subject } from "@saas/shared";
 import type { SchoolClass } from "@saas/shared";
 import type { CourseProgram, CourseChapter } from "../types";
 import type { Lesson } from "@saas/shared";
-
-/**
- * Map subject category to an icon
- */
-function getSubjectIcon(category: Subject["category"]): LucideIcon {
-    const iconMap: Record<Subject["category"], LucideIcon> = {
-        Mathematics: Calculator,
-        Language: Languages,
-        Science: Atom,
-        Social: Users,
-        Literature: BookOpen,
-        Sport: Heart,
-        History: History,
-        Geography: Globe,
-        Philosophy: Lightbulb,
-        Civic: GraduationCap,
-        Music: Music,
-        Art: Palette,
-        Technology: Laptop,
-        "Computer Science": Laptop,
-        Economics: TrendingUp,
-        Other: BookMarked,
-    };
-
-    return iconMap[category] || BookMarked;
-}
 
 /**
  * Map course progress status to CourseProgram status
@@ -97,9 +52,6 @@ export function transformCourseProgressToProgram(
     schoolClass: SchoolClass,
     allLessons: Lesson[] = []
 ): CourseProgram {
-    // Get icon from subject category
-    const icon = getSubjectIcon(subject.category);
-
     // Get all lessons for this subject, sorted by order if available
     const subjectLessons = allLessons
         .filter((lesson) => lesson.subject_id === subject.id)
@@ -284,7 +236,7 @@ export function transformCourseProgressToProgram(
     return {
         id: courseProgress.id,
         subject: subject.name,
-        icon,
+        subjectCategory: subject.category,
         level: schoolClass.level,
         className: schoolClass.name,
         weeklyHours: Math.round(weeklyHours * 10) / 10, // Round to 1 decimal

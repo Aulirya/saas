@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { startOfWeek } from "date-fns";
+import { useUser } from "@clerk/clerk-react";
+import { addDays, startOfWeek } from "date-fns";
 import { useState } from "react";
 import { StatisticsCard } from "@/components/journal/statistics_card";
 import { Calendar } from "@/features/calendar/components/Calendar";
@@ -40,6 +41,7 @@ function LoadingStatCard() {
 }
 
 function DashboardPage() {
+    const { user } = useUser();
     const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(() =>
         startOfWeek(new Date(), { weekStartsOn: 1 })
     );
@@ -51,6 +53,13 @@ function DashboardPage() {
         null
     );
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+
+        if (hour < 18) return "Bonjour";
+        return "Bonsoir";
+    };
+
     // Format planned time as hours and minutes
     const formatPlannedTime = (minutes: number): string => {
         if (minutes === 0) return "0min";
@@ -60,6 +69,14 @@ function DashboardPage() {
         if (mins === 0) return `${hours}h`;
         return `${hours}h ${mins}min`;
     };
+
+    const firstName = user?.firstName ?? user?.username ?? "";
+    const weekEnd = addDays(selectedWeekStart, 6);
+
+    const lessonsThisWeek = statistics?.lessonsThisWeek ?? 0;
+    const plannedMinutes = statistics?.plannedTimeMinutes ?? 0;
+    const availableResources = statistics?.availableResources ?? 0;
+    const aiSuggestions = statistics?.aiSuggestions ?? 0;
 
     return (
         <>
@@ -72,6 +89,29 @@ function DashboardPage() {
             <div className="flex flex-1 flex-col">
                 <div className="@container/main flex flex-1 flex-col gap-2">
                     <div className="flex flex-col gap-4 ">
+                        <div className="flex flex-col gap-2">
+                            {isLoading ? (
+                                <div className="flex items-center gap-3">
+                                    <div className="h-12 w-12 rounded-full bg-gray-200 animate-pulse" />
+                                    <div className="h-4 w-2/3 rounded bg-gray-200 animate-pulse" />
+                                    <div className="h-6 w-1/3 rounded bg-gray-200 animate-pulse" />
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <div className="absolute -inset-1.5 rounded-full blur-sm animate-book-pulse" />
+                                        <div className="relative flex h-12 w-12 items-center justify-center rounded-full ring-1 ring-primary/25 animate-book-float">
+                                            <BookOpenCheck className="h-6 w-6 text-primary" />
+                                        </div>
+                                    </div>
+                                    <h1 className="text-2xl font-semibold text-foreground">
+                                        {getGreeting()}
+                                        {firstName ? ` ${firstName}` : ""},
+                                        prete pour la semaine ?
+                                    </h1>
+                                </div>
+                            )}
+                        </div>
                         <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4  *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs  @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
                             {isLoading ? (
                                 <>
@@ -84,23 +124,19 @@ function DashboardPage() {
                                 <>
                                     <StatisticsCard
                                         description="Cours cette semaine"
-                                        data={statistics?.lessonsThisWeek ?? 0}
+                                        data={lessonsThisWeek}
                                         icon={BookOpenCheck}
                                     />
                                     <StatisticsCard
                                         description="Temps planifié"
-                                        data={formatPlannedTime(
-                                            statistics?.plannedTimeMinutes ?? 0
-                                        )}
+                                        data={formatPlannedTime(plannedMinutes)}
                                         icon={ClockIcon}
                                         iconBg="bg-green-100"
                                         iconColor="text-green-600"
                                     />
                                     <StatisticsCard
                                         description="Supports disponibles"
-                                        data={
-                                            statistics?.availableResources ?? 0
-                                        }
+                                        data={availableResources}
                                         icon={FileUpIcon}
                                         iconBg="bg-purple-100"
                                         iconColor="text-purple-600"
@@ -110,7 +146,7 @@ function DashboardPage() {
                                     />
                                     <StatisticsCard
                                         description="Suggestions IA"
-                                        data={statistics?.aiSuggestions ?? 0}
+                                        data={aiSuggestions}
                                         icon={SparklesIcon}
                                         iconBg="bg-yellow-100"
                                         iconColor="text-yellow-600"

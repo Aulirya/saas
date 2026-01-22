@@ -21,7 +21,7 @@ export function PaginationControls({
     onPageChange,
 }: PaginationControlsProps) {
     return (
-        <div className="flex justify-center shrink-0 pt-4 border-t">
+        <div className="flex justify-center shrink-0 pt-4 pb-6 border-t">
             <Pagination>
                 <PaginationContent>
                     <PaginationItem>

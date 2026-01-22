@@ -4,14 +4,12 @@ import { breakpoints } from "@/lib/media";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Route as ClassDetailRoute } from "./$classId";
-import { Plus, Eye } from "lucide-react";
-import { getClassConfig } from "@/lib/class-utils";
+import { Plus, Eye, GraduationCap } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { PageLayout } from "@/components/PageLayout";
+import { MasterDetailPageLayout } from "@/components/MasterDetailPageLayout";
 import {
     Card,
-    CardAction,
     CardDescription,
     CardHeader,
     CardTitle,
@@ -34,6 +32,8 @@ import { cn } from "@/lib/utils";
 import { CardInfoLayout } from "@/components/ui/card-info-layout";
 import { ViewDetailButton } from "@/components/ui/view-detail-button";
 import { FormSheet } from "@/components/ui/form-sheet";
+import { SelectableCard } from "@/components/SelectableCard";
+
 import { SchoolClassWithSubjectsAndLessons } from "@saas/shared";
 import { formatLessonDateTime } from "@/lib/date";
 import type { LessonWithSubject } from "@/types/class.types";
@@ -62,7 +62,7 @@ function ClassesPage() {
     const [levelFilter, setLevelFilter] = useState<LevelFilterValue>("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize] = useState(5); // Items per page
+    const [pageSize] = useState(20); // Items per page
     const [sortBy, setSortBy] = useState<"name" | "updated_at">("name");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -181,140 +181,122 @@ function ClassesPage() {
     };
 
     return (
-        <>
-            <PageLayout
-                header={
-                    <>
-                        <PageHeader
-                            title="Mes classes"
-                            primaryAction={{
-                                label: "Nouvelle classe",
-                                icon: Plus,
-                                onClick: () => {
-                                    setIsCreateModalOpen(true);
-                                },
-                            }}
-                        />
+        <MasterDetailPageLayout
+            header={
+                <>
+                    <PageHeader
+                        title="Mes classes"
+                        primaryAction={{
+                            label: "Nouvelle classe",
+                            icon: Plus,
+                            onClick: () => {
+                                setIsCreateModalOpen(true);
+                            },
+                        }}
+                    />
 
-                        <FilterBar
-                            searchId="class-search"
-                            searchPlaceholder="Rechercher une classe..."
-                            searchValue={searchQuery}
-                            onSearchChange={setSearchQuery}
-                            filters={[
-                                {
-                                    id: "class-school-filter",
-                                    label: "École",
-                                    value: schoolFilter,
-                                    options: schoolFilterOptions,
-                                    onValueChange: (value: string) =>
-                                        setSchoolFilter(
-                                            value as SchoolFilterValue
-                                        ),
-                                    placeholder: "Toutes les écoles",
-                                    isLoading: isLoadingSchools,
-                                },
-                                {
-                                    id: "class-level-filter",
-                                    label: "Niveau",
-                                    value: levelFilter,
-                                    options: levelFilterOptions,
-                                    onValueChange: (value: string) =>
-                                        setLevelFilter(
-                                            value as LevelFilterValue
-                                        ),
-                                    placeholder: "Tous les niveaux",
-                                    isLoading: isLoadingLevels,
-                                },
-                            ]}
-                            sortBy={sortBy}
-                            sortOptions={[
-                                { value: "name", label: "Nom" },
-                                {
-                                    value: "updated_at",
-                                    label: "Date de modification",
-                                },
-                            ]}
-                            onSortByChange={(value: string) =>
-                                setSortBy(value as "name" | "updated_at")
-                            }
-                            sortOrder={sortOrder}
-                            onSortOrderChange={setSortOrder}
-                        />
-                    </>
-                }
-            >
-                <div className="grid grid-cols-7 gap-6 m-0 grow overflow-hidden">
-                    <div className="col-span-7 lg:col-span-4 xl:col-span-5 flex flex-col overflow-hidden">
-                        {/* Scrollable classes list */}
-                        <div className="flex-1 overflow-y-auto pr-3 pt-3 pl-3">
-                            <div className="space-y-5">
-                                {isLoading ? (
-                                    <SkeletonCard />
-                                ) : paginatedClasses.length > 0 ? (
-                                    paginatedClasses.map((cls) => (
-                                        <ClassCard
-                                            key={cls.id}
-                                            classData={cls}
-                                            isSelected={cls.id === selectedId}
-                                            onSelect={handleClassSelect}
-                                        />
-                                    ))
-                                ) : (
-                                    <EmptyStateCard
-                                        title="Aucune classe trouvée"
-                                        description="Créez votre première classe pour commencer à suivre vos élèves."
-                                        buttonText="Nouvelle classe"
-                                        onButtonClick={() =>
-                                            setIsCreateModalOpen(true)
-                                        }
-                                    />
-                                )}
-                            </div>
-                        </div>
-                        {/* Fixed Pagination */}
-                        {!isLoading && filteredClasses.length > 0 && (
-                            <PaginationControls
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                onPageChange={setCurrentPage}
-                            />
-                        )}
-                    </div>
-                    {/* Desktop sidebar - hidden on mobile */}
-                    <div
-                        className="space-y-4 hidden lg:block pt-3 pr-3 lg:col-span-3 xl:col-span-2 xl:sticky xl:top-28 h-fit"
-                        style={{ top: "auto" }}
-                    >
-                        <ClassSummarySidebar
-                            classData={
-                                selectedClassWithDetails ?? selectedClass
-                            }
-                            isLoading={isLoadingClassDetails}
-                        />
-                    </div>
-                </div>
-
-                {/* Mobile modal - only visible on screens < lg */}
-                <ClassSummaryModal
-                    open={isModalOpen}
-                    onOpenChange={(isOpen) => {
-                        setIsModalOpen(isOpen);
-                        if (!isOpen && isMobile) {
-                            setSelectedId(null);
+                    <FilterBar
+                        searchId="class-search"
+                        searchPlaceholder="Rechercher une classe..."
+                        searchValue={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        filters={[
+                            {
+                                id: "class-school-filter",
+                                label: "École",
+                                value: schoolFilter,
+                                options: schoolFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setSchoolFilter(value as SchoolFilterValue),
+                                placeholder: "Toutes les écoles",
+                                isLoading: isLoadingSchools,
+                            },
+                            {
+                                id: "class-level-filter",
+                                label: "Niveau",
+                                value: levelFilter,
+                                options: levelFilterOptions,
+                                onValueChange: (value: string) =>
+                                    setLevelFilter(value as LevelFilterValue),
+                                placeholder: "Tous les niveaux",
+                                isLoading: isLoadingLevels,
+                            },
+                        ]}
+                        sortBy={sortBy}
+                        sortOptions={[
+                            { value: "name", label: "Nom" },
+                            {
+                                value: "updated_at",
+                                label: "Date de modification",
+                            },
+                        ]}
+                        onSortByChange={(value: string) =>
+                            setSortBy(value as "name" | "updated_at")
                         }
-                    }}
+                        sortOrder={sortOrder}
+                        onSortOrderChange={setSortOrder}
+                    />
+                </>
+            }
+            list={
+                <>
+                    {isLoading ? (
+                        <SkeletonCard />
+                    ) : paginatedClasses.length > 0 ? (
+                        paginatedClasses.map((cls) => (
+                            <ClassCard
+                                key={cls.id}
+                                classData={cls}
+                                isSelected={cls.id === selectedId}
+                                onSelect={handleClassSelect}
+                            />
+                        ))
+                    ) : (
+                        <EmptyStateCard
+                            title="Aucune classe trouvée"
+                            description="Créez votre première classe pour commencer à suivre vos élèves."
+                            buttonText="Nouvelle classe"
+                            onButtonClick={() => setIsCreateModalOpen(true)}
+                        />
+                    )}
+                </>
+            }
+            pagination={
+                !isLoading && filteredClasses.length > 0 ? (
+                    <PaginationControls
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                ) : null
+            }
+            desktopSummary={
+                <ClassSummarySidebar
                     classData={selectedClassWithDetails ?? selectedClass}
                     isLoading={isLoadingClassDetails}
                 />
+            }
+            afterContent={
+                <>
+                    <ClassSummaryModal
+                        open={isModalOpen}
+                        onOpenChange={(isOpen) => {
+                            setIsModalOpen(isOpen);
+                            if (!isOpen && isMobile) {
+                                setSelectedId(null);
+                            }
+                        }}
+                        classData={selectedClassWithDetails ?? selectedClass}
+                        isLoading={isLoadingClassDetails}
+                    />
 
-                {/* Create Class Modal */}
-                <ClassFormModal
-                    open={isCreateModalOpen}
-                    onOpenChange={setIsCreateModalOpen}
-                />
-            </PageLayout>
-        </>
+                    <ClassFormModal
+                        open={isCreateModalOpen}
+                        onOpenChange={setIsCreateModalOpen}
+                    />
+                </>
+            }
+        />
     );
 }
 
@@ -327,79 +309,43 @@ function ClassCard({
     isSelected: boolean;
     onSelect: (id: string) => void;
 }) {
-    const classConfig = getClassConfig(classData.level);
-
     return (
-        <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(classData.id)}
-            onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(classData.id);
-                }
-            }}
-            className={cn(
-                "group cursor-pointer border-border/70 transition-all duration-200",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                "hover:shadow-md hover:scale-[1.01]",
-                isSelected
-                    ? `${classConfig.ringColor} shadow-md ring-2 `
-                    : `${classConfig.ringHoverColor} `
-            )}
-        >
-            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4 flex-1">
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                        <CardTitle className="text-lg font-semibold">
-                            {classData.name}
-                        </CardTitle>
-                        <CardDescription className="flex flex-wrap items-center gap-2 text-sm">
-                            <span className="font-medium text-foreground/80">
-                                {classData.school}
-                            </span>
-                            <span className="text-muted-foreground">•</span>
-                            <span>{classData.level}</span>
-                            {classData.students_count !== undefined && (
-                                <>
-                                    <span className="text-muted-foreground">
-                                        •
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {classData.students_count} élève
-                                        {classData.students_count > 1
-                                            ? "s"
-                                            : ""}
-                                    </span>
-                                </>
-                            )}
-                        </CardDescription>
-                    </div>
-                </div>
-
-                <CardAction>
-                    <Button
-                        asChild
-                        className={cn(
-                            "shrink-0 text-white transition-all",
-                            classConfig.buttonColor,
-                            classConfig.buttonHoverColor,
-                            "group-hover:shadow-sm"
-                        )}
-                        aria-label="Voir la classe"
+        <SelectableCard
+            isSelected={isSelected}
+            onSelect={() => onSelect(classData.id)}
+            icon={<GraduationCap className="size-6 text-primary" aria-hidden />}
+            iconContainerClassName="bg-primary/10"
+            title={classData.name}
+            description={
+                <span>
+                    {classData.school} • {classData.level} selected:{" "}
+                    {isSelected}
+                    {classData.students_count !== undefined &&
+                        ` • ${classData.students_count} élève${
+                            classData.students_count > 1 ? "s" : ""
+                        }`}
+                </span>
+            }
+            action={
+                <Button
+                    asChild
+                    className={cn(
+                        "shrink-0 text-white transition-all",
+                        "bg-primary hover:bg-primary/90",
+                        "group-hover:shadow-sm"
+                    )}
+                    aria-label="Voir la classe"
+                >
+                    <Link
+                        to={ClassDetailRoute.to}
+                        params={{ classId: classData.id }}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <Link
-                            to={ClassDetailRoute.to}
-                            params={{ classId: classData.id }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <Eye className="size-4" /> Voir la classe
-                        </Link>
-                    </Button>
-                </CardAction>
-            </CardHeader>
-        </Card>
+                        <Eye className="size-4" /> Voir la classe
+                    </Link>
+                </Button>
+            }
+        />
     );
 }
 
@@ -410,7 +356,6 @@ function ClassSummarySidebar({
     classData: SchoolClassWithSubjectsAndLessons | SchoolClass | undefined;
     isLoading?: boolean;
 }) {
-    const classConfig = getClassConfig(classData?.level ?? "");
     if (!classData) {
         return (
             <Card className="border-dashed">
@@ -429,7 +374,6 @@ function ClassSummarySidebar({
         <CardInfoLayout
             title={`${classData.name}`}
             description={`${classData.school} - ${classData.level}`}
-            className={classConfig.ringColor}
             footer={
                 <ViewDetailButton
                     to={ClassDetailRoute.to}
