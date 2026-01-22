@@ -70,8 +70,18 @@ export function useGenerateLessonProgressSchedule() {
                 regenerate_existing?: boolean;
             };
         }) => orpc.courseProgress.generateSchedule.call(input),
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ["courseProgress"] });
+            queryClient.invalidateQueries({
+                queryKey: orpc.courseProgress.get.queryOptions({
+                    input: { id: variables.course_progress_id },
+                }).queryKey,
+            });
+            queryClient.invalidateQueries({
+                queryKey: orpc.courseProgress.getWithLessons.queryOptions({
+                    input: { id: variables.course_progress_id },
+                }).queryKey,
+            });
             queryClient.invalidateQueries({ queryKey: ["lessonProgress"] });
             queryClient.invalidateQueries({ queryKey: ["calendarEvents"] });
         },
