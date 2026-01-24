@@ -81,7 +81,7 @@ function LandingPage() {
 
                             <div className="landing-card landing-action--primary rounded-2xl border border-white/70 bg-white/70 p-6 shadow-lg backdrop-blur mt-6">
                                 <h2 className="landing-action-title text-2xl font-semibold text-slate-900">
-                                    Prêt a demarrer ?
+                                    Prêt a démarrer ?
                                 </h2>
                                 <p className="mt-1 text-sm text-slate-600">
                                     Choisissez votre mode en un clic.
@@ -96,7 +96,7 @@ function LandingPage() {
                                                 navigate({ to: "/dashboard" });
                                             }}
                                         >
-                                            Essayer la demo gratuitement
+                                            Essayer la démo gratuitement
                                         </Button>
                                     )}
                                     <SignInButton mode="modal">
@@ -125,7 +125,7 @@ function LandingPage() {
                                     </h3>
                                     <p className="text-md text-slate-600">
                                         Visualisez votre semaine et adaptez vos
-                                        lecons en quelques secondes.
+                                        leçons en quelques secondes.
                                     </p>
                                 </div>
                             </div>
@@ -136,8 +136,7 @@ function LandingPage() {
                                         Suivi des programmes
                                     </h3>
                                     <p className="text-md text-slate-600">
-                                        Gardez une vue claire sur les cours
-                                        avances et les lecons restantes.
+                                        Gardez une vue claire sur la progression des cours.
                                     </p>
                                 </div>
                             </div>
@@ -148,7 +147,7 @@ function LandingPage() {
                                         Pilotage des classes
                                     </h3>
                                     <p className="text-md text-slate-600">
-                                        Organisez vos classes, matieres et
+                                        Organisez vos classes, matières et
                                         groupes en un seul endroit.
                                     </p>
                                 </div>
