@@ -4,15 +4,21 @@ help: ## Display this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+
 dev: ## Start all services in development mode with migrations
-	@echo "Starting SurrealDB..."
+	@echo "🚀 Starting SurrealDB..."
 	docker-compose up -d surrealdb
-	@echo "Running migrations..."
-	docker-compose run --rm surrealdb-migrate
-	@echo "Starting all services..."
+
+	@echo "📦 Running database migrations..."
+	docker-compose --profile tools up --abort-on-container-exit surrealdb-migrate
+
+	@echo "🔥 Starting application services..."
 	docker-compose up -d --remove-orphans
+
 	@echo "\n✅ Services started!"
 	@make urls
+
+
 
 migrate: ## Run database migrations
 	docker-compose up -d surrealdb
@@ -33,7 +39,7 @@ migration-create: ## Create a new migration file (usage: make migration-create N
 		exit 1; \
 	fi
 	@TIMESTAMP=$$(date +%Y%m%d_%H%M%S); \
-	FILENAME="database/migrations/$${TIMESTAMP}_$(NAME).surql"; \
+	FILENAME="apps/database-migrations/migrations/$${TIMESTAMP}_$(NAME).surql"; \
 	touch $$FILENAME; \
 	echo "-- Migration: $(NAME)" > $$FILENAME; \
 	echo "-- Created: $$(date)" >> $$FILENAME; \
@@ -83,4 +89,4 @@ urls: ## Display service URLs
 	@echo "  SurrealDB:     http://localhost:8000"
 
 run-storybook: ## Run storybook in the frontend container
-	cd web && bun run storybook
+	cd apps/web && bun run storybook
