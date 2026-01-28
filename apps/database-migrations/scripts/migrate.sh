@@ -59,7 +59,7 @@ for migration_file in $(ls -1 ${MIGRATIONS_DIR}/*.surql 2>/dev/null | sort); do
         -u "${SURREALDB_USER}:${SURREALDB_PASS}" \
         -d "USE NS ${SURREALDB_NS}; USE DB ${SURREALDB_DB}; SELECT * FROM _migrations WHERE name = '${migration_name}';")
 
-    if echo "$applied" | grep -q '"result":\[\]'; then
+    if echo "$applied" | grep -q '"result":\s*\[\]'; then
         echo "   📦 Applying: ${migration_name}"
 
         # Apply the migration (prepend USE statements)
