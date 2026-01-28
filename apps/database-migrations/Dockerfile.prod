@@ -1,0 +1,15 @@
+# Simple migration runner for SurrealDB
+# Build context: repo root
+FROM alpine:latest
+
+# Install curl for HTTP requests
+RUN apk add --no-cache curl bash grep
+
+# Copy the migration script and migrations
+COPY apps/database-migrations/scripts/migrate.sh /migrate.sh
+COPY apps/database-migrations/migrations /migrations
+
+RUN chmod +x /migrate.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/migrate.sh"]
