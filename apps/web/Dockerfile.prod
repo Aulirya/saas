@@ -1,0 +1,69 @@
+# Stage 1: Builder (use Node.js for Vite/Nitro builds - better memory management)
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+# Build-time environment variables (baked into client JS during Vite build)
+ARG VITE_API_URL
+ARG VITE_CLERK_PUBLISHABLE_KEY
+
+# Install bun for package management
+RUN npm install -g bun
+
+# Copy workspace configuration (required for workspace resolution)
+COPY package.json bun.lock ./
+
+# Copy workspace package.json files for dependency resolution
+COPY apps/web/package.json ./apps/web/
+COPY apps/backend/package.json ./apps/backend/
+
+# Copy shared package (full source needed for types)
+COPY packages/shared ./packages/shared
+
+# Install all workspace dependencies from root
+RUN bun install --frozen-lockfile
+
+# Copy backend source (needed for type imports from oRPC client)
+COPY apps/backend ./apps/backend
+
+# Copy web source
+COPY apps/web ./apps/web
+
+# Set working directory to web app
+WORKDIR /app/apps/web
+
+# Set environment variables for build
+ENV NODE_ENV=production
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+
+# Increase Node.js heap size for Vite/Nitro bundling
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Build the application using Node.js (outputs to .output/)
+RUN npx vite build
+
+# Stage 2: Production Runner (lightweight Bun runtime)
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Install curl for Dokploy health checks
+RUN apk add --no-cache curl
+
+ENV NODE_ENV=production
+
+# Copy build output from builder stage
+COPY --from=build /app/apps/web/.output .output
+
+# Health check for Dokploy zero-downtime deployments
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3000/ || exit 1
+
+# Run as non-root user
+USER bun
+
+EXPOSE 3000
+
+# Start the Nitro server (bun preset)
+CMD ["bun", "run", ".output/server/index.mjs"]
